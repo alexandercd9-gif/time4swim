@@ -12,29 +12,31 @@ import { showTrialSuccessNotification } from "./TrialNotification";
 export function ModernLoginForm() {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: ""
-  });
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('🔴 handleSubmit EJECUTADO');
     e.preventDefault();
     setLoading(true);
+    console.log('Email value:', email);
 
     try {
       if (isLogin) {
         // Login
+        console.log('🟡 ANTES del fetch', email);
         const response = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            email: formData.email,
-            password: formData.password
+            email,
+            password
           })
         });
+        console.log('🟢 RESPONSE recibida', response);
 
         if (response.ok) {
           window.location.href = '/'; // El middleware redirigirá automáticamente según el rol
@@ -44,34 +46,36 @@ export function ModernLoginForm() {
         }
       } else {
         // Registro
-        if (formData.password !== formData.confirmPassword) {
+        if (password !== confirmPassword) {
           alert('Las contraseñas no coinciden');
           return;
         }
-
+        console.log('🟡 ANTES del fetch registro', email);
         const response = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            name: formData.name,
-            email: formData.email,
-            password: formData.password
+            name,
+            email,
+            password
           })
         });
+        console.log('🟢 RESPONSE recibida registro', response);
 
         if (response.ok) {
           const result = await response.json();
-          
           // Mostrar notificación moderna de éxito
           showTrialSuccessNotification({
-            email: formData.email,
+            email,
             trialDays: 7
           });
-          
           // Cambiar a modo login después de un breve delay
           setTimeout(() => {
             setIsLogin(true);
-            setFormData({ name: "", email: "", password: "", confirmPassword: "" });
+            setName("");
+            setEmail("");
+            setPassword("");
+            setConfirmPassword("");
           }, 1500);
         } else {
           const error = await response.json();
@@ -79,6 +83,7 @@ export function ModernLoginForm() {
         }
       }
     } catch (error) {
+      console.log('🔴 ERROR en fetch', error);
       console.error('Error detallado:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       alert(`Error de conexión detallado: ${errorMessage}`);
@@ -89,6 +94,25 @@ export function ModernLoginForm() {
 
   return (
     <div className="space-y-6">
+      {/* Botón de prueba manual para depuración */}
+      <div className="mb-4">
+        <button 
+          type="button" 
+          style={{padding: '8px 16px', background: '#e0e7ff', color: '#1e40af', borderRadius: '6px', fontWeight: 'bold', border: '1px solid #1e40af'}}
+          onClick={() => {
+            console.log('🔵 Prueba manual');
+            fetch('/api/auth/login', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({email: 'admin@time4swim.com', password: 'admin123'})
+            })
+              .then(r => console.log('🟢 Prueba manual response:', r))
+              .catch(e => console.log('🔴 Prueba manual error:', e));
+          }}
+        >
+          PRUEBA MANUAL API
+        </button>
+      </div>
       {/* Formulario principal */}
       <Card className="border-0 shadow-2xl">
         <CardHeader className="space-y-2 pb-6">
@@ -120,6 +144,7 @@ export function ModernLoginForm() {
         
         <CardContent className="space-y-6">
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Nombre completo solo en registro */}
             {!isLogin && (
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-sm font-medium text-gray-700">
@@ -131,8 +156,8 @@ export function ModernLoginForm() {
                     id="name"
                     type="text"
                     placeholder="Ingresa tu nombre completo"
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                     className="pl-10 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                     required={!isLogin}
                   />
@@ -140,6 +165,7 @@ export function ModernLoginForm() {
               </div>
             )}
 
+            {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium text-gray-700">
                 Correo electrónico
@@ -150,14 +176,15 @@ export function ModernLoginForm() {
                   id="email"
                   type="email"
                   placeholder="tu@email.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="pl-10 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                   required
                 />
               </div>
             </div>
 
+            {/* Contraseña */}
             <div className="space-y-2">
               <Label htmlFor="password" className="text-sm font-medium text-gray-700">
                 Contraseña
@@ -168,8 +195,8 @@ export function ModernLoginForm() {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder={isLogin ? "Tu contraseña" : "Mínimo 6 caracteres"}
-                  value={formData.password}
-                  onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="pl-10 pr-10 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                   required
                 />
@@ -189,6 +216,7 @@ export function ModernLoginForm() {
               </div>
             </div>
 
+            {/* Confirmar contraseña solo en registro */}
             {!isLogin && (
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
@@ -200,8 +228,8 @@ export function ModernLoginForm() {
                     id="confirmPassword"
                     type="password"
                     placeholder="Confirma tu contraseña"
-                    value={formData.confirmPassword}
-                    onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
                     className="pl-10 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                     required={!isLogin}
                   />
@@ -209,10 +237,12 @@ export function ModernLoginForm() {
               </div>
             )}
 
-            <Button 
+            {/* Botón submit con onClick adicional */}
+            <button 
               type="submit" 
-              className="w-full h-12 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold text-base shadow-lg hover:shadow-xl transition-all duration-200" 
+              className="w-full h-12 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold text-base shadow-lg hover:shadow-xl transition-all duration-200"
               disabled={loading}
+              onClick={handleSubmit}
             >
               {loading ? (
                 <Loader2 className="h-5 w-5 animate-spin mr-2" />
@@ -232,7 +262,7 @@ export function ModernLoginForm() {
                 </>
               )}
               {loading && "Procesando..."}
-            </Button>
+            </button>
           </form>
 
           {/* Toggle entre login y registro */}
