@@ -10,19 +10,87 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
+  // Función para normalizar el rol
+  const normalizeRole = (role: string) => {
+    const normalized = role.toLowerCase().trim();
+    // Mapeo de posibles variaciones
+    const roleMap: { [key: string]: string } = {
+      'admin': 'admin',
+      'administrator': 'admin',
+      'parent': 'parents',
+      'parents': 'parents', 
+      'family': 'parents',
+      'familia': 'parents',
+      'club': 'club',
+      'coach': 'coach',
+      'entrenador': 'coach',
+      'swimmer': 'swimmer',
+      'nadador': 'swimmer'
+    };
+    return roleMap[normalized] || normalized;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      // Simulación de login exitoso - Reemplazar con tu API real
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Redirección inmediata al dashboard del admin
-      router.push("/admin/dashboard");
+      // LLAMADA REAL A TU ENDPOINT
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      // DEBUG: Mostrar datos recibidos
+      console.log("🔍 Datos recibidos del login:", data);
+      console.log("👤 Rol del usuario:", data.user?.role);
+      console.log("📝 Tipo de rol:", typeof data.user?.role);
+
+      if (data.success) {
+        // Normalizar el rol
+        const normalizedRole = normalizeRole(data.user.role);
+        console.log("🔄 Rol normalizado:", normalizedRole);
+
+        // Guardar token y datos del usuario
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('userRole', normalizedRole);
+        localStorage.setItem('userData', JSON.stringify(data.user));
+        
+        // Redirigir según el rol que viene de la BD
+        const redirectPaths = {
+          admin: '/admin/dashboard',
+          parents: '/parents/dashboard',
+          club: '/club/dashboard',
+          coach: '/coach/dashboard',
+          swimmer: '/swimmer/dashboard'
+        };
+
+        console.log("🗺️ Roles definidos:", Object.keys(redirectPaths));
+        
+        const redirectPath = redirectPaths[normalizedRole as keyof typeof redirectPaths];
+        console.log("📍 Ruta calculada:", redirectPath);
+
+        if (!redirectPath) {
+          console.log("⚠️  Rol no encontrado. Redirigiendo a dashboard por defecto");
+          router.push('/dashboard');
+        } else {
+          console.log("✅ Redirigiendo a:", redirectPath);
+          router.push(redirectPath);
+        }
+        
+      } else {
+        // Manejar error de login
+        alert(`Error: ${data.message || 'Credenciales incorrectas'}`);
+      }
       
     } catch (error) {
-      console.error("Error de login:", error);
+      console.error("Error de conexión:", error);
+      alert("Error de conexión con el servidor");
     } finally {
       setIsLoading(false);
     }
@@ -88,6 +156,7 @@ export default function LoginPage() {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">¡Bienvenido!</h2>
           <p className="text-gray-600 text-center mb-6">Ingresa a tu cuenta para continuar</p>
+          
           <form className="space-y-4" onSubmit={handleSubmit}>
             {/* Email con icono */}
             <div>
@@ -110,6 +179,7 @@ export default function LoginPage() {
                   autoComplete="email"
                   required
                   disabled={isLoading}
+                  placeholder="tu@email.com"
                 />
               </div>
             </div>
@@ -134,6 +204,7 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   required
                   disabled={isLoading}
+                  placeholder="Tu contraseña"
                 />
                 <button
                   type="button"
@@ -200,7 +271,7 @@ export default function LoginPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Procesando...
+                  Iniciando sesión...
                 </>
               ) : (
                 <>

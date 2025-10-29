@@ -69,37 +69,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Error al generar el token.' }, { status: 500 });
     }
 
-    // 7. Preparar respuesta y cookies
-    const response = NextResponse.json({
+    // 7. Preparar respuesta según estructura solicitada
+    return NextResponse.json({
       success: true,
-      message: 'Login exitoso',
       user: {
         id: user.id,
-        name: user.name,
         email: user.email,
-        role: user.role
-      }
+        role: user.role,
+        name: user.name
+      },
+      token
     });
-
-    // Cookie de autenticación (httpOnly)
-    response.cookies.set('auth-token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 24 * 60 * 60, // 1 día
-      path: '/'
-    });
-
-    // Cookie de rol (no httpOnly)
-    response.cookies.set('user-role', user.role, {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 24 * 60 * 60, // 1 día
-      path: '/'
-    });
-
-    return response;
 
   } catch (error) {
     // Manejo de errores generales
