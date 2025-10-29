@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       { expiresIn: '7d' }
     );
 
-    // Crear respuesta con cookie
+    // Crear respuesta con cookies
     const response = NextResponse.json({
       message: 'Login exitoso',
       user: {
@@ -61,12 +61,20 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Establecer cookie httpOnly
+    // Cookie de autenticación (httpOnly)
     response.cookies.set('auth-token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días
+      maxAge: 24 * 60 * 60 // 1 día
+    });
+
+    // Cookie de rol (no httpOnly)
+    response.cookies.set('user-role', user.role, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 // 1 día
     });
 
     return response;
