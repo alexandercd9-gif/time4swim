@@ -1,4 +1,4 @@
-import { ModernLoginForm } from "@/components/modern-login-form";
+// import ModernLoginForm from "@/components/modern-login-form";
 import { LogoDisplay } from "@/components/logo-display";
 
 export default function Home() {
@@ -71,7 +71,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Lado derecho - Formulario */}
+        {/* Lado derecho - Info básica */}
         <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
           <div className="w-full max-w-md">
             {/* Logo móvil */}
@@ -80,8 +80,7 @@ export default function Home() {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Time4Swim</h1>
               <p className="text-gray-600">Sistema completo de gestión para natación</p>
             </div>
-            
-            <ModernLoginForm />
+            {/* Aquí puedes agregar información adicional o enlaces, pero sin el formulario de login */}
           </div>
         </div>
       </div>

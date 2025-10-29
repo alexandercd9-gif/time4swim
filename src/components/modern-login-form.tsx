@@ -11,15 +11,11 @@ export default function ModernLoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     console.log('🔴 handleSubmit EJECUTADO')
-    console.log('Email value:', email)
-    console.log('Password value:', password)
     
     setError('')
     setLoading(true)
 
     try {
-      console.log('🟡 ANTES del fetch', email)
-      
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -31,13 +27,10 @@ export default function ModernLoginForm() {
         }),
       })
 
-      console.log('🟢 RESPONSE recibida', response)
-
       if (response.ok) {
-        const data = await response.json()
-        console.log('✅ Login exitoso', data)
-        // El middleware debería redirigir automáticamente
-        window.location.href = '/'
+        console.log('✅ Login exitoso')
+        // REDIRECCIÓN DIRECTA AL DASHBOARD
+        window.location.href = '/admin/dashboard'
       } else {
         const errorData = await response.json()
         setError(errorData.error || 'Error en el login')
@@ -51,46 +44,42 @@ export default function ModernLoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium mb-1">
-          Email
-        </label>
-        <input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md"
-          required
-        />
+    <div className="card shadow-lg border-0" style={{ width: '400px' }}>
+      <div className="card-body p-4">
+        <h2 className="card-title text-center mb-4">Iniciar Sesión</h2>
+        <form onSubmit={handleSubmit}>
+          <div className="mb-3">
+            <label htmlFor="email" className="form-label">Email</label>
+            <input
+              type="email"
+              className="form-control"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="mb-3">
+            <label htmlFor="password" className="form-label">Contraseña</label>
+            <input
+              type="password"
+              className="form-control"
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          {error && <div className="alert alert-danger">{error}</div>}
+          <button 
+            type="submit" 
+            className="btn btn-primary w-100"
+            disabled={loading}
+          >
+            {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+          </button>
+        </form>
       </div>
-
-      <div>
-        <label htmlFor="password" className="block text-sm font-medium mb-1">
-          Contraseña
-        </label>
-        <input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md"
-          required
-        />
-      </div>
-
-      {error && (
-        <div className="text-red-600 text-sm">{error}</div>
-      )}
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50"
-      >
-        {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
-      </button>
-    </form>
+    </div>
   )
 }
