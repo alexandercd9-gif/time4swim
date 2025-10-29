@@ -1,57 +1,77 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import * as jwt from 'jsonwebtoken';
-import { prisma } from '@/lib/prisma';
+import jwt from 'jsonwebtoken';
+import { connectDB } from '@/lib/db';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'tu-secreto-jwt-aqui';
+const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-jwt-key';
 
 export async function POST(request: NextRequest) {
+  let connection;
   try {
-    const { email, password } = await request.json();
+    // 1. Parsear body
+    let body;
+    try {
+      body = await request.json();
+    } catch (err) {
+      return NextResponse.json({ error: 'Body inválido, debe ser JSON.' }, { status: 400 });
+    }
+    const { email, password } = body;
 
-    // Validar datos
+    // 2. Validar datos
     if (!email || !password) {
-      return NextResponse.json(
-        { message: 'Email y contraseña son obligatorios' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Email y contraseña son obligatorios.' }, { status: 400 });
     }
 
-    // Buscar usuario
-    const user = await prisma.user.findUnique({
-      where: { email }
-    });
+    // 3. Conectar a la base de datos
+    try {
+      connection = await connectDB();
+    } catch (dbErr) {
+      return NextResponse.json({ error: 'Error de conexión a la base de datos.' }, { status: 500 });
+    }
 
+    // 4. Buscar usuario con consulta SQL directa
+    let user;
+    try {
+      const [users] = await connection.execute('SELECT * FROM user WHERE email = ?', [email]);
+      user = users[0];
+    } catch (sqlErr) {
+      return NextResponse.json({ error: 'Error al consultar usuario.' }, { status: 500 });
+    }
     if (!user) {
-      return NextResponse.json(
-        { message: 'Credenciales inválidas' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Usuario o contraseña incorrectos.' }, { status: 401 });
     }
 
-    // Verificar contraseña
-    const isValidPassword = await bcrypt.compare(password, user.password);
-
-    if (!isValidPassword) {
-      return NextResponse.json(
-        { message: 'Credenciales inválidas' },
-        { status: 401 }
-      );
+    // 5. Verificar contraseña
+    let validPassword = false;
+    try {
+      validPassword = await bcrypt.compare(password, user.password);
+    } catch (bcryptErr) {
+      return NextResponse.json({ error: 'Error al verificar la contraseña.' }, { status: 500 });
+    }
+    if (!validPassword) {
+      return NextResponse.json({ error: 'Usuario o contraseña incorrectos.' }, { status: 401 });
     }
 
-    // Crear token JWT
-    const token = jwt.sign(
-      { 
-        userId: user.id,
-        email: user.email,
-        role: user.role
-      },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    // 6. Generar JWT
+    let token;
+    try {
+      token = jwt.sign(
+        {
+          userId: user.id,
+          email: user.email,
+          role: user.role
+        },
+        JWT_SECRET,
+        { expiresIn: '1d' }
+      );
+    } catch (jwtErr) {
+      return NextResponse.json({ error: 'Error al generar el token.' }, { status: 500 });
+    }
 
-    // Crear respuesta con cookies
+    // 7. Preparar respuesta y cookies
     const response = NextResponse.json({
+      success: true,
       message: 'Login exitoso',
       user: {
         id: user.id,
@@ -66,7 +86,8 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 24 * 60 * 60 // 1 día
+      maxAge: 24 * 60 * 60, // 1 día
+      path: '/'
     });
 
     // Cookie de rol (no httpOnly)
@@ -74,16 +95,19 @@ export async function POST(request: NextRequest) {
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 24 * 60 * 60 // 1 día
+      maxAge: 24 * 60 * 60, // 1 día
+      path: '/'
     });
 
     return response;
 
   } catch (error) {
+    // Manejo de errores generales
     console.error('Error en login:', error);
-    return NextResponse.json(
-      { message: 'Error interno del servidor' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Error interno del servidor.' }, { status: 500 });
+  } finally {
+    if (connection) {
+      try { await connection.end(); } catch (e) { /* ignore */ }
+    }
   }
 }
