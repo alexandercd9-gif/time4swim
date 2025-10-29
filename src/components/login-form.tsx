@@ -37,7 +37,7 @@ export function LoginForm() {
         });
 
         if (response.ok) {
-          window.location.reload(); // El middleware redirigirá automáticamente según el rol
+          window.location.href = '/'; // El middleware redirigirá automáticamente según el rol
         } else {
           const error = await response.json();
           alert(error.message || 'Error al iniciar sesión');
