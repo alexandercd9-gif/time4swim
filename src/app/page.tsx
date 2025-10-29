@@ -1,7 +1,12 @@
+import { redirect } from "next/navigation";
+
 // import ModernLoginForm from "@/components/modern-login-form";
 import { LogoDisplay } from "@/components/logo-display";
 
 export default function Home() {
+  redirect("/login");
+  return null;
+
   return (
     <main className="min-h-screen bg-white">
       <div className="flex min-h-screen">
