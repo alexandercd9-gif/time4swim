@@ -1,8 +1,9 @@
 "use client";
 import { useUser } from "@/context/UserContext";
 import Link from "next/link";
-import { Home, Users, Medal, BarChart, User, LogOut, School } from "lucide-react";
+import { Home, Users, Medal, BarChart, User, LogOut, School, Calendar, CreditCard, FileText } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const navByRole = {
   admin: [
@@ -18,10 +19,14 @@ const navByRole = {
     { href: "/parents/records", label: "Records", icon: <Medal size={20} /> },
   ],
   club: [
-    { href: "/club/dashboard", label: "Nadadores", icon: <Users size={20} /> },
-    { href: "/club/entrenamientos", label: "Entrenamientos", icon: <BarChart size={20} /> },
-    { href: "/club/medallas", label: "Medallas", icon: <Medal size={20} /> },
-    { href: "/club/gestion", label: "Gestión", icon: <User size={20} /> },
+    { href: "/club/dashboard", label: "Dashboard", icon: <Home size={20} /> },
+    { href: "/club/nadadores", label: "Nadadores", icon: <Users size={20} /> },
+    { href: "/club/entrenadores", label: "Entrenadores", icon: <User size={20} /> },
+    { href: "/club/grupos", label: "Grupos", icon: <School size={20} /> },
+    { href: "/club/competencias", label: "Competiciones", icon: <Medal size={20} /> },
+    { href: "/club/calendario", label: "Calendario", icon: <Calendar size={20} /> },
+    { href: "/club/pagos", label: "Pagos", icon: <CreditCard size={20} /> },
+    { href: "/club/reportes", label: "Reportes", icon: <FileText size={20} /> },
   ],
   coach: [
     { href: "/coach/dashboard", label: "Mis Nadadores", icon: <Users size={20} /> },
@@ -36,8 +41,22 @@ const navByRole = {
 };
 
 export default function Sidebar() {
-  const { user } = useUser();
+  const { user, setUser } = useUser();
   const [collapsed, setCollapsed] = useState(false);
+  const router = useRouter();
+
+const handleLogout = () => {
+  // Limpiar usuario
+  setUser({
+    id: "",
+    name: "",
+    email: "",
+    role: "parents"
+  });
+
+  // Recargar la página completamente
+  window.location.href = "/login";
+};
 
   return (
     <aside className={`bg-blue-900 text-white flex flex-col transition-all duration-300 ${collapsed ? "w-16" : "w-64"} min-h-screen shadow-lg glassmorphism`}>
@@ -49,7 +68,7 @@ export default function Sidebar() {
       </div>
       <nav className="flex-1">
         <ul>
-          {navByRole[user.role].map((item) => (
+          {navByRole[user.role]?.map((item) => (
             <li key={item.href}>
               <Link href={item.href} className="flex items-center gap-3 px-6 py-3 hover:bg-blue-800 transition rounded-lg">
                 <span>{item.icon}</span>
@@ -60,7 +79,10 @@ export default function Sidebar() {
         </ul>
       </nav>
       <div className="px-6 py-4 border-t border-blue-800">
-        <button className="flex items-center gap-2 text-red-300 hover:text-red-500 transition">
+        <button 
+          onClick={handleLogout}
+          className="flex items-center gap-2 text-red-300 hover:text-red-500 transition w-full"
+        >
           <LogOut size={20} />
           {!collapsed && <span>Cerrar sesión</span>}
         </button>
