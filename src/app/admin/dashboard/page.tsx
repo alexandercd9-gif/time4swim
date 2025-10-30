@@ -1,44 +1,16 @@
-"use client";
 
+
+import MetricCard from "@/components/MetricCard";
+import { Users, School, BarChart, Medal } from "lucide-react";
 
 export default function AdminDashboard() {
   return (
-    <div className="container py-5">
-      <h1 className="mb-5 text-center">Dashboard Administrador</h1>
-      <div className="row g-4 justify-content-center">
-        <div className="col-12 col-md-6 col-lg-3">
-          <div className="card shadow-sm">
-            <div className="card-body text-center">
-              <h5 className="card-title">Usuarios Totales</h5>
-              <p className="display-5 fw-bold text-primary">1,234</p>
-            </div>
-          </div>
-        </div>
-        <div className="col-12 col-md-6 col-lg-3">
-          <div className="card shadow-sm">
-            <div className="card-body text-center">
-              <h5 className="card-title">Clubes Activos</h5>
-              <p className="display-5 fw-bold text-success">27</p>
-            </div>
-          </div>
-        </div>
-        <div className="col-12 col-md-6 col-lg-3">
-          <div className="card shadow-sm">
-            <div className="card-body text-center">
-              <h5 className="card-title">Nadadores</h5>
-              <p className="display-5 fw-bold text-info">542</p>
-            </div>
-          </div>
-        </div>
-        <div className="col-12 col-md-6 col-lg-3">
-          <div className="card shadow-sm">
-            <div className="card-body text-center">
-              <h5 className="card-title">Competiciones</h5>
-              <p className="display-5 fw-bold text-warning">16</p>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <MetricCard icon={<Users size={32} />} label="Usuarios" value={120} trend="+5% esta semana" color="blue" />
+      <MetricCard icon={<School size={32} />} label="Clubes" value={12} trend="+1" color="cyan" />
+      <MetricCard icon={<BarChart size={32} />} label="Nadadores" value={542} trend="+12" color="green" />
+      <MetricCard icon={<Medal size={32} />} label="Competiciones" value={16} color="yellow" />
     </div>
+    // ...puedes agregar más componentes aquí
   );
 }
