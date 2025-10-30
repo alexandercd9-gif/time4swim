@@ -1,3 +1,4 @@
+"use client";
 import { createContext, useContext, useState, ReactNode } from "react";
 
 export type UserRole = "admin" | "parents" | "club" | "coach" | "swimmer";
