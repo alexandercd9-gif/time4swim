@@ -119,21 +119,28 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-    // 7. Preparar respuesta - CORREGIDO: estructura consistente
-    const responseData = {
+    // 7. Preparar respuesta y establecer cookie httpOnly
+    const response = NextResponse.json({
       success: true,
       user: {
         id: user.id,
         email: user.email,
         role: user.role || 'user',
-        name: user.name || user.email.split('@')[0] // nombre por defecto
+        name: user.name || user.email.split('@')[0]
       },
-      token,
       message: 'Login exitoso'
-    };
+    });
+
+    response.cookies.set('token', token, {
+      httpOnly: true,
+      path: '/',
+      maxAge: 60 * 60 * 24, // 1 día
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production'
+    });
 
     console.log('Login exitoso para:', user.email, 'Rol:', user.role);
-    return NextResponse.json(responseData);
+    return response;
 
   } catch (error) {
     // Manejo de errores generales

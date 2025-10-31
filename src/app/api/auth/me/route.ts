@@ -1,51 +1,62 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as jwt from "jsonwebtoken";
-import { prisma } from "@/lib/prisma";
-
-const JWT_SECRET = process.env.JWT_SECRET || 'tu-secreto-jwt-aqui';
+import { connectDB } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('auth-token')?.value;
+    // Extraer token del header o cookie
+    const authHeader = request.headers.get("Authorization");
+    const token = authHeader?.replace("Bearer ", "") || request.cookies.get("token")?.value;
 
     if (!token) {
-      return NextResponse.json(
-        { message: 'No autorizado' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Token de acceso requerido" }, { status: 401 });
     }
 
-    // Verificar token
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    
-    // Obtener información actualizada del usuario
-    const user = await (prisma as any).user.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        accountStatus: true,
-        isTrialAccount: true,
-        trialExpiresAt: true
+    let decoded: jwt.JwtPayload | string;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET || "your-secret-key");
+    } catch (err) {
+      return NextResponse.json({ error: "Token inválido o expirado" }, { status: 401 });
+    }
+
+    // Extraer userId correctamente
+    const userId = typeof decoded === "string" ? undefined : decoded.userId;
+    if (!userId) {
+      return NextResponse.json({ error: "Token sin userId" }, { status: 401 });
+    }
+
+    // Buscar usuario real en MySQL (como login)
+    let connection;
+    try {
+      connection = await connectDB();
+      const [rows] = await connection.execute('SELECT * FROM user WHERE id = ?', [userId]);
+      const users = rows as any[];
+      if (!users || users.length === 0) {
+        return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
       }
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { message: 'Usuario no encontrado' },
-        { status: 404 }
-      );
+      const user = users[0];
+      return NextResponse.json({
+        user: {
+          id: user.id,
+          name: user.name || user.email.split('@')[0],
+          email: user.email,
+          role: user.role
+        }
+      });
+    } catch (dbErr) {
+      console.error('Error consultando usuario en MySQL:', dbErr);
+      return NextResponse.json({ error: "Error de base de datos" }, { status: 500 });
+    } finally {
+      if (connection) {
+        try { await connection.end(); } catch (e) { console.error('Error cerrando conexión:', e); }
+      }
     }
-
-    return NextResponse.json({ user });
 
   } catch (error) {
-    console.error('Error verifying user:', error);
+    console.error('Error en /api/auth/me:', error);
     return NextResponse.json(
-      { message: 'Token inválido' },
-      { status: 401 }
+      { message: 'Error del servidor' },
+      { status: 500 }
     );
   }
 }

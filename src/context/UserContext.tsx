@@ -8,11 +8,9 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
-  accountStatus?: string;
-  isTrialAccount?: boolean;
-  trialExpiresAt?: Date;
 }
 
+// Usuario vacío por defecto
 const defaultUser: User = {
   id: "",
   name: "",
@@ -24,42 +22,42 @@ const UserContext = createContext<{
   user: User; 
   setUser: (u: User) => void;
   loading: boolean;
+  refetchUser: () => void;
 }>({
   user: defaultUser,
   setUser: () => {},
   loading: true,
+  refetchUser: () => {},
 });
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User>(defaultUser);
   const [loading, setLoading] = useState(true);
 
-  // Cargar usuario desde tu API /api/auth/me
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch('/api/auth/me');
-        
-        if (response.ok) {
-          const data = await response.json();
-          setUser(data.user);
-        } else {
-          setUser(defaultUser);
-        }
-      } catch (error) {
-        console.log("Error loading user:", error);
+  const refetchUser = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/auth/me', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.user); // ← Usa los datos reales de la API
+      } else {
         setUser(defaultUser);
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (error) {
+      console.log("Error loading user:", error);
+      setUser(defaultUser);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    loadUser();
+  useEffect(() => {
+    refetchUser();
   }, []);
 
   return (
-    <UserContext.Provider value={{ user, setUser, loading }}>
+    <UserContext.Provider value={{ user, setUser, loading, refetchUser }}>
       {children}
     </UserContext.Provider>
   );

@@ -20,6 +20,7 @@ export function LoginForm() {
   });
   const [loading, setLoading] = useState(false);
 
+  const { refetchUser } = useUser();
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -37,7 +38,9 @@ export function LoginForm() {
         });
 
         if (response.ok) {
-          window.location.href = '/'; // El middleware redirigirá automáticamente según el rol
+          // Refrescar usuario sin recargar la página
+          await refetchUser();
+          window.location.href = '/';
         } else {
           const error = await response.json();
           alert(error.message || 'Error al iniciar sesión');

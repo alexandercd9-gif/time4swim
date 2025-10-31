@@ -6,8 +6,8 @@ export async function POST() {
       message: 'Logout exitoso'
     });
 
-    // Eliminar cookie de autenticación
-    response.cookies.set('auth-token', '', {
+    // Eliminar cookie de autenticación (debe ser 'token')
+    response.cookies.set('token', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

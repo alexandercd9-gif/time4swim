@@ -46,16 +46,15 @@ export default function Sidebar() {
   const router = useRouter();
 
 const handleLogout = () => {
-  // Limpiar usuario
-  setUser({
-    id: "",
-    name: "",
-    email: "",
-    role: "parents"
-  });
-
-  // Recargar la página completamente
-  window.location.href = "/login";
+  // Llamar logout API y refetch user
+  fetch("/api/auth/logout", { method: "POST", credentials: "include" })
+    .then(() => {
+      setUser({ id: "", name: "", email: "", role: "parents" });
+      // Forzar refetch del usuario tras logout
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 100);
+    });
 };
 
   return (
