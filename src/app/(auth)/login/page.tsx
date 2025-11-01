@@ -26,8 +26,11 @@ export default function LoginPage() {
       'family': 'parents',
       'familia': 'parents',
       'club': 'club',
-      'coach': 'coach',
-      'entrenador': 'coach',
+      // Unificar TEACHER/coach/profesor -> profesor
+      'teacher': 'profesor',
+      'coach': 'profesor',
+      'entrenador': 'profesor',
+      'profesor': 'profesor',
       'swimmer': 'swimmer',
       'nadador': 'swimmer'
     };
@@ -76,7 +79,7 @@ export default function LoginPage() {
           admin: '/admin/dashboard',
           parents: '/parents/dashboard',
           club: '/club/dashboard',
-          coach: '/coach/dashboard',
+          profesor: '/profesor/dashboard',
           swimmer: '/swimmer/dashboard'
         };
 

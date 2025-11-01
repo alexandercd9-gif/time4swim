@@ -29,6 +29,16 @@ Notas de uso:
   - Criterio: Al autenticarse, el usuario aterriza en `/parents/dashboard`, `/club/dashboard` o `/profesor/dashboard` según rol.
 - [ ] Pruebas rápidas de acceso (3 usuarios de prueba por rol) y captura de pantalla.
 
+### 1.1) Alineación de nombres y rutas de rol (coach → profesor)
+- [ ] Unificar naming de “coach/profesor” y rol `TEACHER`
+  - Criterio: El login redirige TEACHER → `/profesor/dashboard`. El sidebar usa “profesor” y muestra solo items de TEACHER.
+  - Archivos: `src/app/(auth)/login/page.tsx`, `src/components/ModernSidebar.tsx`, `src/components/Sidebar.tsx`.
+
+### 1.2) Sidebar colapsado con logito mini (como el proyecto anterior)
+- [ ] Mostrar logotipo reducido cuando el sidebar está colapsado
+  - Criterio: Al colapsar, se ve un “logito” compacto (favicon/mark) en el header del sidebar; con aria-label; clic navega al dashboard del rol.
+  - Archivos: `src/components/ModernSidebar.tsx`, `src/components/Sidebar.tsx`, `src/components/logo-display.tsx` (si aplica).
+
 ---
 
 ## 2) Club Report (página compartible para convencer al club)

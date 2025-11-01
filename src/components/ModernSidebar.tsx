@@ -40,10 +40,11 @@ const navByRole = {
     { href: "/club/pagos", label: "Pagos", icon: CreditCard, description: "Mensualidades" },
     { href: "/club/reportes", label: "Reportes", icon: FileText, description: "Informes" },
   ],
-  coach: [
-    { href: "/coach/dashboard", label: "Mis Nadadores", icon: Users, description: "Alumnos asignados" },
-    { href: "/coach/planes", label: "Planes", icon: BarChart, description: "Entrenamientos" },
-    { href: "/coach/progreso", label: "Progreso", icon: Medal, description: "Evolución" },
+  // Profesor (TEACHER)
+  profesor: [
+    { href: "/profesor/dashboard", label: "Mis Nadadores", icon: Users, description: "Alumnos asignados" },
+    { href: "/profesor/planes", label: "Planes", icon: BarChart, description: "Entrenamientos" },
+    { href: "/profesor/progreso", label: "Progreso", icon: Medal, description: "Evolución" },
   ],
   swimmer: [
     { href: "/swimmer/dashboard", label: "Mi Progreso", icon: BarChart, description: "Estadísticas" },
@@ -73,7 +74,7 @@ export default function ModernSidebar() {
     if (pathname?.startsWith('/admin')) return 'admin';
     if (pathname?.startsWith('/parents')) return 'parents';
     if (pathname?.startsWith('/club')) return 'club';
-    if (pathname?.startsWith('/coach')) return 'coach';
+    if (pathname?.startsWith('/profesor')) return 'profesor';
     if (pathname?.startsWith('/swimmer')) return 'swimmer';
     return 'parents';
   };
@@ -82,7 +83,15 @@ export default function ModernSidebar() {
   // Convertir el rol a minúsculas para que coincida con las claves del objeto navByRole
   // Si el usuario está cargado, usar su rol; si no, usar el rol detectado de la URL
   const userRoleKey = !loading && user.id 
-    ? user.role.toLowerCase() as keyof typeof navByRole
+    ? (() => {
+        const raw = String(user.role || '').toLowerCase();
+        // Normalizar TEACHER/coach/profesor → 'profesor'
+        if (["teacher", "coach", "entrenador", "profesor"].includes(raw)) return 'profesor' as keyof typeof navByRole;
+        // parent/parents/family → 'parents'
+        if (["parent", "parents", "family", "familia"].includes(raw)) return 'parents' as keyof typeof navByRole;
+        // admin / club / swimmer quedan igual si existen
+        return (raw as keyof typeof navByRole) in navByRole ? (raw as keyof typeof navByRole) : 'parents';
+      })()
     : getRoleFromPath();
   
   const menuItems = navByRole[userRoleKey] || navByRole.parents;
@@ -122,6 +131,15 @@ export default function ModernSidebar() {
                   <p className="text-xs text-gray-500">Sistema de Natación</p>
                 </div>
               </div>
+            )}
+            {collapsed && (
+              <Link
+                href={userRoleKey === 'admin' ? '/admin/dashboard' : userRoleKey === 'club' ? '/club/dashboard' : userRoleKey === 'profesor' ? '/profesor/dashboard' : userRoleKey === 'swimmer' ? '/swimmer/dashboard' : '/parents/dashboard'}
+                aria-label="Ir al dashboard"
+                className="inline-flex items-center justify-center w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl"
+              >
+                <Timer className="h-6 w-6 text-white" />
+              </Link>
             )}
             <button 
               onClick={() => setCollapsed(!collapsed)}
