@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-import * as jwt from 'jsonwebtoken'
-
-const prisma = new PrismaClient()
+import prisma from "@/lib/prisma";
+import { requireAuth } from "@/lib/auth";
 
 // PUT - Actualizar un club (solo ADMIN)
 export async function PUT(
@@ -11,24 +9,8 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    // Obtener token de las cookies
-    const token = request.cookies.get('auth-token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
-
-    // Verificar token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
-    
-    // Obtener usuario para verificar role
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId }
-    });
-
-    if (!user || user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'No autorizado - Solo administradores' }, { status: 401 })
-    }
+    // Requiere ADMIN autenticado (usa cookie "token" o Authorization)
+    await requireAuth(request as unknown as Request, ['ADMIN'])
 
     const body = await request.json()
     const { name, address, phone, email, website, description } = body
@@ -38,9 +20,7 @@ export async function PUT(
     }
 
     // Verificar que el club existe
-    const existingClub = await (prisma as any).club.findUnique({
-      where: { id }
-    })
+    const existingClub = await (prisma as any).club.findUnique({ where: { id } })
 
     if (!existingClub) {
       return NextResponse.json({ error: 'Club no encontrado' }, { status: 404 })
@@ -48,10 +28,7 @@ export async function PUT(
 
     // Verificar que no hay otro club con el mismo nombre (excepto el actual)
     const duplicateClub = await (prisma as any).club.findFirst({
-      where: { 
-        name,
-        id: { not: id }
-      }
+      where: { name, id: { not: id } }
     })
 
     if (duplicateClub) {
@@ -71,9 +48,11 @@ export async function PUT(
     })
 
     return NextResponse.json(updatedClub)
-  } catch (error) {
+  } catch (error: any) {
+    const status = error?.statusCode || 500
+    const message = error?.message || 'Error interno del servidor'
     console.error('Error al actualizar club:', error)
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
@@ -84,29 +63,11 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    // Obtener token de las cookies
-    const token = request.cookies.get('auth-token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
-
-    // Verificar token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
-    
-    // Obtener usuario para verificar role
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId }
-    });
-
-    if (!user || user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'No autorizado - Solo administradores' }, { status: 401 })
-    }
+    // Requiere ADMIN autenticado
+    await requireAuth(request as unknown as Request, ['ADMIN'])
 
     // Verificar que el club existe
-    const existingClub = await (prisma as any).club.findUnique({
-      where: { id }
-    })
+    const existingClub = await (prisma as any).club.findUnique({ where: { id } })
 
     if (!existingClub) {
       return NextResponse.json({ error: 'Club no encontrado' }, { status: 404 })
@@ -119,8 +80,10 @@ export async function DELETE(
     })
 
     return NextResponse.json({ message: 'Club desactivado exitosamente' })
-  } catch (error) {
+  } catch (error: any) {
+    const status = error?.statusCode || 500
+    const message = error?.message || 'Error interno del servidor'
     console.error('Error al desactivar club:', error)
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
+    return NextResponse.json({ error: message }, { status })
   }
 }

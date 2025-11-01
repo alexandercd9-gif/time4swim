@@ -2,7 +2,7 @@
 
 import ModernSidebar from "@/components/ModernSidebar";
 
-export default function ClubLayout({
+export default function SwimmerLayout({
   children,
 }: {
   children: React.ReactNode;

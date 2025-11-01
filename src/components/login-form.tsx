@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useUser } from "@/context/UserContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,7 @@ export function LoginForm() {
         const response = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
             email: formData.email,
             password: formData.password
@@ -38,9 +40,34 @@ export function LoginForm() {
         });
 
         if (response.ok) {
-          // Refrescar usuario sin recargar la página
+          const data = await response.json();
+          
+          // Esperar a que el usuario se actualice en el contexto
           await refetchUser();
-          window.location.href = '/';
+          
+          // Pequeño delay para asegurar que el estado se actualice
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          // Redirigir al dashboard del rol correspondiente
+          const roleRoutes: Record<string, string> = {
+            'ADMIN': '/admin/dashboard',
+            'admin': '/admin/dashboard',
+            'PARENT': '/parents/dashboard',
+            'parent': '/parents/dashboard',
+            'parents': '/parents/dashboard',
+            'CLUB': '/club/dashboard',
+            'club': '/club/dashboard',
+            'TEACHER': '/coach/dashboard',
+            'teacher': '/coach/dashboard',
+            'coach': '/coach/dashboard',
+            'SWIMMER': '/swimmer/dashboard',
+            'swimmer': '/swimmer/dashboard'
+          };
+          
+          const userRole = data.user?.role || 'PARENT';
+          const redirectUrl = roleRoutes[userRole] || '/parents/dashboard';
+          
+          window.location.href = redirectUrl;
         } else {
           const error = await response.json();
           alert(error.message || 'Error al iniciar sesión');

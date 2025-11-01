@@ -115,7 +115,7 @@ export function Navigation({ user }: NavigationProps) {
             })}
           </div>
 
-          {/* PERFIL + BOTONES */}
+          {/* PERFIL + ACCIONES */}
           <div className="p-4 border-t border-gray-100">
             {user && (
               <div className="flex items-center gap-3 mb-3">
@@ -123,10 +123,32 @@ export function Navigation({ user }: NavigationProps) {
                   {user.name?.charAt(0)?.toUpperCase()}
                 </div>
                 {!isSidebarCollapsed && (
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-900">{user.name}</div>
-                    <div className="text-xs text-gray-500">{user.email}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <div className="font-medium text-gray-900 truncate" title={user.name}>{user.name}</div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleLogout}
+                        className="text-red-600 hover:bg-red-50"
+                        title="Cerrar sesión"
+                      >
+                        <LogOut className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="text-xs text-gray-500 truncate" title={user.email}>{user.email}</div>
                   </div>
+                )}
+                {isSidebarCollapsed && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleLogout}
+                    className="text-red-600 hover:bg-red-50 ml-auto"
+                    title="Cerrar sesión"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Button>
                 )}
               </div>
             )}
@@ -140,15 +162,6 @@ export function Navigation({ user }: NavigationProps) {
                 <Settings className="h-4 w-4 mr-2" />
                 {!isSidebarCollapsed && "Configuración"}
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-red-600 hover:bg-red-50"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                {!isSidebarCollapsed && "Cerrar Sesión"}
-              </Button>
             </div>
           </div>
         </div>
@@ -160,9 +173,20 @@ export function Navigation({ user }: NavigationProps) {
           <Link href="/dashboard">
             <LogoDisplay variant="sidebar" />
           </Link>
-          <Button variant="ghost" size="sm" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-            {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleLogout}
+              title="Cerrar sesión"
+              className="text-red-600 hover:bg-red-50"
+            >
+              <LogOut className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </Button>
+          </div>
         </div>
 
         {isMobileMenuOpen && (

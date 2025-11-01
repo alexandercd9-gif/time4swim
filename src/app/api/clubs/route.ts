@@ -1,68 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-import * as jwt from 'jsonwebtoken'
-
-const prisma = new PrismaClient()
+import prisma from "@/lib/prisma";
+import { requireAuth } from "@/lib/auth";
 
 // GET - Listar todos los clubes activos
 export async function GET(request: NextRequest) {
   try {
-    // Obtener token de las cookies
-    const token = request.cookies.get('auth-token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
-
-    // Verificar token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
-    
-    // Obtener usuario para verificar que existe
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId }
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
-    }
+    // Autentica usando la utilidad común (acepta cookie "token" o Authorization)
+    await requireAuth(request as unknown as Request)
 
     const clubs = await (prisma as any).club.findMany({
-      where: {
-        isActive: true
-      },
-      orderBy: {
-        name: 'asc'
-      }
+      where: { isActive: true },
+      orderBy: { name: 'asc' }
     })
 
     return NextResponse.json(clubs)
-  } catch (error) {
+  } catch (error: any) {
+    const status = error?.statusCode || 500
+    const message = error?.message || 'Error interno del servidor'
     console.error('Error al obtener clubes:', error)
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
 // POST - Crear un nuevo club (solo ADMIN)
 export async function POST(request: NextRequest) {
   try {
-    // Obtener token de las cookies
-    const token = request.cookies.get('auth-token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
-
-    // Verificar token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
-    
-    // Obtener usuario para verificar role
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId }
-    });
-
-    if (!user || user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'No autorizado - Solo administradores' }, { status: 401 })
-    }
+    // Requiere autenticación (la función ya valida el token de cookie "token")
+    const { user } = await requireAuth(request as unknown as Request, ['ADMIN'])
 
     const body = await request.json()
     const { name, address, phone, email, website, description } = body
@@ -72,7 +36,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar que no existe un club con el mismo nombre
-    const existingClub = await (prisma as any).club.findUnique({
+    const existingClub = await (prisma as any).club.findFirst({
       where: { name }
     })
 
@@ -81,19 +45,14 @@ export async function POST(request: NextRequest) {
     }
 
     const club = await (prisma as any).club.create({
-      data: {
-        name,
-        address,
-        phone,
-        email,
-        website,
-        description
-      }
+      data: { name, address, phone, email, website, description }
     })
 
     return NextResponse.json(club, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
+    const status = error?.statusCode || 500
+    const message = error?.message || 'Error interno del servidor'
     console.error('Error al crear club:', error)
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
+    return NextResponse.json({ error: message }, { status })
   }
 }
