@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     let connection;
     try {
       connection = await connectDB();
-      const [rows] = await connection.execute('SELECT * FROM user WHERE id = ?', [userId]);
+  const [rows] = await connection.execute('SELECT * FROM user WHERE id = ?', [userId]);
       const users = rows as any[];
       if (!users || users.length === 0) {
         return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
@@ -40,7 +40,11 @@ export async function GET(request: NextRequest) {
           id: user.id,
           name: user.name || user.email.split('@')[0],
           email: user.email,
-          role: user.role
+          role: user.role,
+          // Trial fields
+          isTrialAccount: !!user.isTrialAccount,
+          accountStatus: user.accountStatus,
+          trialExpiresAt: user.trialExpiresAt ? new Date(user.trialExpiresAt).toISOString() : null
         }
       });
     } catch (dbErr) {

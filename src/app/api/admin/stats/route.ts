@@ -11,7 +11,6 @@ export async function GET(request: Request) {
       totalUsers,
       totalClubs,
       totalSwimmers,
-      clubsWithUsers,
       newUsersThisMonth,
       newSwimmersThisMonth
     ] = await Promise.all([
@@ -22,22 +21,11 @@ export async function GET(request: Request) {
         }
       }),
       
-      // Total de clubes registrados
-      (prisma as any).club.count(),
+  // Total de clubes registrados
+  prisma.club.count(),
       
       // Total de nadadores/niños en el sistema
       prisma.child.count(),
-      
-      // Clubes que tienen usuarios asignados a través de UserClub
-      (prisma as any).club.count({
-        where: {
-          teachers: {
-            some: {
-              isActive: true // Solo contar relaciones activas
-            }
-          }
-        }
-      }),
       
       // Nuevos padres este mes (no todos los usuarios)
       prisma.user.count({
@@ -58,6 +46,18 @@ export async function GET(request: Request) {
         }
       })
     ]);
+
+    // Contar clubes con acceso activo (credenciales creadas)
+    const clubsWithAccess = await (prisma as any).userClub.findMany({
+      where: {
+        isActive: true
+      },
+      select: {
+        clubId: true
+      },
+      distinct: ['clubId']
+    });
+    const clubsWithUsers = clubsWithAccess.length;
 
     // Datos simulados para pagos pendientes (futura implementación)
     const pendingPayments = 8; // Simulado

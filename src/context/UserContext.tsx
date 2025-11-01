@@ -7,7 +7,11 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: UserRole;
+  role: UserRole | string; // allow API to send roles like 'PARENT'
+  // Trial fields (opcional)
+  isTrialAccount?: boolean;
+  accountStatus?: string;
+  trialExpiresAt?: string | null;
 }
 
 // Usuario vacío por defecto
@@ -39,8 +43,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       const response = await fetch('/api/auth/me', { credentials: 'include' });
       if (response.ok) {
-        const data = await response.json();
-        setUser(data.user); // ← Usa los datos reales de la API
+  const data = await response.json();
+  setUser(data.user); // incluye campos de trial si vienen del backend
       } else {
         setUser(defaultUser);
       }

@@ -3,99 +3,77 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useUser } from "@/context/UserContext";
+import { showTrialSuccessNotification } from "@/components/TrialNotification";
 import toast, { Toaster } from "react-hot-toast";
 
-export default function LoginPage() {
+export default function RegisterPage() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { refetchUser } = useUser();
-
-  // Función para normalizar el rol
-  const normalizeRole = (role: string) => {
-    const normalized = role.toLowerCase().trim();
-    // Mapeo de posibles variaciones
-    const roleMap: { [key: string]: string } = {
-      'admin': 'admin',
-      'administrator': 'admin',
-      'parent': 'parents',
-      'parents': 'parents', 
-      'family': 'parents',
-      'familia': 'parents',
-      'club': 'club',
-      'coach': 'coach',
-      'entrenador': 'coach',
-      'swimmer': 'swimmer',
-      'nadador': 'swimmer'
-    };
-    return roleMap[normalized] || normalized;
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validaciones
+    if (password !== confirmPassword) {
+      toast.error('Las contraseñas no coinciden', {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: '#ef4444',
+          color: '#fff',
+          padding: '16px',
+          borderRadius: '10px',
+        },
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error('La contraseña debe tener al menos 6 caracteres', {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: '#ef4444',
+          color: '#fff',
+          padding: '16px',
+          borderRadius: '10px',
+        },
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // LLAMADA REAL A TU ENDPOINT
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ name, email, password }),
       });
 
       const data = await response.json();
 
-      // DEBUG: Mostrar datos recibidos
-      console.log("🔍 Datos recibidos del login:", data);
-      console.log("👤 Rol del usuario:", data.user?.role);
-      console.log("📝 Tipo de rol:", typeof data.user?.role);
-
-      if (data.success) {
-        // Normalizar el rol
-        const normalizedRole = normalizeRole(data.user.role);
-        console.log("🔄 Rol normalizado:", normalizedRole);
-
-        // Guardar token y datos del usuario
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('userRole', normalizedRole);
-        localStorage.setItem('userData', JSON.stringify(data.user));
+      if (response.ok) {
+        // Mostrar notificación bonita de éxito
+        showTrialSuccessNotification({
+          email: email,
+          trialDays: 7
+        });
         
-        // IMPORTANTE: Refrescar el contexto del usuario antes de redirigir
-        await refetchUser();
-        
-        // Pequeño delay para asegurar que el estado se actualice
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Redirigir según el rol que viene de la BD
-        const redirectPaths = {
-          admin: '/admin/dashboard',
-          parents: '/parents/dashboard',
-          club: '/club/dashboard',
-          coach: '/coach/dashboard',
-          swimmer: '/swimmer/dashboard'
-        };
-
-        console.log("🗺️ Roles definidos:", Object.keys(redirectPaths));
-        
-        const redirectPath = redirectPaths[normalizedRole as keyof typeof redirectPaths];
-        console.log("📍 Ruta calculada:", redirectPath);
-
-        if (!redirectPath) {
-          console.log("⚠️  Rol no encontrado. Redirigiendo a dashboard por defecto");
-          router.push('/dashboard');
-        } else {
-          console.log("✅ Redirigiendo a:", redirectPath);
-          router.push(redirectPath);
-        }
-        
+        // Redirigir al login después de un breve delay para que vean la notificación
+        setTimeout(() => {
+          router.push('/login');
+        }, 2000);
       } else {
-        // Manejar error de login con toast
-        toast.error(data.message || 'Credenciales incorrectas', {
+        toast.error(data.message || 'No se pudo completar el registro', {
           duration: 4000,
           position: 'top-center',
           style: {
@@ -105,10 +83,6 @@ export default function LoginPage() {
             borderRadius: '10px',
             fontSize: '15px',
             fontWeight: '500',
-          },
-          iconTheme: {
-            primary: '#fff',
-            secondary: '#ef4444',
           },
         });
       }
@@ -123,8 +97,6 @@ export default function LoginPage() {
           color: '#fff',
           padding: '16px',
           borderRadius: '10px',
-          fontSize: '15px',
-          fontWeight: '500',
         },
       });
     } finally {
@@ -134,8 +106,8 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-gradient-to-br from-blue-50 to-cyan-50">
-      {/* Toaster para notificaciones */}
-      <Toaster />
+      {/* Toaster para notificaciones bonitas */}
+      <Toaster position="top-center" />
       
       {/* Lado izquierdo solo visible en desktop */}
       <div className="hidden md:flex flex-1 flex-col justify-center items-center px-8 py-12">
@@ -147,36 +119,36 @@ export default function LoginPage() {
         />
         <div className="-mt-2 mb-7 w-full flex flex-col items-center">
           <h1 className="text-[2.2rem] md:text-[2.6rem] font-bold text-blue-900 mb-2 text-center font-['Poppins','Montserrat','Segoe UI','Inter','sans-serif'] tracking-tight leading-tight">
-            Sistema Completo de Natación
+            Únete a Time4Swim
           </h1>
           <p className="text-base md:text-lg text-gray-600 mb-4 text-center font-['Inter','System UI','Segoe UI','sans-serif'] font-medium">
-            Gestión profesional de entrenamientos y competencias
+            Comienza a gestionar tus entrenamientos hoy
           </p>
         </div>
         <ul className="space-y-5 w-full max-w-lg font-['Inter','System UI','Segoe UI','sans-serif']">
           <li className="flex items-center gap-3">
             <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-cyan-200 text-cyan-700 text-2xl">
-              <span role="img" aria-label="cronómetro">⏱️</span>
+              <span role="img" aria-label="prueba gratis">✨</span>
             </span>
-            <span className="text-gray-800 font-semibold text-base md:text-lg">Cronómetro de precisión para entrenamientos</span>
+            <span className="text-gray-800 font-semibold text-base md:text-lg">7 días de prueba gratis</span>
           </li>
           <li className="flex items-center gap-3">
             <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-blue-200 text-blue-700 text-2xl">
-              <span role="img" aria-label="trofeo">🏆</span>
+              <span role="img" aria-label="cronómetro">⏱️</span>
             </span>
-            <span className="text-gray-800 font-semibold text-base md:text-lg">Registro y control de competencias oficiales</span>
+            <span className="text-gray-800 font-semibold text-base md:text-lg">Cronómetro de precisión</span>
           </li>
           <li className="flex items-center gap-3">
             <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-cyan-200 text-cyan-700 text-2xl">
-              <span role="img" aria-label="estadísticas">📊</span>
+              <span role="img" aria-label="trofeo">🏆</span>
             </span>
-            <span className="text-gray-800 font-semibold text-base md:text-lg">Análisis de progreso y estadísticas detalladas</span>
+            <span className="text-gray-800 font-semibold text-base md:text-lg">Registro de competencias</span>
           </li>
           <li className="flex items-center gap-3">
             <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-blue-200 text-blue-700 text-2xl">
-              <span role="img" aria-label="usuarios">👥</span>
+              <span role="img" aria-label="estadísticas">📊</span>
             </span>
-            <span className="text-gray-800 font-semibold text-base md:text-lg">Gestión de múltiples nadadores y familias</span>
+            <span className="text-gray-800 font-semibold text-base md:text-lg">Estadísticas detalladas</span>
           </li>
         </ul>
       </div>
@@ -193,11 +165,37 @@ export default function LoginPage() {
               style={{ objectFit: 'contain' }}
             />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">¡Bienvenido!</h2>
-          <p className="text-gray-600 text-center mb-6">Ingresa a tu cuenta para continuar</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">Crear Cuenta</h2>
+          <p className="text-gray-600 text-center mb-6">Regístrate y obtén 7 días gratis</p>
           
           <form className="space-y-4" onSubmit={handleSubmit}>
-            {/* Email con icono */}
+            {/* Nombre completo */}
+            <div>
+              <label className="block text-gray-700 font-medium mb-1" htmlFor="name">
+                Nombre completo
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b0b8c1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                </span>
+                <input
+                  id="name"
+                  type="text"
+                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 bg-[#f1f5fa] focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-800"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  autoComplete="name"
+                  required
+                  disabled={isLoading}
+                  placeholder="Ej: Juan Pérez"
+                />
+              </div>
+            </div>
+
+            {/* Email */}
             <div>
               <label className="block text-gray-700 font-medium mb-1" htmlFor="email">
                 Correo electrónico
@@ -222,7 +220,8 @@ export default function LoginPage() {
                 />
               </div>
             </div>
-            {/* Contraseña con icono */}
+
+            {/* Contraseña */}
             <div>
               <label className="block text-gray-700 font-medium mb-1" htmlFor="password">
                 Contraseña
@@ -240,10 +239,11 @@ export default function LoginPage() {
                   className="w-full pl-10 pr-12 py-2 rounded-lg border border-gray-200 bg-[#f1f5fa] focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-800"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   required
                   disabled={isLoading}
-                  placeholder="Tu contraseña"
+                  placeholder="Mínimo 6 caracteres"
+                  minLength={6}
                 />
                 <button
                   type="button"
@@ -255,14 +255,64 @@ export default function LoginPage() {
                   disabled={isLoading}
                 >
                   {showPassword ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-eye-off">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M17.94 17.94A10.06 10.06 0 0 1 12 19c-5 0-9.27-3.11-10.94-7.5a1.5 1.5 0 0 1 0-1c.46-1.18 1.13-2.28 1.98-3.23" />
                       <path d="M1 1l22 22" />
                       <path d="M9.53 9.53A3 3 0 0 0 12 15a3 3 0 0 0 2.47-5.47" />
                       <path d="M12 5c5 0 9.27 3.11 10.94 7.5a1.5 1.5 0 0 1 0 1c-.46 1.18-1.13 2.28-1.98 3.23" />
                     </svg>
                   ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-eye">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Confirmar contraseña */}
+            <div>
+              <label className="block text-gray-700 font-medium mb-1" htmlFor="confirmPassword">
+                Confirmar contraseña
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b0b8c1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="10" rx="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                </span>
+                <input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  className="w-full pl-10 pr-12 py-2 rounded-lg border border-gray-200 bg-[#f1f5fa] focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-800"
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
+                  required
+                  disabled={isLoading}
+                  placeholder="Confirma tu contraseña"
+                  minLength={6}
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-500 transition"
+                  style={{ padding: 0, background: 'none', border: 'none', lineHeight: 0 }}
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  tabIndex={-1}
+                  aria-label={showConfirmPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  disabled={isLoading}
+                >
+                  {showConfirmPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.06 10.06 0 0 1 12 19c-5 0-9.27-3.11-10.94-7.5a1.5 1.5 0 0 1 0-1c.46-1.18 1.13-2.28 1.98-3.23" />
+                      <path d="M1 1l22 22" />
+                      <path d="M9.53 9.53A3 3 0 0 0 12 15a3 3 0 0 0 2.47-5.47" />
+                      <path d="M12 5c5 0 9.27 3.11 10.94 7.5a1.5 1.5 0 0 1 0 1c-.46 1.18-1.13 2.28-1.98 3.23" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
                       <circle cx="12" cy="12" r="3" />
                     </svg>
@@ -310,29 +360,49 @@ export default function LoginPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Iniciando sesión...
+                  Creando cuenta...
                 </>
               ) : (
                 <>
                   <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                      <circle cx="8.5" cy="7" r="4" />
+                      <line x1="20" y1="8" x2="20" y2="14" />
+                      <line x1="23" y1="11" x2="17" y2="11" />
                     </svg>
                   </span>
-                  Iniciar Sesión
+                  Crear Cuenta
                 </>
               )}
             </button>
           </form>
+
           <div className="text-center mt-4">
-            <span className="text-gray-600">¿No tienes cuenta? </span>
-            <Link href="/register" className="text-blue-600 font-semibold hover:underline">
-              Regístrate aquí
+            <span className="text-gray-600">¿Ya tienes cuenta? </span>
+            <Link href="/login" className="text-blue-600 font-semibold hover:underline">
+              Inicia sesión aquí
             </Link>
           </div>
         </div>
+
+        {/* Info adicional */}
+        <div className="w-full max-w-md mt-6 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+          <div className="flex items-start gap-3">
+            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-200 text-green-700 text-xl flex-shrink-0">
+              ✨
+            </span>
+            <div>
+              <h3 className="text-sm font-semibold text-green-900 mb-1">7 días de prueba gratis</h3>
+              <p className="text-green-700 text-xs">
+                Al registrarte obtendrás acceso completo por 7 días sin costo alguno.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Demo Cronómetro */}
-        <div className="w-full max-w-md mt-6 bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 border-2 border-dashed border-blue-300 rounded-xl flex items-center px-4 py-3 gap-3 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
+        <div className="w-full max-w-md mt-4 bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 border-2 border-dashed border-blue-300 rounded-xl flex items-center px-4 py-3 gap-3 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
           onClick={() => router.push('/demo')}
         >
           <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 text-white text-xl shadow-lg flex-shrink-0">

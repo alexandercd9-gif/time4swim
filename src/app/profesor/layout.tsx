@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import ModernSidebar from "@/components/ModernSidebar";
 import { useUser } from "@/context/UserContext";
 
-export default function ClubLayout({
+export default function ProfesorLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -14,9 +14,9 @@ export default function ClubLayout({
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && user && user.role && user.role !== "CLUB") {
+    if (!loading && user && user.role && user.role !== "TEACHER") {
       const role = String(user.role).toLowerCase();
-      const target = ["admin", "parents", "profesor"].includes(role)
+      const target = ["admin", "club", "parents"].includes(role)
         ? `/${role}`
         : "/";
       router.replace(target);

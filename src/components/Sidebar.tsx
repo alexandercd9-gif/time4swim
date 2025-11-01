@@ -1,8 +1,9 @@
 "use client";
 import { useUser } from "@/context/UserContext";
 import Link from "next/link";
-import { Home, Users, Medal, BarChart, User, LogOut, School, Calendar, CreditCard, FileText } from "lucide-react";
+import { Home, Users, Medal, BarChart, User, Power, School, Calendar, CreditCard, FileText } from "lucide-react";
 import { useState } from "react";
+import type React from "react";
 import { useRouter } from "next/navigation";
 
 const navByRole = {
@@ -67,14 +68,18 @@ const handleLogout = () => {
       </div>
       <nav className="flex-1">
         <ul>
-          {navByRole[user.role]?.map((item) => (
+          {(() => {
+            const roleKey = (user.role?.toLowerCase?.() || 'parents') as keyof typeof navByRole;
+            const items = navByRole[roleKey] as { href: string; label: string; icon: React.ReactNode }[];
+            return items.map((item: { href: string; label: string; icon: React.ReactNode }) => (
             <li key={item.href}>
               <Link href={item.href} className="flex items-center gap-3 px-6 py-3 hover:bg-blue-800 transition rounded-lg">
                 <span>{item.icon}</span>
                 {!collapsed && <span>{item.label}</span>}
               </Link>
             </li>
-          ))}
+            ));
+          })()}
         </ul>
       </nav>
       <div className="px-6 py-4 border-t border-blue-800">
@@ -82,7 +87,7 @@ const handleLogout = () => {
           onClick={handleLogout}
           className="flex items-center gap-2 text-red-300 hover:text-red-500 transition w-full"
         >
-          <LogOut size={20} />
+          <Power size={20} />
           {!collapsed && <span>Cerrar sesión</span>}
         </button>
       </div>

@@ -4,7 +4,7 @@ import { useUser } from "@/context/UserContext";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
-  Home, Users, Medal, BarChart, User, LogOut, School, 
+  Home, Users, Medal, BarChart, User, Power, School, 
   Calendar, CreditCard, FileText, Settings, Timer, Menu, X 
 } from "lucide-react";
 import { useState } from "react";
@@ -180,7 +180,7 @@ export default function ModernSidebar() {
                         className="text-red-600 hover:bg-red-50"
                         title="Cerrar sesión"
                       >
-                        <LogOut className="h-4 w-4" />
+                        <Power className="h-4 w-4" />
                       </Button>
                     </div>
                     <div className="text-xs text-gray-500 truncate">{user.email}</div>
@@ -193,7 +193,7 @@ export default function ModernSidebar() {
                     className="ml-auto text-red-600 hover:bg-red-50"
                     title="Cerrar sesión"
                   >
-                    <LogOut className="h-4 w-4" />
+                    <Power className="h-4 w-4" />
                   </Button>
                 )}
               </div>
@@ -219,7 +219,7 @@ export default function ModernSidebar() {
               title="Cerrar sesión"
               className="text-red-600 hover:bg-red-50"
             >
-              <LogOut className="h-5 w-5" />
+              <Power className="h-5 w-5" />
             </Button>
             <Button variant="ghost" size="sm" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
               {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -283,7 +283,7 @@ export default function ModernSidebar() {
                 onClick={handleLogout}
                 className="w-full justify-start text-red-600 hover:bg-red-50"
               >
-                <LogOut className="h-4 w-4 mr-2" />Cerrar Sesión
+                <Power className="h-4 w-4 mr-2" />Cerrar Sesión
               </Button>
             </div>
           </div>

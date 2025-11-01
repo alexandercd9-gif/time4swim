@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { LogoDisplay } from "@/components/logo-display";
 import { useSidebar } from "@/hooks/use-sidebar";
-import { Home, Users, ExternalLink, Timer, UserPlus, Star, Settings, LogOut, Menu, X } from "lucide-react";
+import { Home, Users, ExternalLink, Timer, UserPlus, Star, Settings, Power, Menu, X } from "lucide-react";
 
 type MenuItem = { href: string; label: string; icon: any; description?: string };
 
@@ -133,7 +133,7 @@ export function Navigation({ user }: NavigationProps) {
                         className="text-red-600 hover:bg-red-50"
                         title="Cerrar sesión"
                       >
-                        <LogOut className="h-4 w-4" />
+                        <Power className="h-4 w-4" />
                       </Button>
                     </div>
                     <div className="text-xs text-gray-500 truncate" title={user.email}>{user.email}</div>
@@ -147,7 +147,7 @@ export function Navigation({ user }: NavigationProps) {
                     className="text-red-600 hover:bg-red-50 ml-auto"
                     title="Cerrar sesión"
                   >
-                    <LogOut className="h-4 w-4" />
+                    <Power className="h-4 w-4" />
                   </Button>
                 )}
               </div>
@@ -181,7 +181,7 @@ export function Navigation({ user }: NavigationProps) {
               title="Cerrar sesión"
               className="text-red-600 hover:bg-red-50"
             >
-              <LogOut className="h-5 w-5" />
+              <Power className="h-5 w-5" />
             </Button>
             <Button variant="ghost" size="sm" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
               {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -249,7 +249,7 @@ export function Navigation({ user }: NavigationProps) {
                 onClick={handleLogout}
                 className="w-full justify-start text-red-600 hover:bg-red-50"
               >
-                <LogOut className="h-4 w-4 mr-2" />Cerrar Sesión
+                <Power className="h-4 w-4 mr-2" />Cerrar Sesión
               </Button>
             </div>
           </div>
