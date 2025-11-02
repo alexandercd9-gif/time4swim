@@ -1,42 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-import * as jwt from "jsonwebtoken";
+import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/auth";
 
-const prisma = new PrismaClient();
 
 // GET: Obtener nadadores
 export async function GET(request: NextRequest) {
   try {
-    // Obtener token de las cookies
-    const token = request.cookies.get('auth-token')?.value;
-
-    if (!token) {
-      return NextResponse.json(
-        { message: 'No autorizado' },
-        { status: 401 }
-      );
-    }
-
-    // Verificar token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
-    
-    // Obtener usuario para verificar role
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId }
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { message: 'Usuario no encontrado' },
-        { status: 404 }
-      );
-    }
+    // Autenticación (acepta cookie "token", Authorization Bearer o query ?token=)
+    const auth = await requireAuth(request as any, ['ADMIN', 'PARENT']);
 
     let children;
 
     // Si es ADMIN, puede ver todos los nadadores
     // Si es PARENT, solo ve sus propios hijos
-    if (user.role === 'ADMIN') {
+    if (auth.user.role === 'ADMIN') {
       children = await prisma.child.findMany({
         include: {
           _count: {
@@ -54,7 +31,7 @@ export async function GET(request: NextRequest) {
       // Para parents, obtener solo los hijos asociados a través de UserChild
       const userChildRelations = await (prisma as any).userChild.findMany({
         where: {
-          userId: decoded.userId,
+          userId: auth.user.id,
           isActive: true
         },
         include: {
@@ -87,18 +64,7 @@ export async function GET(request: NextRequest) {
 // POST: Crear nuevo nadador
 export async function POST(request: NextRequest) {
   try {
-    // Obtener token de las cookies
-    const token = request.cookies.get('auth-token')?.value;
-
-    if (!token) {
-      return NextResponse.json(
-        { message: 'No autorizado' },
-        { status: 401 }
-      );
-    }
-
-    // Verificar token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
+    const auth = await requireAuth(request as any, ['ADMIN', 'PARENT']);
     
     const body = await request.json();
     const { name, birthDate, gender, clubId, coach, photo, fdpnAffiliateCode } = body;
@@ -137,7 +103,7 @@ export async function POST(request: NextRequest) {
       coach: coach || null,
       fdpnAffiliateCode: fdpnAffiliateCode || null,
       photoLength: photo?.length || 0,
-      userId: decoded.userId
+      userId: auth.user.id
     });
 
     // Crear nadador
@@ -164,7 +130,7 @@ export async function POST(request: NextRequest) {
     // Crear relación parent-child
     await (prisma as any).userChild.create({
       data: {
-        userId: decoded.userId,
+        userId: auth.user.id,
         childId: child.id
       }
     });

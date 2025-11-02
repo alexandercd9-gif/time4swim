@@ -10,20 +10,25 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const childId = searchParams.get('childId');
 
-    // Obtener hijos del usuario
-    const userChildren = await (prisma as any).child.findMany({
+    // Obtener hijos del usuario (vía relación UserChild)
+    const relations = await (prisma as any).userChild.findMany({
       where: {
         userId: user.user.id,
-        ...(childId ? { id: childId } : {})
+        isActive: true,
+        ...(childId ? { childId } : {})
       },
       include: {
-        club: {
-          select: {
-            name: true
+        child: {
+          include: {
+            club: {
+              select: { name: true }
+            }
           }
         }
       }
     });
+
+    const userChildren = relations.map((r: any) => r.child);
 
     const alerts = [];
 
@@ -46,7 +51,7 @@ export async function GET(request: NextRequest) {
             action: {
               type: 'sync_fdpn',
               label: 'Sincronizar ahora',
-              url: `/dashboard/swimmers/${child.id}`
+              url: `/parents/children`
             },
             createdAt: new Date()
           });
@@ -64,7 +69,7 @@ export async function GET(request: NextRequest) {
           action: {
             type: 'discover_fdpn',
             label: 'Explorar FDPN',
-            url: '/dashboard/fdpn'
+            url: '/parents/children'
           },
           createdAt: new Date()
         });
@@ -88,7 +93,7 @@ export async function GET(request: NextRequest) {
           action: {
             type: 'view_progress',
             label: 'Ver progreso',
-            url: `/dashboard/swimmers/${child.id}`
+            url: `/parents/children`
           },
           createdAt: new Date()
         });
@@ -108,7 +113,7 @@ export async function GET(request: NextRequest) {
           action: {
             type: 'view_competitions',
             label: 'Ver detalles',
-            url: '/dashboard/competitions'
+            url: '/parents/competencias'
           },
           createdAt: new Date()
         });
@@ -128,7 +133,7 @@ export async function GET(request: NextRequest) {
           action: {
             type: 'add_training',
             label: 'Registrar entrenamiento',
-            url: '/dashboard/timer'
+            url: '/trainings'
           },
           createdAt: new Date()
         });
@@ -193,13 +198,13 @@ export async function POST(request: NextRequest) {
 
     if (action === 'sync_fdpn') {
       actionResult = {
-        message: 'Redirigiendo a sincronización FDPN...',
-        redirect: '/dashboard/fdpn'
+        message: 'Redirigiendo a gestión de FDPN...',
+        redirect: '/parents/children'
       };
     } else if (action === 'view_progress') {
       actionResult = {
         message: 'Mostrando progreso del nadador...',
-        redirect: '/dashboard/swimmers'
+        redirect: '/parents/children'
       };
     }
 

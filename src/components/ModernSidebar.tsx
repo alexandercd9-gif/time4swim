@@ -25,7 +25,9 @@ const navByRole = {
     { href: "/admin/estadisticas", label: "Estadísticas", icon: BarChart, description: "Reportes y análisis" },
   ],
   parents: [
-    { href: "/parents/dashboard", label: "Mis Hijos", icon: Users, description: "Nadadores registrados" },
+    { href: "/parents/dashboard", label: "Dashboard", icon: Home, description: "Vista general" },
+    { href: "/parents/children", label: "Mis Hijos", icon: Users, description: "Nadadores registrados" },
+    { href: "/parents/cronometro", label: "Cronómetro", icon: Timer, description: "Registrar tiempos" },
     { href: "/parents/entrenamientos", label: "Entrenamientos", icon: Timer, description: "Sesiones de práctica" },
     { href: "/parents/competencias", label: "Competencias", icon: Medal, description: "Participaciones" },
     { href: "/parents/records", label: "Records", icon: BarChart, description: "Mejores marcas" },

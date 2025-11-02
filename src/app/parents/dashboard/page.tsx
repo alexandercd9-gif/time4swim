@@ -7,12 +7,15 @@ import {
   Clock, 
   Trophy, 
   Activity, 
-  Plus, 
   Timer,
   BarChart3,
-  UserPlus,
   Award
 } from "lucide-react";
+import { toast } from "react-hot-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import TrainingChart from "@/components/TrainingChart";
+import BestTimesByStyle from "@/components/BestTimesByStyle";
 
 interface ParentStats {
   children: { total: number; active: number };
@@ -32,79 +35,80 @@ interface QuickAction {
 export default function ParentsDashboard() {
   const [stats, setStats] = useState<ParentStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [openChart, setOpenChart] = useState(false);
+  const [children, setChildren] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedChild, setSelectedChild] = useState<string>("");
   const router = useRouter();
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // Simular datos - reemplazar con tu API real
-        const mockStats: ParentStats = {
-          children: { total: 2, active: 2 },
-          trainings: { total: 45, thisMonth: 8 },
-          competitions: { total: 12, thisYear: 3 },
-          records: { total: 28, personalBests: 5 }
+        const res = await fetch('/api/parent/stats', { credentials: 'include' });
+        if (!res.ok) throw new Error('No se pudieron cargar las estadísticas');
+        const data = await res.json();
+        const mapped: ParentStats = {
+          children: { total: data.children?.total || 0, active: data.children?.total || 0 },
+          trainings: { total: data.trainings?.total || 0, thisMonth: data.trainings?.thisMonth || 0 },
+          competitions: { total: data.competitions?.total || 0, thisYear: data.competitions?.total || 0 },
+          records: { total: data.records?.total || 0, personalBests: data.records?.personalBests || 0 },
         };
-        
-        setStats(mockStats);
+        setStats(mapped);
       } catch (error) {
         console.error('Error fetching stats:', error);
+        toast.error('No se pudieron cargar tus estadísticas');
       } finally {
         setLoading(false);
       }
     };
 
     fetchStats();
+    // Cargar hijos para el modal de gráfico
+    fetch('/api/swimmers', { credentials: 'include' })
+      .then(r => r.json())
+      .then(data => setChildren((data || []).map((c: any) => ({ id: c.id, name: c.name }))))
+      .catch(() => {});
   }, []);
 
   const quickActions: QuickAction[] = [
     {
-      icon: <Timer className="h-6 w-6" />,
+      icon: <Timer className="h-6 w-6 text-white" />,
       title: "Iniciar Cronómetro",
       description: "Nuevo entrenamiento",
-      href: "/timer",
-      color: "from-blue-500 to-cyan-500"
+      href: "/parents/cronometro",
+      color: "from-blue-500 to-blue-600"
     },
     {
-      icon: <Users className="h-6 w-6" />,
+      icon: <Users className="h-6 w-6 text-white" />,
       title: "Gestionar Nadadores",
       description: "Ver mis nadadores",
-      href: "/swimmers",
-      color: "from-green-500 to-emerald-500"
+      href: "/parents/children",
+      color: "from-green-500 to-green-600"
     },
     {
-      icon: <Trophy className="h-6 w-6" />,
+      icon: <Trophy className="h-6 w-6 text-white" />,
       title: "Nueva Competencia",
       description: "Registrar competencia",
-      href: "/competitions/new",
-      color: "from-amber-500 to-orange-500"
-    },
-    {
-      icon: <Plus className="h-6 w-6" />,
-      title: "Agregar Nadador",
-      description: "Registrar nuevo nadador",
-      href: "/swimmers/new",
-      color: "from-purple-500 to-pink-500"
+      href: "/parents/competencias",
+      color: "from-orange-500 to-orange-600"
     }
   ];
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/4 mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2 mb-8"></div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="h-32 bg-gray-200 rounded-xl"></div>
-              ))}
-            </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="h-64 bg-gray-200 rounded-xl"></div>
-              <div className="h-64 bg-gray-200 rounded-xl"></div>
-            </div>
+      <div className="p-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2 mb-8"></div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-32 bg-gray-200 rounded-xl"></div>
+            ))}
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="h-64 bg-gray-200 rounded-xl"></div>
+            <div className="h-64 bg-gray-200 rounded-xl"></div>
           </div>
         </div>
       </div>
@@ -112,159 +116,178 @@ export default function ParentsDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 p-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Dashboard
-          </h1>
-          <p className="text-gray-600 text-lg">
-            Bienvenido al sistema de gestión de natación
+    <div className="p-6">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          Dashboard
+        </h1>
+        <p className="text-gray-600">
+          Bienvenido al sistema de gestión de natación
+        </p>
+      </div>
+
+      {/* Estadísticas Principales */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Nadadores */}
+        <div className="bg-white rounded-xl shadow p-6">
+          <div className="flex items-start justify-between mb-3">
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-2">Nadadores</p>
+              <p className="text-4xl font-bold text-gray-900">
+                {stats?.children.total || 0}
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
+              <Users className="h-6 w-6 text-white" />
+            </div>
+          </div>
+          <p className="text-sm text-gray-500">
+            ➤ Registrados en el sistema
           </p>
         </div>
 
-        {/* Estadísticas Principales */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* Nadadores */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Nadadores</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {stats?.children.total || 0}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-                <Users className="h-6 w-6 text-white" />
-              </div>
+        {/* Entrenamientos */}
+        <div className="bg-white rounded-xl shadow p-6">
+          <div className="flex items-start justify-between mb-3">
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-2">Entrenamientos</p>
+              <p className="text-4xl font-bold text-gray-900">
+                {stats?.trainings.total || 0}
+              </p>
             </div>
-            <p className="text-xs text-gray-500 flex items-center gap-1">
-              ➤ Registrados en el sistema
-            </p>
+            <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
+              <Clock className="h-6 w-6 text-white" />
+            </div>
           </div>
+          <p className="text-sm text-gray-500">
+            ➤ Total registrados
+          </p>
+        </div>
 
-          {/* Entrenamientos */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Entrenamientos</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {stats?.trainings.total || 0}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center">
-                <Clock className="h-6 w-6 text-white" />
-              </div>
+        {/* Competencias */}
+        <div className="bg-white rounded-xl shadow p-6">
+          <div className="flex items-start justify-between mb-3">
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-2">Competencias</p>
+              <p className="text-4xl font-bold text-gray-900">
+                {stats?.competitions.total || 0}
+              </p>
             </div>
-            <p className="text-xs text-gray-500 flex items-center gap-1">
-              ➤ Total registrados
-            </p>
+            <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center">
+              <Trophy className="h-6 w-6 text-white" />
+            </div>
           </div>
+          <p className="text-sm text-gray-500">
+            ➤ Participaciones registradas
+          </p>
+        </div>
 
-          {/* Competencias */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Competencias</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {stats?.competitions.total || 0}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-r from-amber-500 to-amber-600 rounded-xl flex items-center justify-center">
-                <Trophy className="h-6 w-6 text-white" />
-              </div>
+        {/* Records */}
+        <div className="bg-white rounded-xl shadow p-6">
+          <div className="flex items-start justify-between mb-3">
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-2">Records</p>
+              <p className="text-4xl font-bold text-gray-900">
+                {stats?.records.personalBests || 0}
+              </p>
             </div>
-            <p className="text-xs text-gray-500 flex items-center gap-1">
-              ➤ Participaciones registradas
-            </p>
+            <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
+              <Award className="h-6 w-6 text-white" />
+            </div>
           </div>
+          <p className="text-sm text-gray-500">
+            ➤ Marcas personales
+          </p>
+        </div>
+      </div>
 
-          {/* Records */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Records</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {stats?.records.personalBests || 0}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
-                <Award className="h-6 w-6 text-white" />
-              </div>
-            </div>
-            <p className="text-xs text-gray-500 flex items-center gap-1">
-              ➤ Marcas personales
-            </p>
+      {/* Contenido Principal */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Mejores tiempos por estilo (Competencias/Prácticas) */}
+        <div className="bg-white rounded-xl shadow p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-blue-600" />
+            Mejores tiempos por estilo
+          </h2>
+          <div className="space-y-4">
+            {/* Componente reutilizable con filtros */}
+            <BestTimesByStyle />
+            <p className="text-xs text-gray-500">Puedes alternar entre Competencias o Prácticas en el selector.</p>
           </div>
         </div>
 
-        {/* Contenido Principal */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Acciones Rápidas */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <Activity className="h-5 w-5 text-blue-600" />
-              Acciones Rápidas
-            </h2>
-            
-            <div className="grid grid-cols-1 gap-4">
-              {quickActions.map((action, index) => (
-                <button
-                  key={index}
-                  onClick={() => router.push(action.href)}
-                  className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200 text-left group"
-                >
-                  <div className={`w-12 h-12 bg-gradient-to-r ${action.color} rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform`}>
-                    {action.icon}
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                      {action.title}
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      {action.description}
-                    </p>
-                  </div>
-                </button>
-              ))}
+        {/* Resumen del Mes */}
+        <div className="bg-white rounded-xl shadow p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-green-600" />
+            Resumen del Mes
+          </h2>
+          
+          <div className="space-y-4">
+            <div className="flex justify-between items-center py-3 border-b">
+              <span className="text-sm font-medium text-blue-700">Entrenamientos este mes</span>
+              <span className="text-2xl font-bold text-blue-600">{stats?.trainings.thisMonth || 0}</span>
             </div>
-          </div>
-
-          {/* Información Adicional */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-green-600" />
-              Resumen del Mes
-            </h2>
             
-            <div className="space-y-4">
-              <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                <span className="text-sm font-medium text-blue-900">Entrenamientos este mes</span>
-                <span className="text-lg font-bold text-blue-600">{stats?.trainings.thisMonth || 0}</span>
-              </div>
-              
-              <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                <span className="text-sm font-medium text-green-900">Competencias este año</span>
-                <span className="text-lg font-bold text-green-600">{stats?.competitions.thisYear || 0}</span>
-              </div>
-              
-              <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
-                <span className="text-sm font-medium text-purple-900">Nadadores activos</span>
-                <span className="text-lg font-bold text-purple-600">{stats?.children.active || 0}</span>
-              </div>
+            <div className="flex justify-between items-center py-3 border-b">
+              <span className="text-sm font-medium text-green-700">Competencias este año</span>
+              <span className="text-2xl font-bold text-green-600">{stats?.competitions.thisYear || 0}</span>
+            </div>
+            
+            <div className="flex justify-between items-center py-3 border-b">
+              <span className="text-sm font-medium text-purple-700">Nadadores activos</span>
+              <span className="text-2xl font-bold text-purple-600">{stats?.children.active || 0}</span>
+            </div>
 
-              {/* Espacio para gráfico simple */}
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                <div className="text-center text-gray-500">
-                  <BarChart3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Gráfico de progreso disponible próximamente</p>
+            {/* Espacio para gráfico */}
+            <div className="mt-6 p-8 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between gap-4 flex-col sm:flex-row">
+                <div className="text-gray-600 text-sm">
+                  Visualiza la evolución de tiempos por mes
                 </div>
+                <button onClick={() => setOpenChart(true)} className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">
+                  Ver gráfico
+                </button>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Modal de gráfico en dashboard */}
+      <Dialog open={openChart} onOpenChange={setOpenChart}>
+        <DialogContent className="sm:max-w-[720px]">
+          <DialogHeader>
+            <DialogTitle>Tiempos de entrenamiento</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <p className="text-sm text-gray-600">Selecciona un nadador</p>
+              <Select value={selectedChild} onValueChange={setSelectedChild}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Mis hijos" />
+                </SelectTrigger>
+                <SelectContent>
+                  {children.length === 0 ? (
+                    <SelectItem value="none" disabled>No hay nadadores</SelectItem>
+                  ) : (
+                    children.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedChild ? (
+              <TrainingChart childId={selectedChild} />
+            ) : (
+              <p className="text-sm text-gray-500">Elige un nadador para ver su evolución.</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

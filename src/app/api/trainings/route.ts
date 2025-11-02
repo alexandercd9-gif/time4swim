@@ -1,117 +1,97 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/auth";
 
-export async function GET() {
+// Helpers
+function getMonthRange(year: number, month: number) {
+  // month: 1-12
+  const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
+  const end = new Date(Date.UTC(year, month, 1, 0, 0, 0)); // first day next month
+  return { start, end };
+}
+
+// GET /api/trainings?childId=...&month=...&year=...&style=...
+export async function GET(request: NextRequest) {
   try {
-    const trainings = await db.findMany('training', {
-      include: {
-        child: {
-          select: {
-            name: true,
-            club: true
-          }
-        }
-      },
-      orderBy: {
-        date: 'desc'
+    const auth = await requireAuth(request as any, ["ADMIN", "PARENT"]);
+    const { searchParams } = new URL(request.url);
+    const childId = searchParams.get("childId");
+    const monthParam = searchParams.get("month");
+    const yearParam = searchParams.get("year");
+    const style = searchParams.get("style");
+
+    if (!childId) {
+      return NextResponse.json({ error: "childId es requerido" }, { status: 400 });
+    }
+
+    // Si es PARENT, validar que el hijo le pertenece
+    if (auth.user.role === "PARENT") {
+      const relation = await (prisma as any).userChild.findFirst({
+        where: { userId: auth.user.id, childId, isActive: true },
+      });
+      if (!relation) {
+        return NextResponse.json({ error: "No autorizado" }, { status: 403 });
       }
+    }
+
+    const now = new Date();
+    const month = monthParam ? parseInt(monthParam) : now.getUTCMonth() + 1; // 1-12
+    const year = yearParam ? parseInt(yearParam) : now.getUTCFullYear();
+    const { start, end } = getMonthRange(year, month);
+
+    const trainings = await prisma.training.findMany({
+      where: {
+        childId,
+        date: { gte: start, lt: end },
+        ...(style && style !== "ALL" ? { style: style as any } : {}),
+      },
+      orderBy: { date: "asc" },
+      select: { id: true, date: true, time: true, distance: true, style: true },
     });
 
     return NextResponse.json({ trainings });
   } catch (error) {
-    console.error('Error fetching trainings:', error);
-    return NextResponse.json(
-      { error: 'Error al obtener entrenamientos' },
-      { status: 500 }
-    );
+    console.error("GET /api/trainings error", error);
+    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
 }
 
+// POST /api/trainings
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAuth(request as any, ["ADMIN", "PARENT"]);
     const body = await request.json();
-    const { swimmer, style, distance, time, notes, laps } = body;
+    const { childId, style, distance, time, date, notes } = body;
 
-    // Validar datos requeridos
-    if (!swimmer || !style || !distance || !time) {
-      return NextResponse.json(
-        { error: 'Faltan datos requeridos' },
-        { status: 400 }
-      );
+    if (!childId || !style || !distance || !time) {
+      return NextResponse.json({ error: "Campos requeridos: childId, style, distance, time" }, { status: 400 });
     }
 
-    // Por ahora, crear un usuario y niño de prueba si no existen
-    let user = await db.findFirst('user', {
-      where: { email: 'demo@time4swim.com' }
-    });
-
-    if (!user) {
-      user = await db.createUser({
-        data: {
-          name: 'Usuario Demo',
-          email: 'demo@time4swim.com',
-          password: 'demo123' // En producción esto debería estar hasheado
-        }
+    // Validar relación padre-hijo para PARENT
+    if (auth.user.role === "PARENT") {
+      const relation = await (prisma as any).userChild.findFirst({
+        where: { userId: auth.user.id, childId, isActive: true },
       });
-    }
-
-    // Buscar el hijo a través de las relaciones UserChild
-    const userChildRelation = await db.findFirst('userChild', {
-      where: {
-        userId: user.id,
-        isActive: true
-      },
-      include: {
-        child: {
-          where: {
-            name: swimmer
-          }
-        }
+      if (!relation) {
+        return NextResponse.json({ error: "No autorizado" }, { status: 403 });
       }
-    });
-
-    let child = userChildRelation?.child;
-
-    if (!child) {
-      child = await db.createChild({
-        data: {
-          name: swimmer,
-          birthDate: new Date('2010-01-01'), // Fecha de ejemplo
-          gender: 'MALE' // Género de ejemplo
-        }
-      });
     }
 
-    // Crear el entrenamiento
-    const training = await db.createTraining({
+    const created = await prisma.training.create({
       data: {
-        style: style,
-        distance: parseInt(distance),
-        time: parseFloat(time),
+        childId,
+        style,
+        distance: Number(distance),
+        time: Number(time),
+        date: date ? new Date(date) : new Date(),
         notes: notes || null,
-        childId: child!.id,
-        date: new Date()
-      }
+      },
+      select: { id: true, childId: true, style: true, distance: true, time: true, date: true },
     });
 
-    return NextResponse.json({
-      success: true,
-      training: {
-        id: training.id,
-        swimmer: child!.name,
-        style: training.style,
-        distance: training.distance,
-        time: training.time,
-        notes: training.notes,
-        date: training.date
-      }
-    });
-
+    return NextResponse.json({ training: created });
   } catch (error) {
-    console.error('Error saving training:', error);
-    return NextResponse.json(
-      { error: 'Error interno del servidor' },
-      { status: 500 }
-    );
+    console.error("POST /api/trainings error", error);
+    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
 }

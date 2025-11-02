@@ -236,170 +236,216 @@ export default function SwimmerForm({ isOpen, onClose, onSuccess, swimmer }: Swi
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>
-            {swimmer ? 'Editar Nadador' : 'Crear Nuevo Nadador'}
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="space-y-3 pb-4">
+          <DialogTitle className="text-2xl font-bold">
+            {swimmer ? '✏️ Editar Nadador' : '➕ Crear Nuevo Nadador'}
           </DialogTitle>
+          <p className="text-sm text-gray-500">
+            {swimmer ? 'Actualiza la información del nadador' : 'Completa los datos para registrar un nuevo nadador'}
+          </p>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Nombre */}
-          <div className="space-y-2">
-            <Label htmlFor="name">Nombre *</Label>
-            <Input
-              id="name"
-              type="text"
-              placeholder="Nombre completo del nadador"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-            />
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Información Personal */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+              Información Personal
+            </h3>
+            
+            {/* Nombre */}
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-sm font-medium">
+                Nombre completo <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="Ej: Juan Pérez García"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+                className="h-11"
+              />
+            </div>
+
+            {/* Fecha y Género en grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Fecha de Nacimiento */}
+              <div className="space-y-2">
+                <Label htmlFor="birthDate" className="text-sm font-medium">
+                  Fecha de Nacimiento <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="birthDate"
+                  type="date"
+                  value={formData.birthDate}
+                  onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
+                  required
+                  className="h-11"
+                />
+              </div>
+
+              {/* Género */}
+              <div className="space-y-2">
+                <Label htmlFor="gender" className="text-sm font-medium">
+                  Género <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={formData.gender}
+                  onValueChange={(value) => setFormData({ ...formData, gender: value })}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Seleccionar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="MALE">👦 Masculino</SelectItem>
+                    <SelectItem value="FEMALE">👧 Femenino</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
 
-          {/* Fecha de Nacimiento */}
-          <div className="space-y-2">
-            <Label htmlFor="birthDate">Fecha de Nacimiento *</Label>
-            <Input
-              id="birthDate"
-              type="date"
-              value={formData.birthDate}
-              onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
-              required
-            />
+          {/* Información del Club */}
+          <div className="space-y-4 pt-4 border-t">
+            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+              Información del Club
+            </h3>
+
+            {/* Club y Entrenador en grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Club */}
+              <div className="space-y-2">
+                <Label htmlFor="clubId" className="text-sm font-medium">Club</Label>
+                <Select
+                  value={formData.clubId || "none"}
+                  onValueChange={(value) => setFormData({ ...formData, clubId: value === "none" ? "" : value })}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Seleccionar club" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sin club asignado</SelectItem>
+                    {clubs.map((club) => (
+                      <SelectItem key={club.id} value={club.id}>
+                        {club.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Entrenador */}
+              <div className="space-y-2">
+                <Label htmlFor="coach" className="text-sm font-medium">Entrenador</Label>
+                <Input
+                  id="coach"
+                  type="text"
+                  placeholder="Nombre del entrenador"
+                  value={formData.coach}
+                  onChange={(e) => setFormData({ ...formData, coach: e.target.value })}
+                  className="h-11"
+                />
+              </div>
+            </div>
           </div>
 
-          {/* Género */}
-          <div className="space-y-2">
-            <Label htmlFor="gender">Género *</Label>
-            <Select
-              value={formData.gender}
-              onValueChange={(value) => setFormData({ ...formData, gender: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar género" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="MALE">Masculino</SelectItem>
-                <SelectItem value="FEMALE">Femenino</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Código FDPN */}
+          <div className="space-y-4 pt-4 border-t">
+            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+              Información Adicional
+            </h3>
 
-          {/* Club */}
-          <div className="space-y-2">
-            <Label htmlFor="clubId">Club</Label>
-            <Select
-              value={formData.clubId}
-              onValueChange={(value) => setFormData({ ...formData, clubId: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar club" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Sin club</SelectItem>
-                {clubs.map((club) => (
-                  <SelectItem key={club.id} value={club.id}>
-                    {club.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Entrenador */}
-          <div className="space-y-2">
-            <Label htmlFor="coach">Entrenador</Label>
-            <Input
-              id="coach"
-              type="text"
-              placeholder="Nombre del entrenador"
-              value={formData.coach}
-              onChange={(e) => setFormData({ ...formData, coach: e.target.value })}
-            />
-          </div>
-
-          {/* Código de Afiliado FDPN */}
-          <div className="space-y-2">
-            <Label htmlFor="fdpnAffiliateCode">Código de Afiliado FDPN (Opcional)</Label>
-            <Input
-              id="fdpnAffiliateCode"
-              type="text"
-              placeholder="Ej: 79272554"
-              value={formData.fdpnAffiliateCode}
-              onChange={(e) => setFormData({ ...formData, fdpnAffiliateCode: e.target.value })}
-              className="font-mono"
-            />
-            <p className="text-xs text-gray-500">
-              🔍 Si tu hijo ya compite oficialmente, este código permitirá búsquedas más precisas en FDPN
-            </p>
+            <div className="space-y-2">
+              <Label htmlFor="fdpnAffiliateCode" className="text-sm font-medium">
+                Código de Afiliado FDPN
+              </Label>
+              <Input
+                id="fdpnAffiliateCode"
+                type="text"
+                placeholder="Ej: 79272554"
+                value={formData.fdpnAffiliateCode}
+                onChange={(e) => setFormData({ ...formData, fdpnAffiliateCode: e.target.value })}
+                className="font-mono h-11"
+              />
+              <p className="text-xs text-gray-500 flex items-start gap-2">
+                <span className="text-blue-500">ℹ️</span>
+                <span>Si tu hijo compite oficialmente, este código permitirá búsquedas más precisas en FDPN</span>
+              </p>
+            </div>
           </div>
 
           {/* Foto del Nadador */}
-          <div className="space-y-3">
-            <Label>Foto del Nadador</Label>
-            
-            {/* Opciones de foto */}
-            <div className="flex space-x-2">
-              <Button
-                type="button"
-                variant={photoMode === 'url' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setPhotoMode('url')}
-                className="flex items-center space-x-1"
-              >
-                <Link className="h-4 w-4" />
-                <span>URL</span>
-              </Button>
-              <Button
-                type="button"
-                variant={photoMode === 'upload' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setPhotoMode('upload')}
-                className="flex items-center space-x-1"
-              >
-                <Upload className="h-4 w-4" />
-                <span>Subir Archivo</span>
-              </Button>
+          <div className="space-y-4 pt-4 border-t">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                Foto del Nadador
+              </h3>
+              
+              {/* Opciones de foto */}
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={photoMode === 'url' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setPhotoMode('url')}
+                  className="h-8 text-xs"
+                >
+                  <Link className="h-3 w-3 mr-1" />
+                  URL
+                </Button>
+                <Button
+                  type="button"
+                  variant={photoMode === 'upload' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setPhotoMode('upload')}
+                  className="h-8 text-xs"
+                >
+                  <Upload className="h-3 w-3 mr-1" />
+                  Subir
+                </Button>
+              </div>
             </div>
 
             {/* Input de URL */}
             {photoMode === 'url' && (
-              <Input
-                id="photo"
-                type="url"
-                placeholder="https://ejemplo.com/foto.jpg"
-                value={formData.photo}
-                onChange={(e) => {
-                  setFormData({ ...formData, photo: e.target.value });
-                  setPhotoPreview(e.target.value);
-                  setPhotoFile(null);
-                }}
-              />
+              <div className="space-y-2">
+                <Input
+                  id="photo"
+                  type="url"
+                  placeholder="https://ejemplo.com/foto.jpg"
+                  value={formData.photo}
+                  onChange={(e) => {
+                    setFormData({ ...formData, photo: e.target.value });
+                    setPhotoPreview(e.target.value);
+                    setPhotoFile(null);
+                  }}
+                  className="h-11"
+                />
+              </div>
             )}
 
             {/* Input de archivo */}
             {photoMode === 'upload' && (
-              <div>
-                <div className="relative">
-                  <Input
-                    id="photoFile"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="mb-2 h-12 flex items-center file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:cursor-pointer"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Input
+                  id="photoFile"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="h-11 cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
                 <p className="text-xs text-gray-500">
-                  Formatos soportados: JPG, PNG, GIF. Se comprimirá automáticamente.
+                  JPG, PNG o GIF. Se comprimirá automáticamente.
                 </p>
               </div>
             )}
 
             {/* Preview de la foto */}
             {photoPreview && (
-              <div className="relative">
-                <div className="w-24 h-24 border rounded-lg overflow-hidden bg-gray-50">
+              <div className="relative inline-block">
+                <div className="w-32 h-32 border-2 border-gray-200 rounded-xl overflow-hidden bg-gray-50 shadow-sm">
                   <img
                     src={photoPreview}
                     alt="Preview"
@@ -412,32 +458,41 @@ export default function SwimmerForm({ isOpen, onClose, onSuccess, swimmer }: Swi
                 </div>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="destructive"
                   size="sm"
                   onClick={clearPhoto}
-                  className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                  className="absolute -top-2 -right-2 h-8 w-8 rounded-full p-0 shadow-md"
                 >
-                  <X className="h-3 w-3" />
+                  <X className="h-4 w-4" />
                 </Button>
               </div>
             )}
           </div>
 
-          {/* Botones */}
-          <div className="flex justify-end space-x-2 pt-4">
+          {/* Botones de acción */}
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-6 border-t">
             <Button 
               type="button" 
               variant="outline" 
               onClick={handleClose}
               disabled={loading}
+              className="h-11 w-full sm:w-auto"
             >
               Cancelar
             </Button>
             <Button 
               type="submit" 
               disabled={loading || !formData.name || !formData.birthDate || !formData.gender}
+              className="h-11 w-full sm:w-auto min-w-[120px]"
             >
-              {loading ? 'Procesando...' : (swimmer ? 'Actualizar' : 'Crear')}
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                  Procesando...
+                </>
+              ) : (
+                swimmer ? '✓ Actualizar' : '➕ Crear Nadador'
+              )}
             </Button>
           </div>
         </form>

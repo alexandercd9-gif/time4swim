@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-import * as jwt from "jsonwebtoken";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/auth";
 
 // GET: Obtener detalles del nadador
 export async function GET(
@@ -12,31 +10,7 @@ export async function GET(
   try {
     const resolvedParams = await params;
     const childId = resolvedParams.id;
-
-    // Obtener token de las cookies
-    const token = request.cookies.get('auth-token')?.value;
-
-    if (!token) {
-      return NextResponse.json(
-        { message: 'No autorizado' },
-        { status: 401 }
-      );
-    }
-
-    // Verificar token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
-    
-    // Obtener usuario para verificar role
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId }
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { message: 'Usuario no encontrado' },
-        { status: 404 }
-      );
-    }
+    const auth = await requireAuth(request as any, ['ADMIN', 'PARENT']);
 
     // Obtener detalles completos del nadador
     const child = await prisma.child.findUnique({
@@ -79,8 +53,8 @@ export async function GET(
     }
 
     // Verificar permisos: ADMIN puede ver cualquier nadador, PARENT solo los suyos
-    if ((user as any).role !== 'ADMIN') {
-      const userChildRelation = child.parents.find(p => p.userId === decoded.userId);
+    if ((auth.user as any).role !== 'ADMIN') {
+      const userChildRelation = child.parents.find(p => p.userId === auth.user.id);
       
       if (!userChildRelation) {
         return NextResponse.json(
@@ -126,31 +100,7 @@ export async function PUT(
   try {
     const resolvedParams = await params;
     const childId = resolvedParams.id;
-
-    // Obtener token de las cookies
-    const token = request.cookies.get('auth-token')?.value;
-
-    if (!token) {
-      return NextResponse.json(
-        { message: 'No autorizado' },
-        { status: 401 }
-      );
-    }
-
-    // Verificar token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
-    
-    // Obtener usuario para verificar role
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId }
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { message: 'Usuario no encontrado' },
-        { status: 404 }
-      );
-    }
+    const auth = await requireAuth(request as any, ['ADMIN', 'PARENT']);
 
     // Verificar que el nadador existe
     const existingChild = await prisma.child.findUnique({
@@ -165,10 +115,10 @@ export async function PUT(
     }
 
     // Verificar permisos: ADMIN puede editar cualquier nadador, PARENT solo los suyos
-    if ((user as any).role !== 'ADMIN') {
+    if ((auth.user as any).role !== 'ADMIN') {
       const userChildRelation = await (prisma as any).userChild.findFirst({
         where: {
-          userId: decoded.userId,
+          userId: auth.user.id,
           childId: childId,
           isActive: true
         }
@@ -239,31 +189,7 @@ export async function DELETE(
   try {
     const resolvedParams = await params;
     const childId = resolvedParams.id;
-
-    // Obtener token de las cookies
-    const token = request.cookies.get('auth-token')?.value;
-
-    if (!token) {
-      return NextResponse.json(
-        { message: 'No autorizado' },
-        { status: 401 }
-      );
-    }
-
-    // Verificar token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
-    
-    // Obtener usuario para verificar role
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId }
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { message: 'Usuario no encontrado' },
-        { status: 404 }
-      );
-    }
+    const auth = await requireAuth(request as any, ['ADMIN', 'PARENT']);
 
     // Verificar que el nadador existe
     const existingChild = await prisma.child.findUnique({
@@ -278,10 +204,10 @@ export async function DELETE(
     }
 
     // Verificar permisos: ADMIN puede eliminar cualquier nadador, PARENT solo los suyos
-    if ((user as any).role !== 'ADMIN') {
+    if ((auth.user as any).role !== 'ADMIN') {
       const userChildRelation = await (prisma as any).userChild.findFirst({
         where: {
-          userId: decoded.userId,
+          userId: auth.user.id,
           childId: childId,
           isActive: true
         }

@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Play, Pause, Square, Save, Timer } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import TrainingChart from "@/components/TrainingChart";
 
 // Tipos para el cronómetro
 type TimerState = "stopped" | "running" | "paused";
@@ -24,17 +26,18 @@ const swimStyles = [
 // Distancias comunes
 const distances = [25, 50, 100, 200, 400, 800, 1500];
 
-export function Stopwatch() {
+export function Stopwatch({ swimmers = [] }: { swimmers?: Array<{ id: string, name: string }> }) {
   const [time, setTime] = useState(0); // tiempo en milisegundos
   const [state, setState] = useState<TimerState>("stopped");
   const [startTime, setStartTime] = useState<number | null>(null);
   const [laps, setLaps] = useState<number[]>([]);
-  
+
   // Datos del entrenamiento
   const [swimmer, setSwimmer] = useState("");
   const [style, setStyle] = useState("");
   const [distance, setDistance] = useState("");
   const [notes, setNotes] = useState("");
+  const [openChart, setOpenChart] = useState(false);
 
   // Actualizar el cronómetro cada 10ms para mayor precisión
   useEffect(() => {
@@ -102,7 +105,7 @@ export function Stopwatch() {
     if (time === 0) return;
     
     const trainingData = {
-      swimmer,
+      childId: swimmer,
       style,
       distance: parseInt(distance),
       time: time / 1000, // convertir a segundos
@@ -117,12 +120,13 @@ export function Stopwatch() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(trainingData),
       });
 
       if (response.ok) {
         const result = await response.json();
-        alert(`¡Entrenamiento guardado exitosamente!\n${result.training.swimmer} - ${result.training.style}\n${result.training.distance}m en ${formatTime(time)}`);
+  alert(`¡Entrenamiento guardado exitosamente!\n${result.training.style} - ${result.training.distance}m\nTiempo: ${formatTime(time)}`);
         
         // Limpiar formulario
         resetTimer();
@@ -180,6 +184,11 @@ export function Stopwatch() {
                 Vuelta
               </Button>
             )}
+
+            {/* Botón para ver gráfico en modal */}
+            <Button onClick={() => setOpenChart(true)} size="default" variant="outline" className="px-6">
+              Tiempo de entrenamiento
+            </Button>
           </div>
 
           {/* Vueltas */}
@@ -211,12 +220,20 @@ export function Stopwatch() {
             {/* Nadador */}
             <div className="space-y-2">
               <Label htmlFor="swimmer">Nadador</Label>
-              <Input
-                id="swimmer"
-                placeholder="Nombre del nadador"
-                value={swimmer}
-                onChange={(e) => setSwimmer(e.target.value)}
-              />
+              <Select value={swimmer} onValueChange={setSwimmer}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar nadador" />
+                </SelectTrigger>
+                <SelectContent>
+                  {swimmers.length === 0 ? (
+                    <SelectItem value="" disabled>No hay nadadores registrados</SelectItem>
+                  ) : (
+                    swimmers.map((child) => (
+                      <SelectItem key={child.id} value={child.id}>{child.name}</SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Estilo */}
@@ -277,6 +294,20 @@ export function Stopwatch() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Modal con gráfico de tiempos */}
+      <Dialog open={openChart} onOpenChange={setOpenChart}>
+        <DialogContent className="sm:max-w-[720px]">
+          <DialogHeader>
+            <DialogTitle>Historial de tiempos</DialogTitle>
+          </DialogHeader>
+          {swimmer ? (
+            <TrainingChart childId={swimmer} />
+          ) : (
+            <p className="text-sm text-gray-500">Selecciona un nadador para ver el gráfico.</p>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

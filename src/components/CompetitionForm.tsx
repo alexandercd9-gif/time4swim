@@ -10,12 +10,12 @@ import { toast } from "react-hot-toast";
 import { CheckCircle2, Circle, Users, Trophy, FileText } from "lucide-react";
 
 interface StyleConfig {
-  id: string;
+  id?: string;
   style: string;
   nameEs: string;
   nameEn: string;
   description?: string;
-  isActive: boolean;
+  isActive?: boolean;
 }
 
 interface PoolConfig {
@@ -177,11 +177,18 @@ export default function CompetitionForm({
 
   const fetchConfigurations = async () => {
     try {
-      const response = await fetch('/api/config');
-      if (response.ok) {
-        const data = await response.json();
-        setStyles(data.styles);
-        setPoolTypes(data.pools);
+      const [stylesRes, poolsRes] = await Promise.all([
+        fetch('/api/config/styles'),
+        fetch('/api/config?type=pools')
+      ]);
+
+      if (stylesRes.ok) {
+        const stylesData = await stylesRes.json();
+        setStyles(stylesData);
+      }
+      if (poolsRes.ok) {
+        const poolsData = await poolsRes.json();
+        setPoolTypes(poolsData);
       }
     } catch (error) {
       console.error('Error fetching configurations:', error);
@@ -444,7 +451,7 @@ export default function CompetitionForm({
                       </SelectTrigger>
                       <SelectContent>
                         {styles.map((style) => (
-                          <SelectItem key={style.id} value={style.style}>
+                          <SelectItem key={style.style} value={style.style}>
                             {style.nameEs}
                           </SelectItem>
                         ))}
