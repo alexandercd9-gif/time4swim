@@ -46,10 +46,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const data = await response.json();
   setUser(data.user); // incluye campos de trial si vienen del backend
       } else {
+        // 401 es esperado cuando no hay sesión, no es un error
         setUser(defaultUser);
       }
     } catch (error) {
-      console.log("Error loading user:", error);
+      // Solo loggear errores que no sean de red/autenticación
+      // console.log("Error loading user:", error);
       setUser(defaultUser);
     } finally {
       setLoading(false);

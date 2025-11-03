@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import ModernSidebar from "@/components/ModernSidebar";
 import TrialBanner from "@/components/TrialBanner";
 import { useUser } from "@/context/UserContext";
+import { useSidebar } from "@/hooks/use-sidebar";
 
 export default function ParentsLayout({
   children,
@@ -49,20 +50,34 @@ export default function ParentsLayout({
   return (
     <div className="flex min-h-screen bg-gray-50">
       <ModernSidebar />
-      <main className="flex-1 lg:ml-80 transition-all duration-300">
+      <ResponsiveMain>
         <div className="p-6 lg:p-8 pt-20 lg:pt-8">
-          {/* Mostrar banner de trial si aplica */}
-          {/* TrialBanner internamente oculta si no es trial */}
-          <TrialBanner user={{
-            id: user.id,
-            accountStatus: (user as any).accountStatus,
-            isTrialAccount: (user as any).isTrialAccount,
-            trialExpiresAt: (user as any).trialExpiresAt || null,
-          }} />
+        {/* Mostrar banner de trial si aplica */}
+        {/* TrialBanner internamente oculta si no es trial */}
+        <TrialBanner user={{
+          id: user.id,
+          accountStatus: (user as any).accountStatus,
+          isTrialAccount: (user as any).isTrialAccount,
+          trialExpiresAt: (user as any).trialExpiresAt || null,
+        }} />
 
           {children}
         </div>
-      </main>
+      </ResponsiveMain>
     </div>
+  );
+}
+
+// Componente interno que ajusta el margen según el estado del sidebar
+function ResponsiveMain({ children }: { children: React.ReactNode }) {
+  const { isSidebarCollapsed } = useSidebar();
+  return (
+    <main
+      className={`flex-1 transition-all duration-300 ${
+        isSidebarCollapsed ? "lg:ml-20" : "lg:ml-80"
+      }`}
+    >
+      {children}
+    </main>
   );
 }

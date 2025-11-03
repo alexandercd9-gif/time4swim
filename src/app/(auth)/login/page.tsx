@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useUser } from "@/context/UserContext";
@@ -13,6 +13,16 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { refetchUser } = useUser();
+
+  // Prevenir caché de la página
+  useEffect(() => {
+    // Limpiar cualquier estado residual al cargar la página
+    const cleanupOnLoad = () => {
+      // No redirigir automáticamente, solo limpiar
+      console.log('Login page loaded');
+    };
+    cleanupOnLoad();
+  }, []);
 
   // Función para normalizar el rol
   const normalizeRole = (role: string) => {

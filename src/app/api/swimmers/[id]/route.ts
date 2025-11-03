@@ -133,7 +133,9 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, birthDate, gender, club, coach, photo } = body;
+    console.log('📝 PUT /api/swimmers/[id] - Body recibido:', JSON.stringify(body, null, 2));
+    const { name, birthDate, gender, clubId, coach, photo, fdpnAffiliateCode } = body;
+    console.log('📝 clubId extraído:', clubId);
 
     // Validaciones básicas
     if (!name || !birthDate || !gender) {
@@ -151,17 +153,25 @@ export async function PUT(
     }
 
     // Actualizar nadador
+    console.log('📝 Actualizando nadador con clubId:', clubId);
     const updatedChild = await prisma.child.update({
       where: { id: childId },
       data: {
         name,
         birthDate: new Date(birthDate),
         gender,
-        club: club || null,
+        clubId: clubId || null,
         coach: coach || null,
-        photo: photo || null
+        photo: photo || null,
+        fdpnAffiliateCode: fdpnAffiliateCode || null
       },
       include: {
+        club: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
         _count: {
           select: {
             records: true,
@@ -171,11 +181,12 @@ export async function PUT(
       }
     });
 
+    console.log('✅ Nadador actualizado:', JSON.stringify(updatedChild, null, 2));
     return NextResponse.json(updatedChild);
   } catch (error) {
     console.error('Error updating child:', error);
     return NextResponse.json(
-      { error: 'Error interno del servidor' },
+      { message: 'Error al procesar la solicitud', error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

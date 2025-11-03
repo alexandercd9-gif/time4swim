@@ -1,6 +1,7 @@
 "use client";
 
 import ModernSidebar from "@/components/ModernSidebar";
+import { SidebarProvider } from "@/hooks/use-sidebar";
 
 export default function SwimmerLayout({
   children,

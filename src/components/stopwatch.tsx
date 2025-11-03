@@ -6,9 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Play, Pause, Square, Save, Timer } from "lucide-react";
+import { Play, Pause, Square, Save, Timer, Flag, Keyboard } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import TrainingChart from "@/components/TrainingChart";
+import { Table, TableBody, TableCell, TableHead, TableHeader as ShadTableHeader, TableRow } from "@/components/ui/table";
 
 // Tipos para el cronómetro
 type TimerState = "stopped" | "running" | "paused";
@@ -38,6 +39,7 @@ export function Stopwatch({ swimmers = [] }: { swimmers?: Array<{ id: string, na
   const [distance, setDistance] = useState("");
   const [notes, setNotes] = useState("");
   const [openChart, setOpenChart] = useState(false);
+  const [hintsOpen, setHintsOpen] = useState(false);
 
   // Actualizar el cronómetro cada 10ms para mayor precisión
   useEffect(() => {
@@ -51,6 +53,25 @@ export function Stopwatch({ swimmers = [] }: { swimmers?: Array<{ id: string, na
     
     return () => clearInterval(interval);
   }, [state, startTime]);
+
+  // Atajos de teclado: Space (start/pause), L (lap), R (reset)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target && (e.target as HTMLElement).tagName === 'INPUT') return; // no capturar cuando escribe
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (state === 'running') pauseTimer(); else startTimer();
+      } else if (e.key.toLowerCase() === 'l') {
+        e.preventDefault();
+        addLap();
+      } else if (e.key.toLowerCase() === 'r') {
+        e.preventDefault();
+        resetTimer();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [state, time, startTime]);
 
   // Formatear tiempo en MM:SS.ss
   const formatTime = useCallback((ms: number) => {
@@ -147,41 +168,55 @@ export function Stopwatch({ swimmers = [] }: { swimmers?: Array<{ id: string, na
   return (
     <div className="space-y-6">
       {/* Cronómetro Principal */}
-      <Card className="text-center">
+      <Card className="text-center border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50">
         <CardHeader>
-          <CardTitle className="flex items-center justify-center gap-2 text-2xl">
-            <Timer className="h-6 w-6" />
-            Cronómetro
+          <CardTitle className="flex items-center justify-between gap-2 text-2xl">
+            <span className="flex items-center gap-2">
+              <Timer className="h-6 w-6 text-blue-600" />
+              Cronómetro
+            </span>
+            <Button variant="ghost" size="sm" onClick={() => setHintsOpen(!hintsOpen)} className="text-gray-600 hover:bg-white">
+              <Keyboard className="h-4 w-4 mr-2" />Atajos
+            </Button>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-5">
           {/* Display del tiempo */}
-          <div className="text-4xl md:text-5xl font-mono font-bold text-blue-600 dark:text-blue-400 tracking-wider">
+          <div className="mx-auto w-full max-w-2xl">
+            <div className="text-6xl md:text-7xl font-mono font-bold text-blue-700 tracking-wider px-4 py-4 bg-white/70 rounded-2xl shadow-sm ring-1 ring-blue-200">
             {formatTime(time)}
+            </div>
           </div>
+          {hintsOpen && (
+            <div className="text-xs text-gray-600">
+              <span className="px-2 py-1 rounded bg-white/70 border mr-2">Espacio</span> Iniciar/Pausar
+              <span className="px-2 py-1 rounded bg-white/70 border mx-2">L</span> Vuelta
+              <span className="px-2 py-1 rounded bg-white/70 border mx-2">R</span> Reiniciar
+            </div>
+          )}
           
           {/* Controles principales */}
           <div className="flex justify-center gap-2 flex-wrap">
             {state === "running" ? (
-              <Button onClick={pauseTimer} size="default" variant="outline" className="px-6">
+              <Button onClick={pauseTimer} size="lg" variant="secondary" className="px-6">
                 <Pause className="h-4 w-4 mr-2" />
                 Pausar
               </Button>
             ) : (
-              <Button onClick={startTimer} size="default" className="px-6">
+              <Button onClick={startTimer} size="lg" className="px-6 bg-green-600 hover:bg-green-700">
                 <Play className="h-4 w-4 mr-2" />
                 {state === "paused" ? "Continuar" : "Iniciar"}
               </Button>
             )}
             
-            <Button onClick={stopTimer} size="default" variant="destructive" className="px-6">
+            <Button onClick={stopTimer} size="lg" variant="destructive" className="px-6">
               <Square className="h-4 w-4 mr-2" />
               Detener
             </Button>
             
             {state === "running" && (
-              <Button onClick={addLap} size="default" variant="secondary" className="px-6">
-                Vuelta
+              <Button onClick={addLap} size="lg" variant="outline" className="px-6">
+                <Flag className="h-4 w-4 mr-2" />Vuelta
               </Button>
             )}
 
@@ -193,14 +228,33 @@ export function Stopwatch({ swimmers = [] }: { swimmers?: Array<{ id: string, na
 
           {/* Vueltas */}
           {laps.length > 0 && (
-            <div className="mt-4">
-              <h3 className="font-semibold mb-2 text-sm">Vueltas registradas:</h3>
-              <div className="grid grid-cols-2 gap-1 max-h-24 overflow-y-auto">
-                {laps.map((lapTime, index) => (
-                  <div key={index} className="text-xs bg-gray-100 dark:bg-gray-800 rounded px-2 py-1">
-                    Vuelta {index + 1}: {formatTime(lapTime)}
-                  </div>
-                ))}
+            <div className="mt-4 text-left">
+              <h3 className="font-semibold mb-2 text-sm">Vueltas registradas</h3>
+              <div className="max-h-56 overflow-auto rounded-lg bg-white/70 ring-1 ring-gray-200">
+                <Table>
+                  <ShadTableHeader>
+                    <TableRow>
+                      <TableHead>#</TableHead>
+                      <TableHead>Tiempo</TableHead>
+                      <TableHead>Δ respecto anterior</TableHead>
+                      <TableHead>Split total</TableHead>
+                    </TableRow>
+                  </ShadTableHeader>
+                  <TableBody>
+                    {laps.map((lapTime, index) => {
+                      const prev = index > 0 ? laps[index - 1] : 0;
+                      const delta = index > 0 ? lapTime - prev : lapTime;
+                      return (
+                        <TableRow key={index}>
+                          <TableCell className="w-12">{index + 1}</TableCell>
+                          <TableCell>{formatTime(lapTime)}</TableCell>
+                          <TableCell className="text-blue-700">{formatTime(delta)}</TableCell>
+                          <TableCell className="text-gray-600">{formatTime(lapTime)}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
               </div>
             </div>
           )}
@@ -208,7 +262,7 @@ export function Stopwatch({ swimmers = [] }: { swimmers?: Array<{ id: string, na
       </Card>
 
       {/* Formulario de Entrenamiento */}
-      <Card>
+      <Card className="border-blue-200">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Save className="h-5 w-5" />
@@ -285,7 +339,7 @@ export function Stopwatch({ swimmers = [] }: { swimmers?: Array<{ id: string, na
           {/* Botón guardar */}
           <Button 
             onClick={saveTraining} 
-            className="w-full" 
+            className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700" 
             size="default"
             disabled={!swimmer || !style || !distance || time === 0}
           >

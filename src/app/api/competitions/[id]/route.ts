@@ -14,7 +14,7 @@ export async function PUT(
     const { id } = resolvedParams;
 
     // Obtener token de las cookies
-    const token = request.cookies.get('auth-token')?.value;
+    const token = request.cookies.get('token')?.value;
 
     if (!token) {
       return NextResponse.json(
@@ -189,7 +189,7 @@ export async function DELETE(
     const { id } = resolvedParams;
 
     // Obtener token de las cookies
-    const token = request.cookies.get('auth-token')?.value;
+    const token = request.cookies.get('token')?.value;
 
     if (!token) {
       return NextResponse.json(

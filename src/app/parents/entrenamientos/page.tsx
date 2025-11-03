@@ -116,8 +116,12 @@ export default function ParentTrainingsAnalysisPage() {
         {/* Acordeón principal: 1) Filtros  2) Mejores tiempos  3) Tiempo (estilo seleccionado) */}
         <Accordion value={openSection} onValueChange={(v) => v && setOpenSection(v as any)} type="single" collapsible className="space-y-4">
           {/* 1. Filtros de búsqueda */}
-          <AccordionItem value="filters">
-            <AccordionTrigger className="text-left">Filtros de búsqueda</AccordionTrigger>
+          <AccordionItem value="filters" className="rounded-xl shadow-md border-2 border-blue-100 bg-gradient-to-br from-blue-50 to-cyan-50">
+            <AccordionTrigger className="flex items-center gap-3 text-left px-4 py-3 font-semibold text-blue-700 hover:bg-blue-100/40 rounded-xl transition-all">
+              <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              Filtros de búsqueda
+              <span className="ml-auto"><span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full">Activo</span></span>
+            </AccordionTrigger>
             <AccordionContent>
               <div className="rounded-lg border bg-white p-6 shadow-sm">
                 {/* Primera fila: Nadador, Fuente, Distancia */}
@@ -275,7 +279,11 @@ export default function ParentTrainingsAnalysisPage() {
 
           {/* 2. Mejores tiempos por estilo */}
           <AccordionItem value="best">
-            <AccordionTrigger className="text-left">Mejores tiempos por estilo</AccordionTrigger>
+            <AccordionTrigger className="flex items-center gap-3 text-left px-4 py-3 font-semibold text-green-700 hover:bg-green-100/40 rounded-xl transition-all">
+              <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              Mejores tiempos por estilo
+              <span className="ml-auto"><span className={`bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full ${Object.keys(bestTimes).length ? '' : 'opacity-50'}`}>{Object.keys(bestTimes).length ? 'Resultados' : 'Sin datos'}</span></span>
+            </AccordionTrigger>
             <AccordionContent>
               <div ref={resultsRef} className="rounded-lg border bg-white p-6 shadow-sm">
                 {Object.keys(bestTimes).length === 0 ? (
@@ -322,11 +330,13 @@ export default function ParentTrainingsAnalysisPage() {
 
           {/* 3. Tiempo (estilo seleccionado) */}
           <AccordionItem value="detail">
-            <AccordionTrigger className="text-left">
+            <AccordionTrigger className="flex items-center gap-3 text-left px-4 py-3 font-semibold text-purple-700 hover:bg-purple-100/40 rounded-xl transition-all">
+              <svg className="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
               {(() => {
                 const sel = styles.find(st => st.style === expandedStyle);
                 return sel ? `Tiempo: ${sel.nameEs}` : 'Tiempo (estilo seleccionado)';
               })()}
+              <span className="ml-auto"><span className={`bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full ${expandedStyle ? '' : 'opacity-50'}`}>{expandedStyle ? 'Detalle' : 'Sin selección'}</span></span>
             </AccordionTrigger>
             <AccordionContent>
               <div ref={analysisRef} className="rounded-lg border bg-white p-6 shadow-sm">

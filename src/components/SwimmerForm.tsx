@@ -34,18 +34,18 @@ interface SwimmerFormProps {
 
 export default function SwimmerForm({ isOpen, onClose, onSuccess, swimmer }: SwimmerFormProps) {
   const [formData, setFormData] = useState({
-    name: swimmer?.name || "",
-    birthDate: swimmer?.birthDate ? swimmer.birthDate.split('T')[0] : "",
-    gender: swimmer?.gender || "",
-    clubId: swimmer?.club?.id || "",
-    coach: swimmer?.coach || "",
-    photo: swimmer?.photo || "",
+    name: "",
+    birthDate: "",
+    gender: "",
+    clubId: "",
+    coach: "",
+    photo: "",
     fdpnAffiliateCode: ""
   });
   const [loading, setLoading] = useState(false);
   const [clubs, setClubs] = useState<Club[]>([]);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(swimmer?.photo || null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoMode, setPhotoMode] = useState<'url' | 'upload'>('url');
 
   // Cargar clubes cuando se abre el formulario
@@ -54,6 +54,39 @@ export default function SwimmerForm({ isOpen, onClose, onSuccess, swimmer }: Swi
       fetchClubs();
     }
   }, [isOpen]);
+
+  // Inicializar datos del formulario cuando cambia el swimmer o se abre el modal
+  useEffect(() => {
+    if (isOpen) {
+      if (swimmer) {
+        setFormData({
+          name: swimmer.name || "",
+          birthDate: swimmer.birthDate ? swimmer.birthDate.split('T')[0] : "",
+          gender: swimmer.gender || "",
+          clubId: swimmer.club?.id || "",
+          coach: swimmer.coach || "",
+          photo: swimmer.photo || "",
+          fdpnAffiliateCode: ""
+        });
+        setPhotoPreview(swimmer.photo || null);
+        setPhotoFile(null);
+      } else {
+        // Reset para crear nuevo
+        setFormData({
+          name: "",
+          birthDate: "",
+          gender: "",
+          clubId: "",
+          coach: "",
+          photo: "",
+          fdpnAffiliateCode: ""
+        });
+        setPhotoPreview(null);
+        setPhotoFile(null);
+      }
+      setPhotoMode('url');
+    }
+  }, [isOpen, swimmer]);
 
   const fetchClubs = async () => {
     try {
@@ -176,11 +209,17 @@ export default function SwimmerForm({ isOpen, onClose, onSuccess, swimmer }: Swi
         photo: photoData
       };
 
+      console.log('📤 SwimmerForm - Datos a enviar:', {
+        ...submitData,
+        photo: submitData.photo ? `[${submitData.photo.length} caracteres]` : 'null'
+      });
+
       const url = swimmer 
         ? `/api/swimmers/${swimmer.id}` 
         : '/api/swimmers';
       
       const method = swimmer ? 'PUT' : 'POST';
+      console.log(`📤 ${method} ${url}`);
 
       const response = await fetch(url, {
         method,
@@ -191,6 +230,8 @@ export default function SwimmerForm({ isOpen, onClose, onSuccess, swimmer }: Swi
       });
 
       if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Respuesta del servidor:', result);
         toast.success(swimmer ? 'Nadador actualizado exitosamente' : 'Nadador creado exitosamente');
         onSuccess();
         onClose();

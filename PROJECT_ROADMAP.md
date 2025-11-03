@@ -9,6 +9,25 @@ Notas de uso:
 ---
 
 ## 0) Hecho recientemente ✅
+
+### 2025-11-02 — Página de análisis para padres (entrenamientos)
+- [x] Reestructura completa de `parents/entrenamientos/page.tsx` en 3 acordeones principales:
+  1) Filtros de búsqueda
+  2) Mejores tiempos por estilo
+  3) Tiempo (estilo seleccionado) con sub-acordeón para estadísticas y gráficos
+- [x] Tarjetas de estilo clicables que seleccionan el estilo y abren automáticamente el acordeón 3 con scroll suave.
+- [x] Filtros de fecha compactados: segunda fila con controles condicionales (Semana/Mes/Personalizado) al lado del selector de rango para mantener solo 2 filas.
+- [x] Gráficos movidos únicamente al tercer acordeón (limpiamos el segundo acordeón de visualizaciones).
+- [x] Endpoint centralizado de estilos: `GET /api/config/styles` y consumo en UI.
+- [x] Endpoint de mejores tiempos por estilo (base): `GET /api/parent/best-times?childId=...&source=...`.
+
+Notas/Pendientes inmediatos del módulo:
+- [ ] Graficar progresión diaria y promedios por semana/mes (usar datos reales de prácticas/competencias).
+- [ ] Extender filtros del endpoint para soportar estilo, distancia y fechas.
+- [ ] Timeline ligero en “Progresión Temporal” (lista de hitos/mejoras) mientras llegan los gráficos.
+- [ ] Micro-polish: icono de “desplegar” en tarjetas y KPI del mejor tiempo en el encabezado del acordeón 3.
+
+### Otros realizados recientemente
 - [x] Dashboard Admin: barras proporcionales por px, pie con acceso vs total, etiquetas más legibles (`src/app/admin/dashboard/page.tsx`).
 - [x] Estadísticas admin (`/api/admin/stats`): padres por mes, clubes con/ sin acceso.
 - [x] CRUD Usuarios Admin: buscar/editar/eliminar con modales y toasts (`/api/admin/users/[id]`).
@@ -128,6 +147,11 @@ Notas de uso:
 - Layouts por rol: `src/app/parents/layout.tsx`, `src/app/club/layout.tsx`, `src/app/profesor/layout.tsx`.
 - Dashboards por rol: `parents/dashboard/page.tsx`, `club/dashboard/page.tsx`, `profesor/dashboard/page.tsx`.
 - Prisma schema: `prisma/schema.prisma`.
+
+Nuevas rutas/endpoints útiles:
+- `GET /api/config/styles` — estilos activos centralizados.
+- `GET /api/parent/best-times` — mejores tiempos por estilo para hijo y fuente.
+- Página: `src/app/parents/entrenamientos/page.tsx` — análisis avanzado con acordeones.
 
 ---
 

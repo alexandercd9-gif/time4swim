@@ -7,8 +7,9 @@ import {
   Home, Users, Medal, BarChart, User, Power, School, 
   Calendar, CreditCard, FileText, Settings, Timer, Menu, X 
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { useSidebar } from "@/hooks/use-sidebar";
 
 type MenuItem = { 
   href: string; 
@@ -30,15 +31,16 @@ const navByRole = {
     { href: "/parents/cronometro", label: "Cronómetro", icon: Timer, description: "Registrar tiempos" },
     { href: "/parents/entrenamientos", label: "Entrenamientos", icon: Timer, description: "Sesiones de práctica" },
     { href: "/parents/competencias", label: "Competencias", icon: Medal, description: "Participaciones" },
+    { href: "/parents/events", label: "Eventos", icon: Calendar, description: "Próximas competencias" },
     { href: "/parents/records", label: "Records", icon: BarChart, description: "Mejores marcas" },
   ],
-  club: [
+    club: [
     { href: "/club/dashboard", label: "Dashboard", icon: Home, description: "Vista general" },
     { href: "/club/nadadores", label: "Nadadores", icon: Users, description: "Del club" },
     { href: "/club/entrenadores", label: "Entrenadores", icon: User, description: "Profesores" },
     { href: "/club/grupos", label: "Grupos", icon: School, description: "Categorías" },
     { href: "/club/competencias", label: "Competiciones", icon: Medal, description: "Eventos" },
-    { href: "/club/calendario", label: "Calendario", icon: Calendar, description: "Programación" },
+    { href: "/club/events", label: "Eventos (Agenda)", icon: Calendar, description: "Próximos eventos" },
     { href: "/club/pagos", label: "Pagos", icon: CreditCard, description: "Mensualidades" },
     { href: "/club/reportes", label: "Reportes", icon: FileText, description: "Informes" },
   ],
@@ -57,17 +59,66 @@ const navByRole = {
 
 export default function ModernSidebar() {
   const { user, setUser, loading } = useUser();
-  const [collapsed, setCollapsed] = useState(false);
+  const { isSidebarCollapsed: collapsed, setIsSidebarCollapsed: setCollapsed } = useSidebar();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [eventsCount, setEventsCount] = useState(0);
   const pathname = usePathname();
+
+  // Cargar el contador de eventos para padres
+  useEffect(() => {
+    if (user.role === 'PARENT' || user.role === 'parents') {
+      const fetchEventsCount = async () => {
+        try {
+          const res = await fetch('/api/parent/events', { credentials: 'include' });
+          if (res.ok) {
+            const data = await res.json();
+            
+            // Obtener la última vez que se revisaron los eventos
+            const lastCheck = localStorage.getItem('lastEventCheck');
+            
+            if (!lastCheck) {
+              // Si nunca ha visto los eventos, contar todos
+              setEventsCount(data.length);
+            } else {
+              // Contar solo eventos nuevos (creados después de la última revisión)
+              const lastCheckDate = new Date(lastCheck);
+              const newEvents = data.filter((event: any) => {
+                if (!event.createdAt) return false;
+                const eventCreatedDate = new Date(event.createdAt);
+                return eventCreatedDate > lastCheckDate;
+              });
+              setEventsCount(newEvents.length);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching events count:', error);
+        }
+      };
+      fetchEventsCount();
+      
+      // Actualizar cada 5 minutos
+      const interval = setInterval(fetchEventsCount, 5 * 60 * 1000);
+      return () => clearInterval(interval);
+    }
+  }, [user.role, pathname]); // Agregar pathname para actualizar cuando cambia la ruta
 
   const handleLogout = () => {
     fetch("/api/auth/logout", { method: "POST", credentials: "include" })
       .then(() => {
-        setUser({ id: "", name: "", email: "", role: "parents" });
-        setTimeout(() => {
-          window.location.href = "/login";
-        }, 100);
+        // Limpiar localStorage
+        localStorage.removeItem('token');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('userData');
+        localStorage.removeItem('lastEventCheck'); // Limpiar también el check de eventos
+        
+        // Forzar redirección inmediata sin resetear el estado
+        window.location.href = "/login";
+      })
+      .catch((err) => {
+        console.error('Error en logout:', err);
+        // Aún así redirigir al login
+        localStorage.clear();
+        window.location.href = "/login";
       });
   };
 
@@ -156,6 +207,8 @@ export default function ModernSidebar() {
             {menuItems.map((item) => {
               const isActive = pathname === item.href;
               const Icon = item.icon;
+              const showBadge = item.href === '/parents/events' && eventsCount > 0;
+              
               return (
                 <Link
                   key={item.href}
@@ -166,14 +219,28 @@ export default function ModernSidebar() {
                       : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                   }`}
                 >
-                  <Icon className={`h-5 w-5 flex-shrink-0 ${isActive ? "text-white" : "text-gray-500"}`} />
+                  <div className="relative">
+                    <Icon className={`h-5 w-5 flex-shrink-0 ${isActive ? "text-white" : "text-gray-500"}`} />
+                    {showBadge && (
+                      <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white">
+                        {eventsCount > 9 ? '9+' : eventsCount}
+                      </span>
+                    )}
+                  </div>
                   {!collapsed && (
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{item.label}</div>
-                      {item.description && (
-                        <div className={`text-xs truncate ${isActive ? "text-cyan-100" : "text-gray-500"}`}>
-                          {item.description}
-                        </div>
+                    <div className="flex-1 min-w-0 flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate">{item.label}</div>
+                        {item.description && (
+                          <div className={`text-xs truncate ${isActive ? "text-cyan-100" : "text-gray-500"}`}>
+                            {item.description}
+                          </div>
+                        )}
+                      </div>
+                      {showBadge && (
+                        <span className="ml-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                          {eventsCount > 9 ? '9+' : eventsCount}
+                        </span>
                       )}
                     </div>
                   )}
@@ -264,6 +331,8 @@ export default function ModernSidebar() {
               {menuItems.map((item) => {
                 const isActive = pathname === item.href;
                 const Icon = item.icon;
+                const showBadge = item.href === '/parents/events' && eventsCount > 0;
+                
                 return (
                   <Link
                     key={item.href}
@@ -275,13 +344,20 @@ export default function ModernSidebar() {
                         : "text-gray-700 hover:bg-gray-100"
                     }`}
                   >
-                    <Icon className={`h-5 w-5 ${isActive ? "text-white" : "text-gray-500"}`} />
-                    <div>
-                      <div className="font-medium">{item.label}</div>
-                      {item.description && (
-                        <div className={`text-xs ${isActive ? "text-cyan-100" : "text-gray-500"}`}>
-                          {item.description}
-                        </div>
+                    <div className="relative">
+                      <Icon className="h-5 w-5" />
+                      {showBadge && (
+                        <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white">
+                          {eventsCount > 9 ? '9+' : eventsCount}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex-1 flex items-center justify-between">
+                      <span className="font-medium">{item.label}</span>
+                      {showBadge && (
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                          {eventsCount > 9 ? '9+' : eventsCount}
+                        </span>
                       )}
                     </div>
                   </Link>

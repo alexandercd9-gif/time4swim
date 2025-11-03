@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import TrainingChart from "@/components/TrainingChart";
 import BestTimesByStyle from "@/components/BestTimesByStyle";
+import UpcomingEvents from "@/components/UpcomingEvents";
 
 interface ParentStats {
   children: { total: number; active: number };
@@ -116,109 +117,89 @@ export default function ParentsDashboard() {
   }
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Dashboard
-        </h1>
-        <p className="text-gray-600">
-          Bienvenido al sistema de gestión de natación
-        </p>
-      </div>
-
-      {/* Estadísticas Principales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {/* Nadadores */}
-        <div className="bg-white rounded-xl shadow p-6">
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-2">Nadadores</p>
-              <p className="text-4xl font-bold text-gray-900">
-                {stats?.children.total || 0}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
-              <Users className="h-6 w-6 text-white" />
-            </div>
-          </div>
-          <p className="text-sm text-gray-500">
-            ➤ Registrados en el sistema
-          </p>
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Header consistente */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">Dashboard</h1>
+          <p className="text-gray-600">Bienvenido al sistema de gestión de natación</p>
         </div>
 
-        {/* Entrenamientos */}
-        <div className="bg-white rounded-xl shadow p-6">
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-2">Entrenamientos</p>
-              <p className="text-4xl font-bold text-gray-900">
-                {stats?.trainings.total || 0}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
-              <Clock className="h-6 w-6 text-white" />
-            </div>
-          </div>
-          <p className="text-sm text-gray-500">
-            ➤ Total registrados
-          </p>
+        {/* Acciones rápidas */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          {quickActions.map((a) => (
+            <button
+              key={a.title}
+              onClick={() => router.push(a.href)}
+              className={`relative overflow-hidden rounded-xl border bg-white text-left shadow hover:shadow-md transition-all`}
+            >
+              <div className={`absolute inset-0 opacity-10 bg-gradient-to-r ${a.color}`} />
+              <div className="relative flex items-center gap-4 p-4">
+                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${a.color} flex items-center justify-center shadow`}>{a.icon}</div>
+                <div>
+                  <div className="font-semibold text-gray-900">{a.title}</div>
+                  <div className="text-sm text-gray-600">{a.description}</div>
+                </div>
+              </div>
+            </button>
+          ))}
         </div>
 
-        {/* Competencias */}
-        <div className="bg-white rounded-xl shadow p-6">
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-2">Competencias</p>
-              <p className="text-4xl font-bold text-gray-900">
-                {stats?.competitions.total || 0}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center">
-              <Trophy className="h-6 w-6 text-white" />
-            </div>
-          </div>
-          <p className="text-sm text-gray-500">
-            ➤ Participaciones registradas
-          </p>
-        </div>
-
-        {/* Records */}
-        <div className="bg-white rounded-xl shadow p-6">
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-2">Records</p>
-              <p className="text-4xl font-bold text-gray-900">
-                {stats?.records.personalBests || 0}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
-              <Award className="h-6 w-6 text-white" />
+        {/* Layout según imagen: izquierda = Mejores tiempos, derecha = KPIs apilados */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Columna izquierda: Mejores tiempos por estilo */}
+          <div className="bg-white rounded-xl shadow p-6 border">
+            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-blue-600" />
+              Mejores tiempos por estilo
+            </h2>
+            <div className="space-y-4">
+              <BestTimesByStyle />
             </div>
           </div>
-          <p className="text-sm text-gray-500">
-            ➤ Marcas personales
-          </p>
-        </div>
-      </div>
 
-      {/* Contenido Principal */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Mejores tiempos por estilo (Competencias/Prácticas) */}
-        <div className="bg-white rounded-xl shadow p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-blue-600" />
-            Mejores tiempos por estilo
-          </h2>
-          <div className="space-y-4">
-            {/* Componente reutilizable con filtros */}
-            <BestTimesByStyle />
-            <p className="text-xs text-gray-500">Puedes alternar entre Competencias o Prácticas en el selector.</p>
+          {/* Columna derecha: Entrenamientos y Competencias apilados */}
+          <div className="space-y-6">
+            {/* Entrenamientos KPI */}
+            <div className="bg-white rounded-xl shadow p-6 border">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-2">Entrenamientos</p>
+                  <p className="text-5xl font-bold text-gray-900">
+                    {stats?.trainings.total || 0}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-2 flex items-center gap-1">
+                    <span>➤</span> Total registrados
+                  </p>
+                </div>
+                <div className="w-14 h-14 bg-green-500 rounded-xl flex items-center justify-center">
+                  <Clock className="h-7 w-7 text-white" />
+                </div>
+              </div>
+            </div>
+
+            {/* Competencias KPI */}
+            <div className="bg-white rounded-xl shadow p-6 border">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-2">Competencias</p>
+                  <p className="text-5xl font-bold text-gray-900">
+                    {stats?.competitions.total || 0}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-2 flex items-center gap-1">
+                    <span>➤</span> Participaciones registradas
+                  </p>
+                </div>
+                <div className="w-14 h-14 bg-orange-500 rounded-xl flex items-center justify-center">
+                  <Trophy className="h-7 w-7 text-white" />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Resumen del Mes */}
-        <div className="bg-white rounded-xl shadow p-6">
+  {/* Resumen del Mes - full width */}
+        <div className="bg-white rounded-xl shadow p-6 border mb-8">
           <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-green-600" />
             Resumen del Mes
@@ -234,11 +215,6 @@ export default function ParentsDashboard() {
               <span className="text-sm font-medium text-green-700">Competencias este año</span>
               <span className="text-2xl font-bold text-green-600">{stats?.competitions.thisYear || 0}</span>
             </div>
-            
-            <div className="flex justify-between items-center py-3 border-b">
-              <span className="text-sm font-medium text-purple-700">Nadadores activos</span>
-              <span className="text-2xl font-bold text-purple-600">{stats?.children.active || 0}</span>
-            </div>
 
             {/* Espacio para gráfico */}
             <div className="mt-6 p-8 bg-gray-50 rounded-lg">
@@ -252,42 +228,46 @@ export default function ParentsDashboard() {
               </div>
             </div>
           </div>
+        </div>        {/* Modal de gráfico en dashboard */}
+        
+        {/* Upcoming events / Agenda */}
+        <div className="mb-8">
+          <UpcomingEvents />
         </div>
-      </div>
 
-      {/* Modal de gráfico en dashboard */}
-      <Dialog open={openChart} onOpenChange={setOpenChart}>
-        <DialogContent className="sm:max-w-[720px]">
-          <DialogHeader>
-            <DialogTitle>Tiempos de entrenamiento</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <p className="text-sm text-gray-600">Selecciona un nadador</p>
-              <Select value={selectedChild} onValueChange={setSelectedChild}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Mis hijos" />
-                </SelectTrigger>
-                <SelectContent>
-                  {children.length === 0 ? (
-                    <SelectItem value="none" disabled>No hay nadadores</SelectItem>
-                  ) : (
-                    children.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
+        <Dialog open={openChart} onOpenChange={setOpenChart}>
+          <DialogContent className="sm:max-w-[720px]">
+            <DialogHeader>
+              <DialogTitle>Tiempos de entrenamiento</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <p className="text-sm text-gray-600">Selecciona un nadador</p>
+                <Select value={selectedChild} onValueChange={setSelectedChild}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Mis hijos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {children.length === 0 ? (
+                      <SelectItem value="none" disabled>No hay nadadores</SelectItem>
+                    ) : (
+                      children.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {selectedChild ? (
+                <TrainingChart childId={selectedChild} />
+              ) : (
+                <p className="text-sm text-gray-500">Elige un nadador para ver su evolución.</p>
+              )}
             </div>
-
-            {selectedChild ? (
-              <TrainingChart childId={selectedChild} />
-            ) : (
-              <p className="text-sm text-gray-500">Elige un nadador para ver su evolución.</p>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }

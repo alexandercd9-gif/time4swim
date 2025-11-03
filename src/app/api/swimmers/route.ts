@@ -16,6 +16,12 @@ export async function GET(request: NextRequest) {
     if (auth.user.role === 'ADMIN') {
       children = await prisma.child.findMany({
         include: {
+          club: {
+            select: {
+              id: true,
+              name: true
+            }
+          },
           _count: {
             select: {
               records: true,
@@ -37,6 +43,12 @@ export async function GET(request: NextRequest) {
         include: {
           child: {
             include: {
+              club: {
+                select: {
+                  id: true,
+                  name: true
+                }
+              },
               _count: {
                 select: {
                   records: true,

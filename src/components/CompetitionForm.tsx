@@ -295,72 +295,108 @@ export default function CompetitionForm({
     onClose();
   };
 
-  // Función para convertir segundos a formato HH:MM:SS o MM:SS
+  // Función para convertir segundos a formato M:SS.CC
   const secondsToTimeFormat = (seconds: number): string => {
     const totalSeconds = Math.floor(seconds);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const centiseconds = Math.round((seconds - totalSeconds) * 100);
+    const minutes = Math.floor(totalSeconds / 60);
     const remainingSeconds = totalSeconds % 60;
     
-    if (hours > 0) {
-      // Formato HH:MM:SS cuando hay horas
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-    } else {
-      // Formato MM:SS cuando no hay horas
-      return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-    }
+    // Formato M:SS.CC (siempre minutos en natación)
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}.${centiseconds.toString().padStart(2, '0')}`;
   };
 
-  // Función para convertir tiempo en formato HH:MM:SS, MM:SS a segundos
+  // Función para convertir tiempo en formato M:SS.CC a segundos
   const parseTimeToSeconds = (timeString: string): number => {
     if (!timeString) return 0;
     
     // Limpiar espacios
     timeString = timeString.trim();
     
-    // Si no tiene :, es solo segundos
-    if (!timeString.includes(':')) {
+    // Si no tiene : ni ., es solo segundos
+    if (!timeString.includes(':') && !timeString.includes('.')) {
       const seconds = parseFloat(timeString) || 0;
       return seconds;
     }
 
-    const parts = timeString.split(':');
-    
-    if (parts.length === 2) {
-      // Formato MM:SS
-      const minutes = parseInt(parts[0]) || 0;
-      const secondsPart = parseFloat(parts[1]) || 0; // Usar parseFloat para decimales
-      return minutes * 60 + secondsPart;
-    } else if (parts.length === 3) {
-      // Formato HH:MM:SS
-      const hours = parseInt(parts[0]) || 0;
-      const minutes = parseInt(parts[1]) || 0;
-      const secondsPart = parseFloat(parts[2]) || 0; // Usar parseFloat para decimales
-      return hours * 3600 + minutes * 60 + secondsPart;
-    } else if (parts.length === 4) {
-      // Formato HH:MM:SS:CC (con centésimas/milisegundos)
-      const hours = parseInt(parts[0]) || 0;
-      const minutes = parseInt(parts[1]) || 0;
-      const seconds = parseInt(parts[2]) || 0;
-      const centiseconds = parseInt(parts[3]) || 0;
-      return hours * 3600 + minutes * 60 + seconds + (centiseconds / 100);
-    } else {
-      // Formato inválido, intentar parsear como segundos
-      return parseFloat(timeString) || 0;
+    // Separar minutos:segundos.centésimas
+    let minutesPart = '0';
+    let secondsPart = '0';
+    let centisecondsPart = '0';
+
+    if (timeString.includes(':')) {
+      const parts = timeString.split(':');
+      minutesPart = parts[0] || '0';
+      
+      if (parts[1]) {
+        if (parts[1].includes('.')) {
+          const secParts = parts[1].split('.');
+          secondsPart = secParts[0] || '0';
+          centisecondsPart = secParts[1] || '0';
+        } else {
+          secondsPart = parts[1];
+        }
+      }
+    } else if (timeString.includes('.')) {
+      // Solo segundos.centésimas (sin minutos)
+      const parts = timeString.split('.');
+      secondsPart = parts[0] || '0';
+      centisecondsPart = parts[1] || '0';
     }
+
+    const minutes = parseInt(minutesPart) || 0;
+    const seconds = parseInt(secondsPart) || 0;
+    const centiseconds = parseInt(centisecondsPart.padEnd(2, '0').substring(0, 2)) || 0;
+    
+    return minutes * 60 + seconds + (centiseconds / 100);
   };
 
   const handleTimeChange = (value: string) => {
+    // Permitir solo números, : y .
+    let cleanValue = value.replace(/[^\d:.]/g, '');
+    
+    // Remover múltiples : o .
+    cleanValue = cleanValue.replace(/:+/g, ':').replace(/\.+/g, '.');
+    
+    // Auto-formatear mientras escribe (formato natación: M:SS.CC)
+    // Eliminar : y . para procesar solo números
+    const digitsOnly = cleanValue.replace(/[:.]/g, '');
+    
+    if (digitsOnly.length > 0) {
+      let formatted = '';
+      
+      if (digitsOnly.length <= 2) {
+        // 1-2 dígitos: solo segundos (ej: "5" o "59")
+        formatted = digitsOnly;
+      } else if (digitsOnly.length === 3) {
+        // 3 dígitos: M:SS (ej: "102" → "1:02")
+        formatted = `${digitsOnly[0]}:${digitsOnly.substring(1)}`;
+      } else if (digitsOnly.length === 4) {
+        // 4 dígitos: M:SS (ej: "1025" → "10:25")
+        formatted = `${digitsOnly.substring(0, 2)}:${digitsOnly.substring(2)}`;
+      } else if (digitsOnly.length === 5) {
+        // 5 dígitos: M:SS.C (ej: "10259" → "1:02.59" o "40295" → "4:02.95")
+        formatted = `${digitsOnly[0]}:${digitsOnly.substring(1, 3)}.${digitsOnly.substring(3)}`;
+      } else if (digitsOnly.length >= 6) {
+        // 6+ dígitos: MM:SS.CC (ej: "100295" → "10:02.95")
+        formatted = `${digitsOnly.substring(0, digitsOnly.length - 4)}:${digitsOnly.substring(digitsOnly.length - 4, digitsOnly.length - 2)}.${digitsOnly.substring(digitsOnly.length - 2)}`;
+      }
+      
+      cleanValue = formatted;
+    }
+    
     // Actualizar el display
-    setTimeDisplay(value);
+    setTimeDisplay(cleanValue);
     
     // Convertir a segundos para almacenar
-    const timeInSeconds = parseTimeToSeconds(value);
+    const timeInSeconds = parseTimeToSeconds(cleanValue);
     setFormData(prev => ({ ...prev, time: timeInSeconds.toString() }));
     
     // Log para debugging
     console.log('Time changed:', {
-      value,
+      input: value,
+      digitsOnly,
+      formatted: cleanValue,
       timeInSeconds
     });
   };
@@ -403,7 +439,16 @@ export default function CompetitionForm({
                     <Label htmlFor="childId" className="text-sm font-medium">Nadador *</Label>
                     <Select
                       value={formData.childId}
-                      onValueChange={(value) => setFormData({ ...formData, childId: value })}
+                      onValueChange={(value) => {
+                        setFormData({ ...formData, childId: value });
+                        // Si selecciona nadador, abrir sección 2 automáticamente
+                        setOpenSections((prev) => {
+                          const newSections = prev.includes('competition')
+                            ? prev
+                            : [...prev, 'competition'];
+                          return newSections;
+                        });
+                      }}
                     >
                       <SelectTrigger className="h-11">
                         <SelectValue placeholder="Seleccionar nadador" />
@@ -528,14 +573,14 @@ export default function CompetitionForm({
                     <Input
                       id="time"
                       type="text"
-                      placeholder="ej: 30, 1:30, 3:36:55"
+                      placeholder="Escribe números (ej: 40295)"
                       value={timeDisplay}
                       onChange={(e) => handleTimeChange(e.target.value)}
-                      className="h-11"
+                      className="h-11 font-mono text-lg"
                       required
                     />
                     <p className="text-xs text-gray-500">
-                      Formatos: SS, MM:SS, HH:MM:SS
+                      Auto-formato: 40295 → 4:02.95 (minutos:segundos.centésimas)
                     </p>
                   </div>
                 </div>
