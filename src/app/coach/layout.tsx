@@ -12,10 +12,8 @@ export default function CoachLayout({
     <div className="flex min-h-screen bg-gray-50">
       <ModernSidebar />
       <main className="flex-1 lg:ml-80 transition-all duration-300">
-        <div className="p-6 lg:p-8 pt-20 lg:pt-8">
-          <div className="mb-4">
-            <TopBar />
-          </div>
+        <TopBar />
+        <div className="px-6 lg:px-8 pt-1 pb-6">
           {children}
         </div>
       </main>

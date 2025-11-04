@@ -20,10 +20,8 @@ export default function AdminLayout({
           ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-80'}
         `}
       >
-        <div className="p-6 lg:p-8">
-          <div className="mb-4">
-            <TopBar />
-          </div>
+        <TopBar />
+        <div className="px-6 lg:px-8 pt-1 pb-6">
           {children}
         </div>
       </main>

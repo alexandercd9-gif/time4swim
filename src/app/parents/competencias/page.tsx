@@ -87,6 +87,13 @@ export default function CompetitionsPage() {
       if (response.ok) {
         const data = await response.json();
         setSwimmers(data);
+        if (Array.isArray(data) && data.length > 0) {
+          try {
+            const stored = typeof window !== 'undefined' ? localStorage.getItem('selectedChildId') : null;
+            const exists = stored && data.some((d: any) => d.id === stored);
+            setFilters((prev) => ({ ...prev, swimmer: exists ? (stored as string) : prev.swimmer }));
+          } catch {}
+        }
       }
     } catch (error) {
       console.error('Error fetching swimmers:', error);
@@ -112,6 +119,13 @@ export default function CompetitionsPage() {
     fetchSwimmers();
     fetchStyles();
   }, []);
+
+  // Persistir selección de nadador del filtro para consistencia global
+  useEffect(() => {
+    if (filters.swimmer && filters.swimmer !== 'all') {
+      try { localStorage.setItem('selectedChildId', filters.swimmer); } catch {}
+    }
+  }, [filters.swimmer]);
 
   const handleFormSuccess = () => {
     fetchCompetitions();
@@ -233,20 +247,26 @@ export default function CompetitionsPage() {
 
   if (loading) {
     return (
-      <div className="space-y-8 p-6">
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="max-w-7xl mx-auto space-y-8">
         <div className="text-center text-muted-foreground">
           <p>Cargando competencias...</p>
+        </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 p-6">
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-7xl mx-auto space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Competencias</h1>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Trophy className="h-7 w-7 text-yellow-600" />
+            Competencias
+          </h1>
           <p className="text-gray-600">
             Registra y gestiona las competencias de tus nadadores
           </p>
@@ -268,7 +288,7 @@ export default function CompetitionsPage() {
             Nueva Competencia
           </Button>
         </div>
-      </div>
+  </div>
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
@@ -476,6 +496,7 @@ export default function CompetitionsPage() {
         swimmers={swimmers}
         competitions={competitions}
       />
+      </div>
     </div>
   );
 }

@@ -1,19 +1,6 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs/promises';
-import path from 'path';
 import { requireAuth } from '@/lib/auth';
-
-const DATA_DIR = path.resolve(process.cwd(), 'data');
-const FILE = path.join(DATA_DIR, 'club-events.json');
-
-async function ensureDataFile() {
-  try {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    await fs.stat(FILE);
-  } catch (e) {
-    await fs.writeFile(FILE, JSON.stringify([], null, 2), 'utf8');
-  }
-}
+import { prisma } from '@/lib/prisma';
 
 // PUT: Actualizar un evento
 export async function PUT(
@@ -24,49 +11,65 @@ export async function PUT(
     const auth = await requireAuth(request as any, ['CLUB', 'ADMIN']);
     const { id } = await context.params;
     const body = await request.json();
-    const { title, date, location } = body || {};
+    const { title, date, location, eligibleCategories } = body || {};
 
     if (!title || !date) {
       return NextResponse.json({ error: 'title and date required' }, { status: 400 });
     }
 
-    await ensureDataFile();
-    const raw = await fs.readFile(FILE, 'utf8');
-    const data = JSON.parse(raw || '[]');
+    // Verificar que el evento existe
+    const existingEvent = await prisma.event.findUnique({
+      where: { id },
+      include: { club: true },
+    });
 
-    const eventIndex = data.findIndex((e: any) => e.id === id);
-    if (eventIndex === -1) {
+    if (!existingEvent) {
       return NextResponse.json({ error: 'Event not found' }, { status: 404 });
     }
 
-    // Solo ADMIN puede editar cualquier evento, CLUB solo puede editar sus propios eventos
+    // Verificar permisos
     if (auth.user.role === 'CLUB') {
-      const event = data[eventIndex];
-      // Verificar que el evento pertenece al club del usuario
-      const prisma = (await import('@/lib/prisma')).prisma;
       const userClubRelation = await prisma.userClub.findFirst({
         where: { userId: auth.user.id },
-        include: { club: true }
       });
-      
-      if (event.club !== userClubRelation?.club?.name) {
+
+      if (!userClubRelation || existingEvent.clubId !== userClubRelation.clubId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
       }
     }
 
-    // Actualizar el evento manteniendo el club y createdAt
-    data[eventIndex] = {
-      ...data[eventIndex],
-      title,
-      date,
-      location: location || null,
-      updatedAt: new Date().toISOString(),
-    };
+    // Actualizar el evento
+    const updatedEvent = await prisma.event.update({
+      where: { id },
+      data: {
+        title,
+        date: new Date(date),
+        location: location || null,
+        eligibleCategories: eligibleCategories && eligibleCategories.length > 0
+          ? JSON.stringify(eligibleCategories)
+          : null,
+      },
+      include: {
+        club: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
 
-    await fs.writeFile(FILE, JSON.stringify(data, null, 2), 'utf8');
+    console.log('✅ Event updated:', updatedEvent.id);
 
-    console.log('✅ Event updated:', data[eventIndex]);
-    return NextResponse.json(data[eventIndex]);
+    return NextResponse.json({
+      id: updatedEvent.id,
+      title: updatedEvent.title,
+      date: updatedEvent.date.toISOString(),
+      location: updatedEvent.location,
+      club: updatedEvent.club.name,
+      eligibleCategories: updatedEvent.eligibleCategories ? JSON.parse(updatedEvent.eligibleCategories) : null,
+      updatedAt: updatedEvent.updatedAt.toISOString(),
+    });
   } catch (err) {
     console.error('PUT /api/club/events/[id] error', err);
     return NextResponse.json({ error: 'internal' }, { status: 500 });
@@ -86,50 +89,32 @@ export async function DELETE(
     const { id } = await context.params;
     console.log('📝 Event ID to delete:', id);
 
-    await ensureDataFile();
-    const raw = await fs.readFile(FILE, 'utf8');
-    const data = JSON.parse(raw || '[]');
-    console.log('📄 Total events in file:', data.length);
+    // Verificar que el evento existe
+    const existingEvent = await prisma.event.findUnique({
+      where: { id },
+    });
 
-    const eventIndex = data.findIndex((e: any) => e.id === id);
-    console.log('🔍 Event index found:', eventIndex);
-    
-    if (eventIndex === -1) {
+    if (!existingEvent) {
       console.log('❌ Event not found');
       return NextResponse.json({ error: 'Event not found' }, { status: 404 });
     }
 
-    // Solo ADMIN puede eliminar cualquier evento
-    // CLUB puede eliminar eventos (ya validado por requireAuth)
+    // Verificar permisos
     if (auth.user.role === 'CLUB') {
-      const event = data[eventIndex];
-      console.log('🏊 Event club:', event.club);
-      
-      // Verificar que el evento pertenece al club del usuario
-      const prisma = (await import('@/lib/prisma')).prisma;
       const userClubRelation = await prisma.userClub.findFirst({
         where: { userId: auth.user.id },
-        include: { club: true }
       });
-      
-      const userClubName = userClubRelation?.club?.name;
-      console.log('🏊 User club name:', userClubName);
-      console.log('🏊 Event club name:', event.club);
-      
-      // Comparar nombres normalizados (minúsculas, sin espacios)
-      const normalizeClubName = (name: string) => name?.toLowerCase().trim().replace(/\s+/g, '');
-      
-      if (normalizeClubName(event.club) !== normalizeClubName(userClubName || '')) {
+
+      if (!userClubRelation || existingEvent.clubId !== userClubRelation.clubId) {
         console.log('❌ Unauthorized - club mismatch');
-        console.log('   Event club normalized:', normalizeClubName(event.club));
-        console.log('   User club normalized:', normalizeClubName(userClubName || ''));
         return NextResponse.json({ error: 'Unauthorized - Este evento pertenece a otro club' }, { status: 403 });
       }
     }
 
-    // Eliminar el evento
-    data.splice(eventIndex, 1);
-    await fs.writeFile(FILE, JSON.stringify(data, null, 2), 'utf8');
+    // Eliminar el evento (también eliminará las participaciones por CASCADE)
+    await prisma.event.delete({
+      where: { id },
+    });
 
     console.log('✅ Event deleted successfully:', id);
     return NextResponse.json({ success: true });

@@ -1,4 +1,4 @@
-import { ModernLoginForm } from "@/components/modern-login-form";
+import ModernLoginForm from "@/components/modern-login-form";
 import { LogoDisplay } from "@/components/logo-display";
 
 export default function Home() {

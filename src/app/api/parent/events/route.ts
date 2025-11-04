@@ -1,36 +1,43 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import fs from 'fs/promises';
-import path from 'path';
-
-const DATA_DIR = path.resolve(process.cwd(), 'data');
-const FILE = path.join(DATA_DIR, 'club-events.json');
-
-async function ensureDataFile() {
-  try {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    await fs.stat(FILE);
-  } catch (e) {
-    await fs.writeFile(FILE, JSON.stringify([], null, 2), 'utf8');
-  }
-}
+import { calculateCategory } from '@/lib/categories';
 
 export async function GET(request: Request) {
   try {
     // Require parent authentication
     const auth = await requireAuth(request as any, ['PARENT', 'ADMIN']);
     
-    await ensureDataFile();
-    const raw = await fs.readFile(FILE, 'utf8');
-    const allEvents = JSON.parse(raw || '[]');
-
     // If admin, return all events
     if (auth.user.role === 'ADMIN') {
-      return NextResponse.json(allEvents);
+      const allEvents = await prisma.event.findMany({
+        include: {
+          club: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: {
+          date: 'asc',
+        },
+      });
+
+      return NextResponse.json(
+        allEvents.map(event => ({
+          id: event.id,
+          title: event.title,
+          date: event.date.toISOString(),
+          location: event.location,
+          club: event.club.name,
+          eligibleCategories: event.eligibleCategories ? JSON.parse(event.eligibleCategories) : null,
+          createdAt: event.createdAt.toISOString(),
+        }))
+      );
     }
 
-    // For parents: filter events by their children's clubs
+    // For parents: filter events by their children's clubs and categories
     const userChildren = await prisma.userChild.findMany({
       where: { 
         userId: auth.user.id,
@@ -46,40 +53,89 @@ export async function GET(request: Request) {
     });
 
     console.log('👶 UserChildren encontrados:', userChildren.length);
-    console.log('👶 Detalles:', JSON.stringify(userChildren.map(uc => ({
-      childName: uc.child.name,
-      clubId: uc.child.clubId,
-      clubName: uc.child.club?.name
-    })), null, 2));
 
-    // Get unique club names from children
-    const childrenClubs = new Set(
+    if (userChildren.length === 0) {
+      console.log('⚠️ No hay hijos registrados');
+      return NextResponse.json([]);
+    }
+
+    // Get unique club IDs from children
+    const childrenClubIds = new Set(
       userChildren
-        .map(uc => uc.child.club?.name)
-        .filter(Boolean)
+        .map(uc => uc.child.clubId)
+        .filter(Boolean) as string[]
     );
 
-    console.log('🏊 Clubs únicos de los hijos:', Array.from(childrenClubs));
-    console.log('📅 Total eventos en archivo:', allEvents.length);
-    console.log('📅 Eventos detalles:', JSON.stringify(allEvents.map((e: any) => ({
-      title: e.title,
-      club: e.club,
-      date: e.date
-    })), null, 2));
+    console.log('🏊 Club IDs únicos de los hijos:', Array.from(childrenClubIds));
 
-    // If no children have clubs, return empty array
-    if (childrenClubs.size === 0) {
+    if (childrenClubIds.size === 0) {
       console.log('⚠️ No hay clubes asignados a los hijos');
       return NextResponse.json([]);
     }
 
-    // Filter events by club names
-    const filteredEvents = allEvents.filter((event: any) => 
-      event.club && childrenClubs.has(event.club)
-    );
+    // Get all events from these clubs
+    const clubEvents = await prisma.event.findMany({
+      where: {
+        clubId: {
+          in: Array.from(childrenClubIds),
+        },
+        date: {
+          gte: new Date(), // Solo eventos futuros
+        },
+      },
+      include: {
+        club: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        date: 'asc',
+      },
+    });
 
-    console.log('✅ Eventos filtrados para el padre:', filteredEvents.length);
-    return NextResponse.json(filteredEvents);
+    console.log('📅 Total eventos del club:', clubEvents.length);
+
+    // Filter events by eligible categories
+    const filteredEvents = clubEvents.filter(event => {
+      // Si el evento no tiene categorías elegibles, es para todos
+      if (!event.eligibleCategories) {
+        return true;
+      }
+
+      const eligibleCats = JSON.parse(event.eligibleCategories) as string[];
+      
+      // Verificar si algún hijo del padre cae en las categorías elegibles
+      const eventDate = event.date;
+      const competitionYear = eventDate.getFullYear();
+
+      return userChildren.some(uc => {
+        // Solo considerar hijos del mismo club que el evento
+        if (uc.child.clubId !== event.clubId) {
+          return false;
+        }
+
+        const childCategory = calculateCategory(uc.child.birthDate, competitionYear);
+        return eligibleCats.includes(childCategory.code);
+      });
+    });
+
+    console.log('✅ Eventos filtrados por categoría:', filteredEvents.length);
+
+    return NextResponse.json(
+      filteredEvents.map(event => ({
+        id: event.id,
+        title: event.title,
+        date: event.date.toISOString(),
+        location: event.location,
+        club: event.club.name,
+        clubId: event.club.id,
+        eligibleCategories: event.eligibleCategories ? JSON.parse(event.eligibleCategories) : null,
+        createdAt: event.createdAt.toISOString(),
+      }))
+    );
   } catch (err) {
     console.error('GET /api/parent/events error', err);
     return NextResponse.json([], { status: 200 });

@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "react-hot-toast";
-import { Upload, Link, X } from "lucide-react";
+import { Upload, Link, X, Info } from "lucide-react";
+import { calculateCategory, formatCategory } from "@/lib/categories";
 
 interface Club {
   id: string;
@@ -325,6 +326,23 @@ export default function SwimmerForm({ isOpen, onClose, onSuccess, swimmer }: Swi
                   required
                   className="h-11"
                 />
+                {/* Mostrar categoría calculada automáticamente */}
+                {formData.birthDate && (
+                  <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <Info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <div className="text-sm">
+                        <p className="font-medium text-blue-900">Categoría Automática</p>
+                        <p className="text-blue-700">
+                          {formatCategory(calculateCategory(formData.birthDate))}
+                        </p>
+                        <p className="text-xs text-blue-600 mt-1">
+                          Se calcula según el año de nacimiento
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Género */}

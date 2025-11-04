@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Building2, TrendingUp, Activity, Award, Calendar } from "lucide-react";
+import { Users, Building2, TrendingUp, Activity, Award, Calendar, BarChart3 } from "lucide-react";
 
 interface Stats {
   totalUsers: number;
@@ -106,7 +106,10 @@ export default function EstadisticasPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Estadísticas del Sistema</h1>
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+          <BarChart3 className="h-8 w-8 text-blue-600" />
+          Estadísticas del Sistema
+        </h1>
         <p className="text-gray-600 mt-1">Vista general del sistema Time4Swim</p>
       </div>
 

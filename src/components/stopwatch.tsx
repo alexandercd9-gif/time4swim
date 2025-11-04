@@ -10,6 +10,7 @@ import { Play, Pause, Square, Save, Timer, Flag, Keyboard } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import TrainingChart from "@/components/TrainingChart";
 import { Table, TableBody, TableCell, TableHead, TableHeader as ShadTableHeader, TableRow } from "@/components/ui/table";
+import { toast } from "react-hot-toast";
 
 // Tipos para el cronómetro
 type TimerState = "stopped" | "running" | "paused";
@@ -73,6 +74,25 @@ export function Stopwatch({ swimmers = [] }: { swimmers?: Array<{ id: string, na
     return () => window.removeEventListener('keydown', onKey);
   }, [state, time, startTime]);
 
+  // Auto-seleccionar nadador desde selección global almacenada
+  useEffect(() => {
+    if (!swimmer) {
+      try {
+        const stored = typeof window !== 'undefined' ? localStorage.getItem('selectedChildId') : null;
+        const exists = stored && swimmers.some((s) => s.id === stored);
+        if (exists) setSwimmer(stored as string);
+        else if (swimmers.length > 0) setSwimmer(swimmers[0].id);
+      } catch {}
+    }
+  }, [swimmers, swimmer]);
+
+  // Persistir selección de nadador para reusarla en otros módulos/modales
+  useEffect(() => {
+    if (swimmer) {
+      try { localStorage.setItem('selectedChildId', swimmer); } catch {}
+    }
+  }, [swimmer]);
+
   // Formatear tiempo en MM:SS.ss
   const formatTime = useCallback((ms: number) => {
     const totalSeconds = Math.floor(ms / 1000);
@@ -130,7 +150,7 @@ export function Stopwatch({ swimmers = [] }: { swimmers?: Array<{ id: string, na
       style,
       distance: parseInt(distance),
       time: time / 1000, // convertir a segundos
-      laps,
+      laps: laps.length > 0 ? laps : null, // guardar vueltas si existen
       notes,
       date: new Date().toISOString()
     };
@@ -147,7 +167,15 @@ export function Stopwatch({ swimmers = [] }: { swimmers?: Array<{ id: string, na
 
       if (response.ok) {
         const result = await response.json();
-  alert(`¡Entrenamiento guardado exitosamente!\n${result.training.style} - ${result.training.distance}m\nTiempo: ${formatTime(time)}`);
+        toast.success(
+          `¡Entrenamiento guardado!\n${result.training.style} - ${result.training.distance}m\nTiempo: ${formatTime(time)}`,
+          { duration: 4000 }
+        );
+        
+        // Emitir evento personalizado para notificar a otros componentes
+        window.dispatchEvent(new CustomEvent('trainingAdded', { 
+          detail: { training: result.training } 
+        }));
         
         // Limpiar formulario
         resetTimer();
@@ -157,11 +185,11 @@ export function Stopwatch({ swimmers = [] }: { swimmers?: Array<{ id: string, na
         setNotes("");
       } else {
         const error = await response.json();
-        alert(`Error al guardar: ${error.error}`);
+        toast.error(error.error || 'Error al guardar el entrenamiento');
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Error de conexión. Por favor intenta nuevamente.');
+      toast.error('Error de conexión. Por favor intenta nuevamente.');
     }
   };
 
@@ -221,7 +249,15 @@ export function Stopwatch({ swimmers = [] }: { swimmers?: Array<{ id: string, na
             )}
 
             {/* Botón para ver gráfico en modal */}
-            <Button onClick={() => setOpenChart(true)} size="default" variant="outline" className="px-6">
+            <Button onClick={() => {
+              // Asegurar que haya un nadador seleccionado antes de abrir el modal
+              if (!swimmer && swimmers.length > 0) {
+                const stored = typeof window !== 'undefined' ? localStorage.getItem('selectedChildId') : null;
+                const exists = stored && swimmers.some((s) => s.id === stored);
+                setSwimmer(exists ? (stored as string) : swimmers[0].id);
+              }
+              setOpenChart(true);
+            }} size="default" variant="outline" className="px-6">
               Tiempo de entrenamiento
             </Button>
           </div>

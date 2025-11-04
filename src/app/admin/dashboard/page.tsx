@@ -55,24 +55,27 @@ export default function AdminDashboardPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-2"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="animate-pulse">
-              <div className="h-32 bg-gray-200 rounded-lg"></div>
-            </div>
-          ))}
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="animate-pulse">
+                <div className="h-32 bg-gray-200 rounded-lg"></div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-7xl mx-auto space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Dashboard Administrador</h1>
         <p className="text-gray-600">Panel de administración del sistema</p>
@@ -282,6 +285,7 @@ export default function AdminDashboardPage() {
             </div>
           </CardContent>
         </Card>
+      </div>
       </div>
     </div>
   );

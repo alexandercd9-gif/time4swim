@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await requireAuth(request as any, ["ADMIN", "PARENT"]);
     const body = await request.json();
-    const { childId, style, distance, time, date, notes } = body;
+    const { childId, style, distance, time, date, notes, laps } = body;
 
     if (!childId || !style || !distance || !time) {
       return NextResponse.json({ error: "Campos requeridos: childId, style, distance, time" }, { status: 400 });
@@ -85,8 +85,9 @@ export async function POST(request: NextRequest) {
         time: Number(time),
         date: date ? new Date(date) : new Date(),
         notes: notes || null,
-      },
-      select: { id: true, childId: true, style: true, distance: true, time: true, date: true },
+        laps: laps || null,
+      } as any,
+      select: { id: true, childId: true, style: true, distance: true, time: true, date: true, laps: true } as any,
     });
 
     return NextResponse.json({ training: created });

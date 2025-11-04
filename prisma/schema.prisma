@@ -107,6 +107,7 @@ model Club {
   // Relations
   children    Child[]
   teachers    UserClub[]
+  events      Event[]
 }
 
 // User-Club relationship (for teachers)
@@ -183,12 +184,17 @@ model Child {
   fdpnData          String?  @db.LongText // JSON con datos de FDPN
   fdpnLastSync      DateTime? // Última sincronización con FDPN
   
+  // Category system
+  // La categoría se calcula automáticamente según año de nacimiento
+  // No se almacena, se deriva en tiempo de ejecución
+  
   // Relations
   clubId    String?
   club      Club?     @relation(fields: [clubId], references: [id], onDelete: SetNull)
   parents   UserChild[]
   records   Record[]
   trainings Training[]
+  eventParticipations EventParticipation[]
 
   @@index([fdpnAffiliateCode])
 }
@@ -220,6 +226,7 @@ model Training {
   style     SwimStyle
   distance  Int       // distance in meters
   time      Float     // time in seconds
+  laps      Json?     // array of lap times in milliseconds
   date      DateTime  @default(now())
   notes     String?
   createdAt DateTime  @default(now())
@@ -228,4 +235,50 @@ model Training {
   // Relations
   childId   String
   child     Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
+}
+
+// Events (Competencias/Actividades del Club)
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  date        DateTime
+  location    String?
+  description String?  @db.Text
+  
+  // Categorías elegibles (JSON array de códigos de categoría)
+  // Ej: ["minima_1", "minima_2", "infantil_a1"]
+  // Si es null o vacío, el evento es para todas las categorías
+  eligibleCategories String? @db.Text
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  clubId      String
+  club        Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  participations EventParticipation[]
+  
+  @@index([clubId])
+  @@index([date])
+}
+
+// Participación de nadadores en eventos
+model EventParticipation {
+  id          String   @id @default(cuid())
+  status      String   @default("INVITED") // INVITED, CONFIRMED, DECLINED, MAYBE
+  respondedAt DateTime?
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  eventId     String
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  childId     String
+  child       Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  
+  @@unique([eventId, childId])
+  @@index([eventId])
+  @@index([childId])
+  @@index([status])
 }

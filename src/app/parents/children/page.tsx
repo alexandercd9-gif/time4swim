@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "react-hot-toast";
 import { Plus, Pencil, Trash2, Users, RefreshCcw } from "lucide-react";
 import SwimmerForm from "@/components/SwimmerForm";
+import { calculateCategory } from "@/lib/categories";
 
 interface ChildItem {
   id: string;
@@ -90,7 +91,7 @@ export default function ParentChildrenPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -126,6 +127,7 @@ export default function ParentChildrenPage() {
                 <TableHead>Nombre</TableHead>
                 <TableHead>Fecha de nacimiento</TableHead>
                 <TableHead>Género</TableHead>
+                <TableHead>Categoría</TableHead>
                 <TableHead>Club</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
@@ -139,14 +141,16 @@ export default function ParentChildrenPage() {
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5}>
+                  <TableCell colSpan={6}>
                     <div className="py-10 text-center text-gray-500">
                       No hay nadadores. Crea el primero con el botón "Agregar nadador".
                     </div>
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((c) => (
+                filtered.map((c) => {
+                  const category = calculateCategory(c.birthDate);
+                  return (
                   <TableRow key={c.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
@@ -163,6 +167,11 @@ export default function ParentChildrenPage() {
                     </TableCell>
                     <TableCell>{new Date(c.birthDate).toLocaleDateString()}</TableCell>
                     <TableCell>{c.gender === 'MALE' ? 'Masculino' : 'Femenino'}</TableCell>
+                    <TableCell>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {category.name}
+                      </span>
+                    </TableCell>
                     <TableCell>{c.club?.name || '—'}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
@@ -175,7 +184,8 @@ export default function ParentChildrenPage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))
+                  );
+                })
               )}
             </TableBody>
           </Table>

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Activity } from "lucide-react";
 
 interface Child {
   id: string;
@@ -49,6 +50,15 @@ export default function ParentTrainingsAnalysisPage() {
         if (!res.ok) throw new Error("Error al obtener nadadores");
         const data = await res.json();
         setChildren(data);
+        if (Array.isArray(data) && data.length > 0) {
+          try {
+            const stored = typeof window !== 'undefined' ? localStorage.getItem('selectedChildId') : null;
+            const exists = stored && data.some((d: any) => d.id === stored);
+            setSelectedChild(exists ? (stored as string) : data[0].id);
+          } catch {
+            setSelectedChild(data[0].id);
+          }
+        }
       } catch (err) {
         setChildren([]);
       } finally {
@@ -68,6 +78,13 @@ export default function ParentTrainingsAnalysisPage() {
     fetchChildren();
     fetchStyles();
   }, []);
+
+  // Mantener sincronizada la selección con el resto de la app
+  useEffect(() => {
+    if (selectedChild) {
+      try { localStorage.setItem('selectedChildId', selectedChild); } catch {}
+    }
+  }, [selectedChild]);
 
   // Mapeo simple para el origen de datos hacia valores esperados por la API
   function mapSourceToApi(value: string): "COMPETITION" | "TRAINING" | undefined {
@@ -109,7 +126,10 @@ export default function ParentTrainingsAnalysisPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Análisis Avanzado de Entrenamientos</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1 flex items-center gap-2">
+            <Activity className="h-7 w-7 text-blue-600" />
+            Análisis Avanzado de Entrenamientos
+          </h1>
           <p className="text-gray-600">Analiza y compara el rendimiento de tus nadadores</p>
         </div>
 

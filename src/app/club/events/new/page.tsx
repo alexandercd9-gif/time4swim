@@ -1,21 +1,48 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
-import { Calendar, MapPin, Type, ArrowLeft, Sparkles } from "lucide-react";
+import { Calendar, MapPin, Type, ArrowLeft, Sparkles, Users } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { getCategoriesForCompetitionYear, type Category } from "@/lib/categories";
 
 export default function NewClubEventPage() {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [location, setLocation] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  // Cargar categorías cuando cambia la fecha o al montar
+  useEffect(() => {
+    const eventYear = date ? new Date(date).getFullYear() : new Date().getFullYear();
+    const categories = getCategoriesForCompetitionYear(eventYear);
+    setAllCategories(categories);
+  }, [date]);
+
+  const toggleCategory = (categoryCode: string) => {
+    setSelectedCategories(prev => 
+      prev.includes(categoryCode)
+        ? prev.filter(c => c !== categoryCode)
+        : [...prev, categoryCode]
+    );
+  };
+
+  const selectAllCategories = () => {
+    setSelectedCategories(allCategories.map(c => c.code));
+  };
+
+  const clearCategories = () => {
+    setSelectedCategories([]);
+  };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -37,7 +64,8 @@ export default function NewClubEventPage() {
         body: JSON.stringify({ 
           title, 
           date: dateObj.toISOString(), 
-          location 
+          location,
+          eligibleCategories: selectedCategories.length > 0 ? selectedCategories : null
         })
       });
 
@@ -49,6 +77,7 @@ export default function NewClubEventPage() {
         setTitle(''); 
         setDate(''); 
         setLocation('');
+        setSelectedCategories([]);
         setTimeout(() => router.push('/club/events'), 500);
       } else if (res.status === 401 || res.status === 403) {
         const err = await res.json();
@@ -130,6 +159,88 @@ export default function NewClubEventPage() {
                   className="h-11"
                 />
               </div>
+            </div>
+
+            {/* Selección de Categorías */}
+            <div className="space-y-3 pt-4 border-t border-gray-200">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-2 text-sm font-medium">
+                  <Users className="h-4 w-4 text-blue-600" />
+                  Categorías Elegibles
+                </Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={selectAllCategories}
+                    className="text-xs h-7"
+                  >
+                    Seleccionar todas
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={clearCategories}
+                    className="text-xs h-7"
+                  >
+                    Limpiar
+                  </Button>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500">
+                Selecciona las categorías que pueden participar. Si no seleccionas ninguna, el evento será visible para todas las categorías.
+              </p>
+              
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                {allCategories.map((category) => (
+                  <div
+                    key={category.code}
+                    className={`flex items-start space-x-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${
+                      selectedCategories.includes(category.code)
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    onClick={() => toggleCategory(category.code)}
+                  >
+                    <Checkbox
+                      id={category.code}
+                      checked={selectedCategories.includes(category.code)}
+                      onCheckedChange={() => toggleCategory(category.code)}
+                      className="mt-0.5"
+                    />
+                    <div className="flex-1">
+                      <label
+                        htmlFor={category.code}
+                        className="text-sm font-medium leading-none cursor-pointer"
+                      >
+                        {category.name}
+                      </label>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {category.description}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {selectedCategories.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <span className="text-xs text-gray-600">Seleccionadas:</span>
+                  {selectedCategories.map(code => {
+                    const cat = allCategories.find(c => c.code === code);
+                    return cat ? (
+                      <span
+                        key={code}
+                        className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800"
+                      >
+                        {cat.name}
+                      </span>
+                    ) : null;
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Vista previa */}

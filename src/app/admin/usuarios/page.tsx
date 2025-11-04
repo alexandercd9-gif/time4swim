@@ -449,7 +449,10 @@ const UserManagementPage = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div className="flex-1">
-          <h1 className="text-3xl font-bold text-gray-900">Gestión de Usuarios</h1>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+            <UsersIcon className="h-8 w-8 text-blue-600" />
+            Gestión de Usuarios
+          </h1>
           <p className="text-gray-600 mt-1">Administra usuarios, trials y permisos</p>
           
           {/* Barra de búsqueda movida debajo de filtros */}

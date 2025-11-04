@@ -1,28 +1,69 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs/promises';
-import path from 'path';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
-const DATA_DIR = path.resolve(process.cwd(), 'data');
-const FILE = path.join(DATA_DIR, 'club-events.json');
-
-async function ensureDataFile() {
+export async function GET(request: Request) {
   try {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    await fs.stat(FILE);
-  } catch (e) {
-    // create file with empty array
-    await fs.writeFile(FILE, JSON.stringify([], null, 2), 'utf8');
-  }
-}
+    const auth = await requireAuth(request as any, ['CLUB', 'ADMIN']);
+    
+    let events;
+    
+    if (auth.user.role === 'ADMIN') {
+      // Admin ve todos los eventos
+      events = await prisma.event.findMany({
+        include: {
+          club: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: {
+          date: 'asc',
+        },
+      });
+    } else {
+      // Club ve solo sus eventos
+      const userClubRelation = await prisma.userClub.findFirst({
+        where: { userId: auth.user.id },
+        include: { club: true },
+      });
 
-export async function GET() {
-  try {
-    await ensureDataFile();
-    const raw = await fs.readFile(FILE, 'utf8');
-    const data = JSON.parse(raw || '[]');
-    return NextResponse.json(data);
+      if (!userClubRelation) {
+        return NextResponse.json([], { status: 200 });
+      }
+
+      events = await prisma.event.findMany({
+        where: {
+          clubId: userClubRelation.clubId,
+        },
+        include: {
+          club: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: {
+          date: 'asc',
+        },
+      });
+    }
+
+    // Formatear para compatibilidad con el frontend
+    const formattedEvents = events.map(event => ({
+      id: event.id,
+      title: event.title,
+      date: event.date.toISOString(),
+      location: event.location,
+      club: event.club.name,
+      eligibleCategories: event.eligibleCategories ? JSON.parse(event.eligibleCategories) : null,
+      createdAt: event.createdAt.toISOString(),
+    }));
+
+    return NextResponse.json(formattedEvents);
   } catch (err) {
     console.error('GET /api/club/events error', err);
     return NextResponse.json([], { status: 200 });
@@ -31,47 +72,72 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    // Require authenticated user with CLUB or ADMIN role
     const auth = await requireAuth(request as any, ['CLUB', 'ADMIN']);
 
     const body = await request.json();
-    const { title, date, club, location } = body || {};
+    const { title, date, location, eligibleCategories } = body || {};
+    
     if (!title || !date) {
       return NextResponse.json({ error: 'title and date required' }, { status: 400 });
     }
 
-    // Get the club name from the database if user is CLUB role
-    let clubName = club;
-    if (!clubName && auth.user.role === 'CLUB') {
+    // Obtener el club del usuario
+    let clubId: string;
+    
+    if (auth.user.role === 'ADMIN') {
+      // Admin necesita especificar el clubId o usar el primero disponible
+      const firstClub = await prisma.club.findFirst();
+      if (!firstClub) {
+        return NextResponse.json({ error: 'No clubs available' }, { status: 400 });
+      }
+      clubId = firstClub.id;
+    } else {
       const userClubRelation = await prisma.userClub.findFirst({
         where: { userId: auth.user.id },
-        include: { club: true }
+        include: { club: true },
       });
-      clubName = userClubRelation?.club?.name || null;
+
+      if (!userClubRelation) {
+        return NextResponse.json({ error: 'User not associated with any club' }, { status: 400 });
+      }
+
+      clubId = userClubRelation.clubId;
     }
 
-    console.log('📝 Creating event with club:', clubName);
+    console.log('📝 Creating event for club:', clubId);
+    console.log('📝 Eligible categories:', eligibleCategories);
 
-    await ensureDataFile();
-    const raw = await fs.readFile(FILE, 'utf8');
-    const data = JSON.parse(raw || '[]');
+    const newEvent = await prisma.event.create({
+      data: {
+        title,
+        date: new Date(date),
+        location: location || null,
+        eligibleCategories: eligibleCategories && eligibleCategories.length > 0 
+          ? JSON.stringify(eligibleCategories) 
+          : null,
+        clubId,
+      },
+      include: {
+        club: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
 
-    const newEvent = {
-      id: String(Date.now()) + Math.random().toString(36).slice(2, 8),
-      title,
-      date,
-      club: clubName || null,
-      location: location || null,
-      createdAt: new Date().toISOString(),
-    };
+    console.log('✅ Event created:', newEvent.id);
 
-    data.unshift(newEvent);
-    // Keep last 100 events
-    const trimmed = data.slice(0, 100);
-    await fs.writeFile(FILE, JSON.stringify(trimmed, null, 2), 'utf8');
-
-    console.log('✅ Event created:', newEvent);
-    return NextResponse.json(newEvent, { status: 201 });
+    return NextResponse.json({
+      id: newEvent.id,
+      title: newEvent.title,
+      date: newEvent.date.toISOString(),
+      location: newEvent.location,
+      club: newEvent.club.name,
+      eligibleCategories: newEvent.eligibleCategories ? JSON.parse(newEvent.eligibleCategories) : null,
+      createdAt: newEvent.createdAt.toISOString(),
+    }, { status: 201 });
   } catch (err) {
     console.error('POST /api/club/events error', err);
     return NextResponse.json({ error: 'internal' }, { status: 500 });

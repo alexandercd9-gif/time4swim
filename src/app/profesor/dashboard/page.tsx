@@ -18,9 +18,10 @@ export default function TeacherDashboard() {
 		setStats({ swimmers: 18, sessionsThisWeek: 5, groups: 3, upcomingEvents: 2 });
 	}, []);
 
-	return (
-		<div className="space-y-6">
-			<div className="flex justify-between items-center">
+		return (
+			<div className="min-h-screen bg-gray-50 p-4">
+				<div className="max-w-7xl mx-auto space-y-6">
+				<div className="flex justify-between items-center">
 				<h1 className="text-2xl font-bold text-gray-900">Dashboard - Profesor</h1>
 				<div className="text-sm text-gray-600">Semana actual</div>
 			</div>
@@ -74,7 +75,8 @@ export default function TeacherDashboard() {
 					<button className="p-4 border rounded-lg hover:bg-gray-50 text-left">Tomar asistencia</button>
 					<button className="p-4 border rounded-lg hover:bg-gray-50 text-left">Enviar anuncio al grupo</button>
 				</div>
-			</div>
-		</div>
+					</div>
+					</div>
+				</div>
 	);
 }

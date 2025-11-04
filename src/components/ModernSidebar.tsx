@@ -7,7 +7,7 @@ import {
   Home, Users, Medal, BarChart, User, Power, School, 
   Calendar, CreditCard, FileText, Settings, Timer, Menu, X 
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/hooks/use-sidebar";
 
@@ -61,46 +61,10 @@ export default function ModernSidebar() {
   const { user, setUser, loading } = useUser();
   const { isSidebarCollapsed: collapsed, setIsSidebarCollapsed: setCollapsed } = useSidebar();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [eventsCount, setEventsCount] = useState(0);
   const pathname = usePathname();
 
-  // Cargar el contador de eventos para padres
-  useEffect(() => {
-    if (user.role === 'PARENT' || user.role === 'parents') {
-      const fetchEventsCount = async () => {
-        try {
-          const res = await fetch('/api/parent/events', { credentials: 'include' });
-          if (res.ok) {
-            const data = await res.json();
-            
-            // Obtener la última vez que se revisaron los eventos
-            const lastCheck = localStorage.getItem('lastEventCheck');
-            
-            if (!lastCheck) {
-              // Si nunca ha visto los eventos, contar todos
-              setEventsCount(data.length);
-            } else {
-              // Contar solo eventos nuevos (creados después de la última revisión)
-              const lastCheckDate = new Date(lastCheck);
-              const newEvents = data.filter((event: any) => {
-                if (!event.createdAt) return false;
-                const eventCreatedDate = new Date(event.createdAt);
-                return eventCreatedDate > lastCheckDate;
-              });
-              setEventsCount(newEvents.length);
-            }
-          }
-        } catch (error) {
-          console.error('Error fetching events count:', error);
-        }
-      };
-      fetchEventsCount();
-      
-      // Actualizar cada 5 minutos
-      const interval = setInterval(fetchEventsCount, 5 * 60 * 1000);
-      return () => clearInterval(interval);
-    }
-  }, [user.role, pathname]); // Agregar pathname para actualizar cuando cambia la ruta
+  // Nota: el contador de eventos y su insignia visual se gestionan en TopBar (campana).
+  // Aquí retiramos la insignia en el menú lateral para evitar duplicidad.
 
   const handleLogout = () => {
     fetch("/api/auth/logout", { method: "POST", credentials: "include" })
@@ -173,7 +137,7 @@ export default function ModernSidebar() {
       >
         <div className="flex flex-col h-full">
           {/* LOGO */}
-          <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+          <div className="p-6 border-b border-gray-100 flex items-center justify-center">
             {!collapsed && (
               <img src="/logo.png" alt="Logo" className="h-16 w-auto max-w-[220px] mx-auto object-contain transition-all duration-300" />
             )}
@@ -186,20 +150,6 @@ export default function ModernSidebar() {
                 <img src="/logito.png" alt="Logo pequeño" className="w-9 h-9 rounded-xl object-cover" />
               </Link>
             )}
-            <button 
-              onClick={() => setCollapsed(!collapsed)}
-              className="absolute right-[-18px] top-1/2 -translate-y-1/2 z-50 p-0 w-8 h-8 flex items-center justify-center rounded-full shadow-lg border border-white"
-              style={{
-                background: 'linear-gradient(90deg, #06b6d4 0%, #2563eb 100%)',
-              }}
-              aria-label={collapsed ? "Expandir menú" : "Colapsar menú"}
-            >
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect y="4" width="18" height="2" rx="1" fill="white" />
-                <rect y="8" width="18" height="2" rx="1" fill="white" />
-                <rect y="12" width="18" height="2" rx="1" fill="white" />
-              </svg>
-            </button>
           </div>
 
           {/* MENÚ */}
@@ -207,7 +157,6 @@ export default function ModernSidebar() {
             {menuItems.map((item) => {
               const isActive = pathname === item.href;
               const Icon = item.icon;
-              const showBadge = item.href === '/parents/events' && eventsCount > 0;
               
               return (
                 <Link
@@ -221,11 +170,6 @@ export default function ModernSidebar() {
                 >
                   <div className="relative">
                     <Icon className={`h-5 w-5 flex-shrink-0 ${isActive ? "text-white" : "text-gray-500"}`} />
-                    {showBadge && (
-                      <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white">
-                        {eventsCount > 9 ? '9+' : eventsCount}
-                      </span>
-                    )}
                   </div>
                   {!collapsed && (
                     <div className="flex-1 min-w-0 flex items-center justify-between">
@@ -237,11 +181,6 @@ export default function ModernSidebar() {
                           </div>
                         )}
                       </div>
-                      {showBadge && (
-                        <span className="ml-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
-                          {eventsCount > 9 ? '9+' : eventsCount}
-                        </span>
-                      )}
                     </div>
                   )}
                 </Link>
@@ -251,6 +190,7 @@ export default function ModernSidebar() {
 
           {/* PERFIL + ACCIONES (moved to TopBar) */}
           <div className="p-4 border-t border-gray-100" />
+        </div>
       </nav>
 
       {/* MOBILE NAV */}
@@ -286,7 +226,6 @@ export default function ModernSidebar() {
               {menuItems.map((item) => {
                 const isActive = pathname === item.href;
                 const Icon = item.icon;
-                const showBadge = item.href === '/parents/events' && eventsCount > 0;
                 
                 return (
                   <Link
@@ -301,19 +240,9 @@ export default function ModernSidebar() {
                   >
                     <div className="relative">
                       <Icon className="h-5 w-5" />
-                      {showBadge && (
-                        <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white">
-                          {eventsCount > 9 ? '9+' : eventsCount}
-                        </span>
-                      )}
                     </div>
                     <div className="flex-1 flex items-center justify-between">
                       <span className="font-medium">{item.label}</span>
-                      {showBadge && (
-                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
-                          {eventsCount > 9 ? '9+' : eventsCount}
-                        </span>
-                      )}
                     </div>
                   </Link>
                 );

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Calendar, MapPin, Plus, Download, ExternalLink, Pencil, Trash2 } from 'lucide-react';
+import { Calendar, MapPin, Plus, Download, ExternalLink, Pencil, Trash2, Users } from 'lucide-react';
 import { downloadICS, openGoogleCalendar } from '@/lib/calendar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -233,6 +233,13 @@ export default function ClubEventsPage() {
                   Google Calendar
                 </button>
                 <div className="ml-auto flex items-center gap-2">
+                  <Link
+                    href={`/club/events/${ev.id}/participants`}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-md transition-colors"
+                  >
+                    <Users className="h-4 w-4" />
+                    Participantes
+                  </Link>
                   <button
                     onClick={() => handleEdit(ev)}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-md transition-colors"

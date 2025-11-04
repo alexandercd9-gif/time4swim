@@ -52,10 +52,8 @@ export default function ParentsLayout({
     <div className="flex min-h-screen bg-gray-50">
       <ModernSidebar />
       <ResponsiveMain>
-        <div className="p-6 lg:p-8 pt-20 lg:pt-8">
-        <div className="mb-4">
-          <TopBar />
-        </div>
+        <TopBar />
+        <div className="px-4 lg:px-6 pt-1 pb-6">
         {/* Mostrar banner de trial si aplica */}
         {/* TrialBanner internamente oculta si no es trial */}
         <TrialBanner user={{
