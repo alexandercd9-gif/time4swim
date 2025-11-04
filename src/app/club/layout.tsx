@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ModernSidebar from "@/components/ModernSidebar";
+import TopBar from "@/components/TopBar";
 import { useUser } from "@/context/UserContext";
 import { useSidebar } from "@/hooks/use-sidebar";
 
@@ -35,6 +36,9 @@ export default function ClubLayout({
         `}
       >
         <div className="p-6 lg:p-8 pt-20 lg:pt-8">
+          <div className="mb-4">
+            <TopBar />
+          </div>
           {children}
         </div>
       </main>

@@ -175,35 +175,35 @@ export default function ModernSidebar() {
           {/* LOGO */}
           <div className="p-6 border-b border-gray-100 flex items-center justify-between">
             {!collapsed && (
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center">
-                  <Timer className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-lg font-bold text-gray-900">Time4Swim</h1>
-                  <p className="text-xs text-gray-500">Sistema de Natación</p>
-                </div>
-              </div>
+              <img src="/logo.png" alt="Logo" className="h-16 w-auto max-w-[220px] mx-auto object-contain transition-all duration-300" />
             )}
             {collapsed && (
               <Link
                 href={userRoleKey === 'admin' ? '/admin/dashboard' : userRoleKey === 'club' ? '/club/dashboard' : userRoleKey === 'profesor' ? '/profesor/dashboard' : userRoleKey === 'swimmer' ? '/swimmer/dashboard' : '/parents/dashboard'}
                 aria-label="Ir al dashboard"
-                className="inline-flex items-center justify-center w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl"
+                className="inline-flex items-center justify-center w-9 h-9"
               >
-                <Timer className="h-6 w-6 text-white" />
+                <img src="/logito.png" alt="Logo pequeño" className="w-9 h-9 rounded-xl object-cover" />
               </Link>
             )}
             <button 
               onClick={() => setCollapsed(!collapsed)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="absolute right-[-18px] top-1/2 -translate-y-1/2 z-50 p-0 w-8 h-8 flex items-center justify-center rounded-full shadow-lg border border-white"
+              style={{
+                background: 'linear-gradient(90deg, #06b6d4 0%, #2563eb 100%)',
+              }}
+              aria-label={collapsed ? "Expandir menú" : "Colapsar menú"}
             >
-              <Menu className="h-5 w-5 text-gray-600" />
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect y="4" width="18" height="2" rx="1" fill="white" />
+                <rect y="8" width="18" height="2" rx="1" fill="white" />
+                <rect y="12" width="18" height="2" rx="1" fill="white" />
+              </svg>
             </button>
           </div>
 
           {/* MENÚ */}
-          <div className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          <div className="flex-1 px-3 py-4 space-y-1">
             {menuItems.map((item) => {
               const isActive = pathname === item.href;
               const Icon = item.icon;
@@ -249,44 +249,8 @@ export default function ModernSidebar() {
             })}
           </div>
 
-          {/* PERFIL + ACCIONES */}
-          <div className="p-4 border-t border-gray-100">
-            {user && user.name && (
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white flex items-center justify-center flex-shrink-0">
-                  {user.name?.charAt(0)?.toUpperCase()}
-                </div>
-                {!collapsed ? (
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <div className="font-medium text-gray-900 truncate">{user.name}</div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={handleLogout}
-                        className="text-red-600 hover:bg-red-50"
-                        title="Cerrar sesión"
-                      >
-                        <Power className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="text-xs text-gray-500 truncate">{user.email}</div>
-                  </div>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleLogout}
-                    className="ml-auto text-red-600 hover:bg-red-50"
-                    title="Cerrar sesión"
-                  >
-                    <Power className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+          {/* PERFIL + ACCIONES (moved to TopBar) */}
+          <div className="p-4 border-t border-gray-100" />
       </nav>
 
       {/* MOBILE NAV */}
@@ -299,15 +263,6 @@ export default function ModernSidebar() {
             <h1 className="text-lg font-bold text-gray-900">Time4Swim</h1>
           </div>
           <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleLogout}
-              title="Cerrar sesión"
-              className="text-red-600 hover:bg-red-50"
-            >
-              <Power className="h-5 w-5" />
-            </Button>
             <Button variant="ghost" size="sm" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
               {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
@@ -365,23 +320,7 @@ export default function ModernSidebar() {
               })}
             </div>
 
-            {user && user.name && (
-              <div className="mt-4 border-t pt-4">
-                <div className="font-medium">{user.name}</div>
-                <div className="text-xs text-gray-500">{user.email}</div>
-              </div>
-            )}
-
-            <div className="mt-4 space-y-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="w-full justify-start text-red-600 hover:bg-red-50"
-              >
-                <Power className="h-4 w-4 mr-2" />Cerrar Sesión
-              </Button>
-            </div>
+            {/* user info and logout moved to TopBar (mobile) */}
           </div>
         </div>
       </div>

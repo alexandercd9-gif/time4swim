@@ -6,6 +6,7 @@ import ModernSidebar from "@/components/ModernSidebar";
 import TrialBanner from "@/components/TrialBanner";
 import { useUser } from "@/context/UserContext";
 import { useSidebar } from "@/hooks/use-sidebar";
+import TopBar from "@/components/TopBar";
 
 export default function ParentsLayout({
   children,
@@ -52,6 +53,9 @@ export default function ParentsLayout({
       <ModernSidebar />
       <ResponsiveMain>
         <div className="p-6 lg:p-8 pt-20 lg:pt-8">
+        <div className="mb-4">
+          <TopBar />
+        </div>
         {/* Mostrar banner de trial si aplica */}
         {/* TrialBanner internamente oculta si no es trial */}
         <TrialBanner user={{

@@ -1,6 +1,7 @@
 "use client";
 
 import ModernSidebar from "@/components/ModernSidebar";
+import TopBar from "@/components/TopBar";
 import { useSidebar } from "@/hooks/use-sidebar";
 
 export default function AdminLayout({
@@ -20,6 +21,9 @@ export default function AdminLayout({
         `}
       >
         <div className="p-6 lg:p-8">
+          <div className="mb-4">
+            <TopBar />
+          </div>
           {children}
         </div>
       </main>
