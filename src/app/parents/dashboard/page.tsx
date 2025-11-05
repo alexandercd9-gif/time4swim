@@ -17,7 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import TrainingChart from "@/components/TrainingChart";
 import BestTimesByStyle from "@/components/BestTimesByStyle";
-import UpcomingEvents from "@/components/UpcomingEvents";
+import NextEventCompact from "@/components/NextEventCompact";
 
 interface ParentStats {
   children: { total: number; active: number };
@@ -187,34 +187,49 @@ export default function ParentsDashboard() {
           <div className="flex flex-col gap-3">
             {/* Fila de 2 tarjetas: Entrenamientos y Competencias */}
             <div className="grid grid-cols-2 gap-3">
-              {/* Entrenamientos KPI */}
-              <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs font-medium text-gray-600 mb-1">Entrenamientos</p>
-                    <p className="text-4xl font-bold text-gray-900 mb-1">
-                      {stats?.trainings.total || 0}
+              {/* Gráficos acceso rápido */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (!selectedChild && children.length > 0) {
+                    try {
+                      const stored = typeof window !== 'undefined' ? localStorage.getItem('selectedChildId') : null;
+                      const exists = stored && children.some((m) => m.id === stored);
+                      setSelectedChild(exists ? (stored as string) : children[0].id);
+                    } catch {
+                      setSelectedChild(children[0].id);
+                    }
+                  }
+                  setOpenChart(true);
+                }}
+                className="bg-white rounded-xl shadow-sm p-3 sm:p-4 border border-gray-200 text-left hover:shadow transition-shadow"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium text-gray-600 mb-1">Gráficos</p>
+                    <p className="text-lg sm:text-2xl font-bold text-gray-900 mb-1 truncate">
+                      Evolución
                     </p>
-                    <p className="text-xs text-gray-500">➤ Total registrados</p>
+                    <p className="text-xs text-blue-600 font-semibold">Ver gráfico</p>
                   </div>
-                  <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
-                    <Clock className="h-6 w-6 text-white" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-600 rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
+                    <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                   </div>
                 </div>
-              </div>
+              </button>
 
               {/* Competencias KPI */}
-              <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
-                <div className="flex items-start justify-between">
-                  <div>
+              <div className="bg-white rounded-xl shadow-sm p-3 sm:p-4 border border-gray-200">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
                     <p className="text-xs font-medium text-gray-600 mb-1">Competencias</p>
-                    <p className="text-4xl font-bold text-gray-900 mb-1">
+                    <p className="text-3xl sm:text-4xl font-bold text-gray-900 mb-1">
                       {stats?.competitions.total || 0}
                     </p>
-                    <p className="text-xs text-gray-500">➤ Participaciones</p>
+                    <p className="text-xs text-gray-500 truncate">➤ Participaciones</p>
                   </div>
-                  <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
-                    <Trophy className="h-6 w-6 text-white" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-500 rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
+                    <Trophy className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                   </div>
                 </div>
               </div>
@@ -227,50 +242,22 @@ export default function ParentsDashboard() {
                 Resumen del Mes
               </h2>
           
-          <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
-            <div className="flex flex-col justify-center items-center p-3 bg-blue-50 rounded-lg border border-blue-100 h-full">
-              <span className="text-xs font-semibold text-blue-700 mb-1 text-center">Entrenamientos este mes</span>
-              <span className="text-2xl font-bold text-blue-600">{stats?.trainings.thisMonth || 0}</span>
-            </div>
-            
-            <div className="flex flex-col justify-center items-center p-3 bg-green-50 rounded-lg border border-green-100 h-full">
-              <span className="text-xs font-semibold text-green-700 mb-1 text-center">Competencias este año</span>
-              <span className="text-2xl font-bold text-green-600">{stats?.competitions.thisYear || 0}</span>
-            </div>
-          </div>
-
-          {/* Espacio para gráfico - altura igual a las tarjetas de arriba */}
-          <div className="p-3 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg border border-blue-100 flex-1 flex items-center">
-            <div className="flex items-center justify-between gap-3 w-full">
-              <div className="text-gray-700 text-xs font-medium">
-                Visualiza la evolución de tiempos por mes
+              <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
+                <div className="flex flex-col justify-center items-center p-3 bg-blue-50 rounded-lg border border-blue-100 h-full">
+                  <span className="text-xs font-semibold text-blue-700 mb-1 text-center">Entrenamientos este mes</span>
+                  <span className="text-2xl font-bold text-blue-600">{stats?.trainings.thisMonth || 0}</span>
+                </div>
+                
+                <div className="flex flex-col justify-center items-center p-3 bg-green-50 rounded-lg border border-green-100 h-full">
+                  <span className="text-xs font-semibold text-green-700 mb-1 text-center">Competencias este año</span>
+                  <span className="text-2xl font-bold text-green-600">{stats?.competitions.thisYear || 0}</span>
+                </div>
               </div>
-              <button 
-                onClick={() => {
-                  if (!selectedChild && children.length > 0) {
-                    try {
-                      const stored = typeof window !== 'undefined' ? localStorage.getItem('selectedChildId') : null;
-                      const exists = stored && children.some((m) => m.id === stored);
-                      setSelectedChild(exists ? (stored as string) : children[0].id);
-                    } catch {
-                      setSelectedChild(children[0].id);
-                    }
-                  }
-                  setOpenChart(true);
-                }} 
-                className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 text-white text-xs font-semibold hover:from-blue-700 hover:to-cyan-700 shadow-md hover:shadow-lg transition-all whitespace-nowrap"
-              >
-                Ver gráfico
-              </button>
+
+              {/* Próximo evento (en lugar del banner del gráfico) */}
+              <NextEventCompact />
             </div>
           </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Upcoming events / Agenda */}
-        <div className="mb-4">
-          <UpcomingEvents />
         </div>
 
         <Dialog open={openChart} onOpenChange={setOpenChart}>

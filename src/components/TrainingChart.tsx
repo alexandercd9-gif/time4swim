@@ -27,7 +27,13 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
   const { isSidebarCollapsed } = useSidebar();
   const [children, setChildren] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedChildId, setSelectedChildId] = useState(propChildId || "");
-  const [filtersCollapsed, setFiltersCollapsed] = useState(false);
+  // Filtros: en móvil ocultos por defecto, en desktop visibles (evitar window en SSR)
+  const [filtersCollapsed, setFiltersCollapsed] = useState(true);
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setFiltersCollapsed(window.innerWidth < 1024);
+    }
+  }, []);
   const [viewMode, setViewMode] = useState<ViewMode>("day");
   const [year, setYear] = useState<number>(now.getFullYear());
   const [month, setMonth] = useState<number>(now.getMonth() + 1); // 1-12
@@ -191,10 +197,10 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
   const renderChart = () => {
     if (!points.length) {
       return (
-        <div className="flex items-center justify-center h-80 text-gray-400">
+        <div className="flex items-center justify-center h-60 lg:h-80 text-gray-400">
           <div className="text-center">
-            <p className="text-lg font-medium">Sin datos para mostrar</p>
-            <p className="text-sm">Ajusta los filtros para ver entrenamientos</p>
+            <p className="text-base lg:text-lg font-medium">Sin datos para mostrar</p>
+            <p className="text-xs lg:text-sm">Ajusta los filtros para ver entrenamientos</p>
           </div>
         </div>
       );
@@ -400,10 +406,11 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
 
   return (
     <div className="space-y-4">
-      {/* Botón para colapsar/expandir filtros - Solo visible en desktop */}
+
+      {/* Botón para mostrar/ocultar filtros SOLO en móvil */}
       <button
         onClick={() => setFiltersCollapsed(!filtersCollapsed)}
-        className="hidden lg:flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        className="flex lg:hidden items-center gap-2 px-4 py-2 mb-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors w-full justify-center"
       >
         {filtersCollapsed ? (
           <>
@@ -422,28 +429,29 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
         )}
       </button>
 
-      {/* Layout 3 Columnas con proporciones dinámicas según estado del sidebar */}
-      <div className={`grid gap-4 transition-all duration-300 ${
-        filtersCollapsed 
-          ? 'grid-cols-1 lg:grid-cols-5' 
+      {/* Layout responsive: columna en móvil, 3 columnas en desktop */}
+      <div className={`grid gap-4 transition-all duration-300
+        grid-cols-1
+        ${filtersCollapsed 
+          ? 'lg:grid-cols-5' 
           : isSidebarCollapsed 
-            ? 'grid-cols-1 lg:grid-cols-[20%_65%_15%]'  // Sidebar cerrado
-            : 'grid-cols-1 lg:grid-cols-[25%_58%_17%]'  // Sidebar abierto (25% | 58% | 17%)
+            ? 'lg:grid-cols-[20%_65%_15%]'  // Sidebar cerrado
+            : 'lg:grid-cols-[25%_58%_17%]'  // Sidebar abierto (25% | 58% | 17%)
       }`} style={{ gridAutoRows: '1fr' }}>
         
-        {/* Columna 1: Filtros - 25% (sidebar abierto) o 20% (sidebar cerrado) */}
+        {/* Columna 1: Filtros - En móvil primero, en desktop a la izquierda */}
         {!filtersCollapsed && (
-          <div className="overflow-hidden">
+          <div className="overflow-hidden order-first lg:order-1 animate-fade-in">
             {/* Card de Filtros */}
             <Card className="p-3 h-full flex flex-col overflow-hidden">
             <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
-              {/* Fila 1: Nadador + Año en la misma línea horizontal */}
+              {/* Fila 1: Nadador + Año - En móvil: columna, en desktop: fila */}
               {children.length > 0 && (
-                <div className="grid grid-cols-[1fr_90px] gap-2">
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_90px] gap-2">
                   <div>
                     <label className="text-xs font-medium text-gray-600 block mb-1.5">Nadador</label>
                     <Select value={selectedChildId} onValueChange={setSelectedChildId}>
-                      <SelectTrigger className="h-8 text-xs bg-white">
+                      <SelectTrigger className="h-9 lg:h-8 text-sm lg:text-xs bg-white">
                         <SelectValue placeholder="Selecciona" />
                       </SelectTrigger>
                       <SelectContent>
@@ -458,7 +466,7 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
                   <div>
                     <label className="text-xs font-medium text-gray-600 block mb-1.5">Año</label>
                     <Select value={String(year)} onValueChange={(v) => setYear(parseInt(v))}>
-                      <SelectTrigger className="h-8 text-xs bg-white">
+                      <SelectTrigger className="h-9 lg:h-8 text-sm lg:text-xs bg-white">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -477,7 +485,7 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
                 <div className="grid grid-cols-3 gap-1.5">
                   <button
                     onClick={() => setViewMode("year")}
-                    className={`px-2 py-1.5 text-xs rounded-md font-medium transition-all ${
+                    className={`px-2 py-2 lg:py-1.5 text-sm lg:text-xs rounded-md font-medium transition-all ${
                       viewMode === "year"
                         ? "bg-blue-600 text-white shadow-sm"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -487,7 +495,7 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
                   </button>
                   <button
                     onClick={() => setViewMode("month")}
-                    className={`px-2 py-1.5 text-xs rounded-md font-medium transition-all ${
+                    className={`px-2 py-2 lg:py-1.5 text-sm lg:text-xs rounded-md font-medium transition-all ${
                       viewMode === "month"
                         ? "bg-blue-600 text-white shadow-sm"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -497,7 +505,7 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
                   </button>
                   <button
                     onClick={() => setViewMode("day")}
-                    className={`px-2 py-1.5 text-xs rounded-md font-medium transition-all ${
+                    className={`px-2 py-2 lg:py-1.5 text-sm lg:text-xs rounded-md font-medium transition-all ${
                       viewMode === "day"
                         ? "bg-blue-600 text-white shadow-sm"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -508,14 +516,14 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
                 </div>
               </div>
 
-              {/* Fila 3: Mes + Estilo */}
-              <div className="grid grid-cols-2 gap-2">
+              {/* Fila 3: Mes + Estilo - En móvil: columna, en desktop: fila */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
                 {/* Mes (solo visible si no es vista anual) */}
                 {viewMode !== "year" ? (
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-gray-600">Mes</label>
                     <Select value={String(month)} onValueChange={(v) => setMonth(parseInt(v))}>
-                      <SelectTrigger className="h-8 text-xs bg-white">
+                      <SelectTrigger className="h-9 lg:h-8 text-sm lg:text-xs bg-white">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -528,13 +536,13 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
                     </Select>
                   </div>
                 ) : (
-                  <div /> 
+                  <div className="hidden lg:block" /> 
                 )}
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-gray-600">Estilo</label>
                   <Select value={style} onValueChange={setStyle}>
-                    <SelectTrigger className="h-8 text-xs bg-white">
+                    <SelectTrigger className="h-9 lg:h-8 text-sm lg:text-xs bg-white">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -547,15 +555,15 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
                 </div>
               </div>
 
-              {/* Fila 4: Distancia - Grid horizontal 2 columnas */}
+              {/* Fila 4: Distancia - Grid horizontal 3 columnas en móvil, 2 en desktop */}
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-gray-600">Distancia</label>
-                <div className="grid grid-cols-2 gap-1.5">
+                <div className="grid grid-cols-3 lg:grid-cols-2 gap-1.5">
                   {DISTANCE_OPTIONS.map((opt) => (
                     <button
                       key={opt.value}
                       onClick={() => setDistance(opt.value)}
-                      className={`px-2 py-1.5 text-xs rounded-md font-medium transition-all ${
+                      className={`px-2 py-2 lg:py-1.5 text-sm lg:text-xs rounded-md font-medium transition-all ${
                         distance === opt.value
                           ? "bg-blue-600 text-white shadow-sm"
                           : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -578,11 +586,11 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
         </div>
         )}
 
-        {/* Columna 2: Gráfico - 60% (sidebar abierto) o 65% (sidebar cerrado) */}
-        <div className={`overflow-hidden transition-all duration-300 ${
+        {/* Columna 2: Gráfico - En móvil después de filtros */}
+        <div className={`overflow-hidden transition-all duration-300 order-2 lg:order-2 ${
           filtersCollapsed ? 'lg:col-span-4' : ''
         }`}>
-          <div className="border border-gray-200 rounded-lg bg-transparent flex flex-col h-full overflow-hidden">
+          <div className="border border-gray-200 rounded-lg bg-transparent flex flex-col h-full overflow-hidden min-h-[300px] lg:min-h-0">
             {loading ? (
               <div className="flex items-center justify-center flex-1">
                 <div className="text-center space-y-3">
@@ -591,15 +599,15 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
                 </div>
               </div>
             ) : (
-              <div className="w-full h-full">
+              <div className="w-full h-full p-2 lg:p-0">
                 {renderChart()}
               </div>
             )}
           </div>
         </div>
 
-        {/* Columna 3: Estadísticas - 15% (misma altura que las demás) */}
-        <div className={`overflow-hidden ${
+        {/* Columna 3: Estadísticas - En móvil tercero */}
+        <div className={`overflow-hidden order-3 lg:order-3 ${
           filtersCollapsed ? 'lg:col-span-1' : ''
         }`}>
           <Card className="p-3 h-full flex flex-col overflow-hidden">
