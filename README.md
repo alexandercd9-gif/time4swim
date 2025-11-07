@@ -20,6 +20,21 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Local environment
+
+Create a `.env.local` file at the project root (already added with placeholders). Update these values:
+
+- `JWT_SECRET`: any long random string
+- `DATABASE_URL`: your MySQL connection for Prisma (defaults to `mysql://root:root@localhost:8889/time4swim`)
+- `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`: from Google Cloud Console (OAuth 2.0 Client ID - Web)
+- `GOOGLE_REDIRECT_URI`: `http://localhost:3000/api/auth/oauth/google/callback`
+
+After editing, restart the dev server.
+
+Google Console tips:
+- Authorized JavaScript origins: `http://localhost:3000`
+- Authorized redirect URIs: `http://localhost:3000/api/auth/oauth/google/callback`
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

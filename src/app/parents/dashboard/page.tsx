@@ -43,6 +43,18 @@ export default function ParentsDashboard() {
   const router = useRouter();
 
   useEffect(() => {
+    // Check for OAuth success message
+    const params = new URLSearchParams(window.location.search);
+    const oauthParam = params.get('oauth');
+    
+    if (oauthParam === 'new_user') {
+      toast.success('¡Cuenta creada con éxito! Tienes 7 días de prueba gratis.', { duration: 5000 });
+      window.history.replaceState({}, '', '/parents/dashboard');
+    } else if (oauthParam === 'login_success') {
+      toast.success('¡Bienvenido de nuevo!', { duration: 3000 });
+      window.history.replaceState({}, '', '/parents/dashboard');
+    }
+
     const fetchStats = async () => {
       try {
         const res = await fetch('/api/parent/stats', { credentials: 'include' });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as jwt from "jsonwebtoken";
 import { connectDB } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,11 +26,32 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Token sin userId" }, { status: 401 });
     }
 
-    // Buscar usuario real en MySQL (como login)
+    // 1. Intentar obtener usuario vía Prisma (OAuth + nuevos registros)
+    try {
+      const prismaUser = await prisma.user.findUnique({ where: { id: userId } });
+      if (prismaUser) {
+        return NextResponse.json({
+          user: {
+            id: prismaUser.id,
+            name: prismaUser.name || prismaUser.email.split('@')[0],
+            email: prismaUser.email,
+            role: prismaUser.role, // e.g. PARENT
+            isTrialAccount: !!prismaUser.isTrialAccount,
+            accountStatus: prismaUser.accountStatus,
+            trialExpiresAt: prismaUser.trialExpiresAt ? prismaUser.trialExpiresAt.toISOString() : null
+          }
+        });
+      }
+    } catch (prismaErr) {
+      console.error('Error consultando usuario en Prisma:', prismaErr);
+      // Continuar al fallback MySQL
+    }
+
+    // 2. Fallback: Buscar usuario en MySQL (usuarios legacy creados por flujo antiguo)
     let connection;
     try {
       connection = await connectDB();
-  const [rows] = await connection.execute('SELECT * FROM user WHERE id = ?', [userId]);
+      const [rows] = await connection.execute('SELECT * FROM user WHERE id = ?', [userId]);
       const users = rows as any[];
       if (!users || users.length === 0) {
         return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
@@ -40,8 +62,7 @@ export async function GET(request: NextRequest) {
           id: user.id,
           name: user.name || user.email.split('@')[0],
           email: user.email,
-          role: user.role,
-          // Trial fields
+          role: user.role || 'PARENT',
           isTrialAccount: !!user.isTrialAccount,
           accountStatus: user.accountStatus,
           trialExpiresAt: user.trialExpiresAt ? new Date(user.trialExpiresAt).toISOString() : null
