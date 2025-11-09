@@ -38,7 +38,6 @@ const navByRole = {
     { href: "/club/dashboard", label: "Dashboard", icon: Home, description: "Vista general" },
     { href: "/club/nadadores", label: "Nadadores", icon: Users, description: "Del club" },
     { href: "/club/entrenadores", label: "Entrenadores", icon: User, description: "Profesores" },
-    { href: "/club/grupos", label: "Grupos", icon: School, description: "Categorías" },
     { href: "/club/competencias", label: "Competiciones", icon: Medal, description: "Eventos" },
     { href: "/club/events", label: "Eventos (Agenda)", icon: Calendar, description: "Próximos eventos" },
     { href: "/club/pagos", label: "Pagos", icon: CreditCard, description: "Mensualidades" },
@@ -211,7 +210,7 @@ export default function ModernSidebar() {
 
         {mobileMenuOpen && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-40 z-40 mt-16"
+            className="fixed inset-0 bg-gray-900/10 backdrop-blur-sm z-40 mt-16"
             onClick={() => setMobileMenuOpen(false)}
           />
         )}
@@ -247,9 +246,19 @@ export default function ModernSidebar() {
                   </Link>
                 );
               })}
-            </div>
 
-            {/* user info and logout moved to TopBar (mobile) */}
+              {/* Separador */}
+              <div className="my-3 border-t border-gray-200"></div>
+
+              {/* Cerrar Sesión */}
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+              >
+                <Power className="h-5 w-5" />
+                <span className="font-medium">Cerrar Sesión</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -442,12 +442,13 @@ const UserManagementPage = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-7xl mx-auto space-y-6">
       {/* Toaster para notificaciones */}
       <Toaster position="top-right" />
       
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-start">
         <div className="flex-1">
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
             <UsersIcon className="h-8 w-8 text-blue-600" />
@@ -1055,6 +1056,7 @@ const UserManagementPage = () => {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };

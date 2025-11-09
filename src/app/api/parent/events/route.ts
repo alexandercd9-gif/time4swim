@@ -20,7 +20,7 @@ export async function GET(request: Request) {
           },
         },
         orderBy: {
-          date: 'asc',
+          startDate: 'asc',
         },
       });
 
@@ -28,7 +28,8 @@ export async function GET(request: Request) {
         allEvents.map(event => ({
           id: event.id,
           title: event.title,
-          date: event.date.toISOString(),
+          startDate: event.startDate.toISOString(),
+          endDate: event.endDate.toISOString(),
           location: event.location,
           club: event.club.name,
           eligibleCategories: event.eligibleCategories ? JSON.parse(event.eligibleCategories) : null,
@@ -79,7 +80,7 @@ export async function GET(request: Request) {
         clubId: {
           in: Array.from(childrenClubIds),
         },
-        date: {
+        startDate: {
           gte: new Date(), // Solo eventos futuros
         },
       },
@@ -92,7 +93,7 @@ export async function GET(request: Request) {
         },
       },
       orderBy: {
-        date: 'asc',
+        startDate: 'asc',
       },
     });
 
@@ -108,7 +109,7 @@ export async function GET(request: Request) {
       const eligibleCats = JSON.parse(event.eligibleCategories) as string[];
       
       // Verificar si algún hijo del padre cae en las categorías elegibles
-      const eventDate = event.date;
+      const eventDate = event.startDate;
       const competitionYear = eventDate.getFullYear();
 
       return userChildren.some(uc => {
@@ -128,7 +129,8 @@ export async function GET(request: Request) {
       filteredEvents.map(event => ({
         id: event.id,
         title: event.title,
-        date: event.date.toISOString(),
+        startDate: event.startDate.toISOString(),
+        endDate: event.endDate.toISOString(),
         location: event.location,
         club: event.club.name,
         clubId: event.club.id,

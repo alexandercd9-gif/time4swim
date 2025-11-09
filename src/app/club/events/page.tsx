@@ -13,13 +13,15 @@ import toast from 'react-hot-toast';
 export default function ClubEventsPage() {
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'upcoming' | 'past'>('upcoming');
   const [editingEvent, setEditingEvent] = useState<any | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [deletingEvent, setDeletingEvent] = useState<any | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [editFormData, setEditFormData] = useState({
     title: '',
-    date: '',
+    startDate: '',
+    endDate: '',
     location: ''
   });
   const [saving, setSaving] = useState(false);
@@ -33,7 +35,8 @@ export default function ClubEventsPage() {
         return;
       }
       const data = await res.json();
-      setEvents(data);
+      // El API ahora devuelve { events: [...] }
+      setEvents(data.events || data || []);
     } catch (e) {
       console.error('Error fetching events', e);
       setEvents([]);
@@ -50,7 +53,8 @@ export default function ClubEventsPage() {
     try {
       downloadICS({
         title: ev.title,
-        startDate: new Date(ev.date),
+        startDate: new Date(ev.startDate),
+        endDate: new Date(ev.endDate),
         location: ev.location || undefined,
         description: ev.club ? `Evento de ${ev.club}` : undefined,
       });
@@ -64,7 +68,8 @@ export default function ClubEventsPage() {
     try {
       openGoogleCalendar({
         title: ev.title,
-        startDate: new Date(ev.date),
+        startDate: new Date(ev.startDate),
+        endDate: new Date(ev.endDate),
         location: ev.location || undefined,
         description: ev.club ? `Evento de ${ev.club}` : undefined,
       });
@@ -75,26 +80,29 @@ export default function ClubEventsPage() {
 
   const handleEdit = (ev: any) => {
     setEditingEvent(ev);
-    // Convertir fecha ISO a formato datetime-local
-    const dateObj = new Date(ev.date);
-    const year = dateObj.getFullYear();
-    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-    const day = String(dateObj.getDate()).padStart(2, '0');
-    const hours = String(dateObj.getHours()).padStart(2, '0');
-    const minutes = String(dateObj.getMinutes()).padStart(2, '0');
-    const formattedDate = `${year}-${month}-${day}T${hours}:${minutes}`;
+    // Convertir fechas ISO a formato date
+    const startDateObj = new Date(ev.startDate);
+    const endDateObj = new Date(ev.endDate);
+    
+    const formatDate = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
 
     setEditFormData({
       title: ev.title,
-      date: formattedDate,
+      startDate: formatDate(startDateObj),
+      endDate: formatDate(endDateObj),
       location: ev.location || ''
     });
     setIsEditModalOpen(true);
   };
 
   const handleSaveEdit = async () => {
-    if (!editFormData.title || !editFormData.date) {
-      toast.error('Título y fecha son requeridos');
+    if (!editFormData.title || !editFormData.startDate || !editFormData.endDate) {
+      toast.error('Título, fecha de inicio y fecha de fin son requeridos');
       return;
     }
 
@@ -161,10 +169,25 @@ export default function ClubEventsPage() {
     return <div className="text-center py-8">Cargando eventos...</div>;
   }
 
+  // Filtrar eventos por fecha
+  const now = new Date();
+  const upcomingEvents = events.filter(e => new Date(e.startDate) >= now);
+  const pastEvents = events.filter(e => new Date(e.startDate) < now);
+  const displayedEvents = filter === 'upcoming' ? upcomingEvents : pastEvents;
+
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold">Eventos del Club</h2>
+    <div className="max-w-7xl mx-auto space-y-6 pt-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <Calendar className="h-8 w-8 text-blue-600" />
+            Eventos del Club
+          </h1>
+          <p className="text-gray-600 mt-2">
+            Gestiona todos los eventos y competiciones del club
+          </p>
+        </div>
         <Link 
           href="/club/events/new"
           className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg hover:shadow-lg transition-all"
@@ -174,26 +197,77 @@ export default function ClubEventsPage() {
         </Link>
       </div>
 
-      {events.length === 0 ? (
+      {/* Filtros */}
+      <div className="flex items-center gap-2 border-b border-gray-200">
+        <button
+          onClick={() => setFilter('upcoming')}
+          className={`px-4 py-2 font-medium text-sm transition-colors ${
+            filter === 'upcoming'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Próximos ({upcomingEvents.length})
+        </button>
+        <button
+          onClick={() => setFilter('past')}
+          className={`px-4 py-2 font-medium text-sm transition-colors ${
+            filter === 'past'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Pasados ({pastEvents.length})
+        </button>
+      </div>
+
+      {displayedEvents.length === 0 ? (
         <div className="p-8 bg-white rounded-lg shadow-sm border border-gray-100 text-center">
           <Calendar className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-600 mb-4">No hay eventos publicados.</p>
-          <p className="text-sm text-gray-500 mb-4">Los eventos que crees aparecerán aquí y serán visibles para los padres en su dashboard.</p>
-          <Link 
-            href="/club/events/new"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-md hover:bg-cyan-700"
-          >
-            <Plus className="h-4 w-4" />
-            Crear tu primer evento
-          </Link>
+          <p className="text-gray-600 mb-4">
+            {filter === 'upcoming' ? 'No hay eventos próximos' : 'No hay eventos pasados'}
+          </p>
+          <p className="text-sm text-gray-500 mb-4">
+            {filter === 'upcoming' 
+              ? 'Los eventos que crees aparecerán aquí y serán visibles para los padres en su dashboard.'
+              : 'Los eventos completados aparecerán aquí.'}
+          </p>
+          {filter === 'upcoming' && (
+            <Link 
+              href="/club/events/new"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-md hover:bg-cyan-700"
+            >
+              <Plus className="h-4 w-4" />
+              Crear tu primer evento
+            </Link>
+          )}
         </div>
       ) : (
-        <div className="space-y-4">
-          {events.map((ev: any) => (
-            <div key={ev.id} className="p-6 bg-white rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {displayedEvents.map((ev: any) => {
+            const isPast = new Date(ev.startDate) < now;
+            
+            return (
+            <div key={ev.id} className={`p-6 bg-white rounded-lg shadow-sm border transition-shadow ${
+              isPast 
+                ? 'border-gray-300 opacity-90' 
+                : 'border-gray-100 hover:shadow-md'
+            }`}>
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{ev.title}</h3>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-lg font-semibold text-gray-900">{ev.title}</h3>
+                    {isPast && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-medium">
+                        Finalizado
+                      </span>
+                    )}
+                    {ev.isInternalCompetition && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
+                        Competencia Interna
+                      </span>
+                    )}
+                  </div>
                   {ev.club && (
                     <div className="text-sm text-gray-600 mb-2">
                       <span className="font-medium">Club:</span> {ev.club}
@@ -202,13 +276,18 @@ export default function ClubEventsPage() {
                 </div>
                 <div className="flex items-center gap-1 text-sm text-gray-600 bg-gray-50 px-3 py-1 rounded-md">
                   <Calendar className="h-4 w-4" />
-                  {new Date(ev.date).toLocaleDateString('es-ES', { 
+                  {new Date(ev.startDate).toLocaleDateString('es-ES', { 
                     day: 'numeric', 
                     month: 'short', 
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
+                    year: 'numeric'
                   })}
+                  {new Date(ev.startDate).toDateString() !== new Date(ev.endDate).toDateString() && (
+                    <> - {new Date(ev.endDate).toLocaleDateString('es-ES', { 
+                      day: 'numeric', 
+                      month: 'short', 
+                      year: 'numeric'
+                    })}</>
+                  )}
                 </div>
               </div>
               {ev.location && (
@@ -217,47 +296,51 @@ export default function ClubEventsPage() {
                   {ev.location}
                 </div>
               )}
-              <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
-                <button
-                  onClick={() => handleDownloadICS(ev)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors"
-                >
-                  <Download className="h-4 w-4" />
-                  Descargar .ics
-                </button>
-                <button
-                  onClick={() => handleOpenGoogleCalendar(ev)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-md transition-colors"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  Google Calendar
-                </button>
-                <div className="ml-auto flex items-center gap-2">
+              
+              {/* Contador de participantes confirmados */}
+              <div className="mb-3 inline-flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
+                <Users className="h-4 w-4 text-green-600" />
+                <span className="text-sm font-semibold text-green-700">
+                  {ev.confirmedParticipants || 0} {ev.confirmedParticipants === 1 ? 'confirmado' : 'confirmados'}
+                </span>
+              </div>
+
+              {/* Botones de acciones */}
+              <div className="pt-3 border-t border-gray-100">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => handleDownloadICS(ev)}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-md transition-colors"
+                  >
+                    <Calendar className="h-3.5 w-3.5" />
+                    Agregar a Calendario
+                  </button>
                   <Link
                     href={`/club/events/${ev.id}/participants`}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-md transition-colors"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs bg-green-50 hover:bg-green-100 text-green-700 rounded-md transition-colors"
                   >
-                    <Users className="h-4 w-4" />
+                    <Users className="h-3.5 w-3.5" />
                     Participantes
                   </Link>
                   <button
                     onClick={() => handleEdit(ev)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-md transition-colors"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-md transition-colors"
                   >
-                    <Pencil className="h-4 w-4" />
+                    <Pencil className="h-3.5 w-3.5" />
                     Editar
                   </button>
                   <button
                     onClick={() => handleDelete(ev)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-red-50 hover:bg-red-100 text-red-700 rounded-md transition-colors"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs bg-red-50 hover:bg-red-100 text-red-700 rounded-md transition-colors"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3.5 w-3.5" />
                     Eliminar
                   </button>
                 </div>
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
       )}
 
@@ -278,12 +361,21 @@ export default function ClubEventsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-date">Fecha y hora *</Label>
+              <Label htmlFor="edit-startDate">Fecha de inicio *</Label>
               <Input
-                id="edit-date"
-                type="datetime-local"
-                value={editFormData.date}
-                onChange={(e) => setEditFormData({ ...editFormData, date: e.target.value })}
+                id="edit-startDate"
+                type="date"
+                value={editFormData.startDate}
+                onChange={(e) => setEditFormData({ ...editFormData, startDate: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-endDate">Fecha de fin *</Label>
+              <Input
+                id="edit-endDate"
+                type="date"
+                value={editFormData.endDate}
+                onChange={(e) => setEditFormData({ ...editFormData, endDate: e.target.value })}
               />
             </div>
             <div className="space-y-2">
@@ -331,13 +423,18 @@ export default function ClubEventsPage() {
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-3">
                 <p className="font-semibold text-red-900">{deletingEvent.title}</p>
                 <p className="text-sm text-red-700 mt-1">
-                  {new Date(deletingEvent.date).toLocaleDateString('es-ES', { 
+                  {new Date(deletingEvent.startDate).toLocaleDateString('es-ES', { 
                     day: 'numeric', 
                     month: 'long', 
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
+                    year: 'numeric'
                   })}
+                  {new Date(deletingEvent.startDate).toDateString() !== new Date(deletingEvent.endDate).toDateString() && (
+                    <> - {new Date(deletingEvent.endDate).toLocaleDateString('es-ES', { 
+                      day: 'numeric', 
+                      month: 'long', 
+                      year: 'numeric'
+                    })}</>
+                  )}
                 </p>
                 {deletingEvent.location && (
                   <p className="text-sm text-red-600 mt-1 flex items-center gap-1">

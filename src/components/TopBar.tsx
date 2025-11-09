@@ -115,15 +115,8 @@ export default function TopBar() {
           </button>
         )}
 
-        {/* User info with avatar */}
+        {/* User info */}
         <div className="hidden sm:flex items-center gap-3">
-          {/* User avatar circle */}
-          {user?.name && (
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white flex items-center justify-center flex-shrink-0 font-semibold text-sm shadow-sm">
-              {user.name.charAt(0).toUpperCase()}
-            </div>
-          )}
-          
           {/* User details */}
           <div className="flex flex-col min-w-0">
             {user?.name && (

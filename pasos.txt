@@ -1,0 +1,237 @@
+Opción 1: Usar NodeSource (Recomendado - versión específica)
+
+# Conectarse al servidor
+ssh root@tu_ip_servidor
+
+# Actualizar paquetes
+sudo apt update
+
+# Instalar Node.js 20.x (LTS)
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Verificar instalación
+node -v
+npm -v
+-----------------------------------------------------------------------------------------
+Opción 2: Usar NVM (Recomendado - múltiples versiones)
+
+# Instalar NVM
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+
+# Recargar configuración
+source ~/.bashrc
+
+# Instalar Node.js (última LTS)
+nvm install --lts
+
+# O versión específica
+nvm install 20.10.0
+
+# Usar versión instalada
+nvm use 20
+
+# Verificar
+node -v
+npm -v
+-----------------------------------------------------------------------------------------
+Opción 3: Repositorio oficial de Ubuntu (no recomendado - versión antigua)
+
+sudo apt update
+sudo apt install nodejs npm
+-----------------------------------------------------------------------------------------
+Pasos adicionales comunes
+
+# Instalar build tools (necesarios para algunos paquetes npm)
+sudo apt install build-essential
+
+# Instalar PM2 globalmente (para mantener apps corriendo)
+sudo npm install -g pm2
+
+# Configurar PM2 para inicio automático
+pm2 startup
+-----------------------------------------------------------------------------------------
+Para tu proyecto Time4Swim:
+
+# Clonar repositorio
+git clone <tu-repo-url>
+cd time4swim
+
+# Instalar dependencias
+npm install
+
+# Configurar variables de entorno
+nano .env.local
+# (agregar DATABASE_URL, JWT_SECRET, etc.)
+
+# Build de producción
+npm run build
+
+# Iniciar con PM2
+pm2 start npm --name "time4swim" -- start
+pm2 save
+
+-----------------------------------------------------------------------------------------
+Instalación recomendada con NodeSource (Node.js 20 LTS):
+
+# Conectarse al servidor
+ssh root@tu_ip_servidor
+
+# Actualizar el sistema
+sudo apt update && sudo apt upgrade -y
+
+# Instalar dependencias necesarias
+sudo apt install -y ca-certificates curl gnupg
+
+# Agregar repositorio NodeSource para Node.js 20.x
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+
+# Instalar Node.js y npm
+sudo apt install -y nodejs
+
+# Verificar instalación
+node -v  # Debería mostrar v20.x.x
+npm -v   # Debería mostrar 10.x.x
+
+# Instalar herramientas de compilación (necesarias para algunos paquetes npm)
+sudo apt install -y build-essential
+-----------------------------------------------------------------------------------------
+Instalar PM2 para gestión de procesos:
+
+# Instalar PM2 globalmente
+sudo npm install -g pm2
+
+# Configurar PM2 para inicio automático al reiniciar servidor
+pm2 startup systemd
+# (ejecutar el comando que PM2 te indique)
+
+# Guardar configuración PM2
+pm2 save
+-----------------------------------------------------------------------------------------
+Configurar firewall (UFW):
+
+# Permitir puertos necesarios
+sudo ufw allow 22/tcp    # SSH
+sudo ufw allow 80/tcp    # HTTP
+sudo ufw allow 443/tcp   # HTTPS
+sudo ufw allow 3000/tcp  # Next.js (temporal, para testing)
+
+# Activar firewall
+sudo ufw enable
+sudo ufw status
+-----------------------------------------------------------------------------------------
+Desplegar tu aplicación Time4Swim:
+
+# Instalar Git si no está
+sudo apt install -y git
+
+# Clonar tu repositorio
+cd /var/www
+git clone https://github.com/alexandercd9-gif/time4swim.git
+cd time4swim
+
+# Instalar dependencias
+npm install
+
+# Crear archivo de variables de entorno
+nano .env.local
+-----------------------------------------------------------------------------------------
+Contenido de .env.local:
+
+DATABASE_URL="mysql://usuario:contraseña@localhost:3306/time4swim"
+JWT_SECRET="tu_secret_key_muy_segura_aqui"
+NEXT_PUBLIC_API_URL="https://tu-dominio.com"
+NODE_ENV="production"
+-----------------------------------------------------------------------------------------
+Build y arranque:
+
+# Generar Prisma Client
+npx prisma generate
+
+# Ejecutar migraciones
+npx prisma migrate deploy
+
+# Build de producción
+npm run build
+
+# Iniciar con PM2
+pm2 start npm --name "time4swim" -- start
+
+# Guardar configuración
+pm2 save
+
+# Ver logs
+pm2 logs time4swim
+
+# Ver status
+pm2 status
+
+----------------------------------------------------------------------------------------
+# Instalar Nginx
+sudo apt install -y nginx
+
+# Crear configuración
+sudo nano /etc/nginx/sites-available/time4swim
+----------------------------------------------------------------------------------------
+Contenido de /etc/nginx/sites-available/time4swim:
+
+server {
+    listen 80;
+    server_name tu-dominio.com www.tu-dominio.com;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+----------------------------------------------------------------------------------------
+
+Activar configuración Nginx:
+
+# Crear enlace simbólico
+sudo ln -s /etc/nginx/sites-available/time4swim /etc/nginx/sites-enabled/
+
+# Verificar configuración
+sudo nginx -t
+
+# Reiniciar Nginx
+sudo systemctl restart nginx
+
+# Habilitar inicio automático
+sudo systemctl enable nginx
+
+----------------------------------------------------------------------------------------
+Instalar SSL con Certbot (HTTPS gratis):
+
+# Instalar Certbot
+sudo apt install -y certbot python3-certbot-nginx
+
+# Obtener certificado SSL
+sudo certbot --nginx -d tu-dominio.com -d www.tu-dominio.com
+
+# Renovación automática ya está configurada
+----------------------------------------------------------------------------------------
+Instalar MySQL Server:
+
+# Instalar MySQL
+sudo apt update
+sudo apt install -y mysql-server
+
+# Verificar que está corriendo
+sudo systemctl status mysql
+
+# Habilitar inicio automático
+sudo systemctl enable MySQL
+
+----------------------------------------------------------------------------------------
+Configuración segura de MySQL:
+
+# Ejecutar script de seguridad
+sudo mysql_secure_installation

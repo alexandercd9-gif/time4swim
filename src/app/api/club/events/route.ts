@@ -6,11 +6,18 @@ export async function GET(request: Request) {
   try {
     const auth = await requireAuth(request as any, ['CLUB', 'ADMIN']);
     
+    // Obtener parámetro de filtro para competencias internas
+    const url = new URL(request.url);
+    const internalOnly = url.searchParams.get('internal') === 'true';
+    
     let events;
     
     if (auth.user.role === 'ADMIN') {
       // Admin ve todos los eventos
       events = await prisma.event.findMany({
+        where: internalOnly ? {
+          isInternalCompetition: true,
+        } : undefined,
         include: {
           club: {
             select: {
@@ -18,9 +25,22 @@ export async function GET(request: Request) {
               name: true,
             },
           },
+          participations: {
+            where: {
+              status: 'CONFIRMED',
+            },
+            select: {
+              id: true,
+            },
+          },
+          _count: {
+            select: {
+              heatLanes: true,
+            },
+          },
         },
         orderBy: {
-          date: 'asc',
+          startDate: 'asc',
         },
       });
     } else {
@@ -31,12 +51,13 @@ export async function GET(request: Request) {
       });
 
       if (!userClubRelation) {
-        return NextResponse.json([], { status: 200 });
+        return NextResponse.json({ events: [] }, { status: 200 });
       }
 
       events = await prisma.event.findMany({
         where: {
           clubId: userClubRelation.clubId,
+          ...(internalOnly ? { isInternalCompetition: true } : {}),
         },
         include: {
           club: {
@@ -45,9 +66,22 @@ export async function GET(request: Request) {
               name: true,
             },
           },
+          participations: {
+            where: {
+              status: 'CONFIRMED',
+            },
+            select: {
+              id: true,
+            },
+          },
+          _count: {
+            select: {
+              heatLanes: true,
+            },
+          },
         },
         orderBy: {
-          date: 'asc',
+          startDate: 'asc',
         },
       });
     }
@@ -56,17 +90,26 @@ export async function GET(request: Request) {
     const formattedEvents = events.map(event => ({
       id: event.id,
       title: event.title,
-      date: event.date.toISOString(),
+      startDate: event.startDate.toISOString(),
+      endDate: event.endDate.toISOString(),
       location: event.location,
       club: event.club.name,
       eligibleCategories: event.eligibleCategories ? JSON.parse(event.eligibleCategories) : null,
       createdAt: event.createdAt.toISOString(),
+      confirmedParticipants: event.participations.length,
+      // Datos de competencia interna
+      isInternalCompetition: event.isInternalCompetition,
+      lanes: event.lanes,
+      style: event.style,
+      distance: event.distance,
+      categoryDistances: event.categoryDistances ? JSON.parse(event.categoryDistances) : null,
+      _count: event._count,
     }));
 
-    return NextResponse.json(formattedEvents);
+    return NextResponse.json({ events: formattedEvents });
   } catch (err) {
     console.error('GET /api/club/events error', err);
-    return NextResponse.json([], { status: 200 });
+    return NextResponse.json({ events: [] }, { status: 200 });
   }
 }
 
@@ -75,10 +118,28 @@ export async function POST(request: Request) {
     const auth = await requireAuth(request as any, ['CLUB', 'ADMIN']);
 
     const body = await request.json();
-    const { title, date, location, eligibleCategories } = body || {};
+    const { 
+      title, 
+      startDate, 
+      endDate, 
+      location, 
+      eligibleCategories,
+      isInternalCompetition,
+      style,
+      distance,
+      lanes,
+      categoryDistances
+    } = body || {};
     
-    if (!title || !date) {
-      return NextResponse.json({ error: 'title and date required' }, { status: 400 });
+    if (!title || !startDate || !endDate) {
+      return NextResponse.json({ error: 'title, startDate and endDate required' }, { status: 400 });
+    }
+
+    // Validación para competencias internas
+    if (isInternalCompetition && (!style || !distance || !lanes)) {
+      return NextResponse.json({ 
+        error: 'Para competencias internas se requiere: style, distance y lanes' 
+      }, { status: 400 });
     }
 
     // Obtener el club del usuario
@@ -110,10 +171,18 @@ export async function POST(request: Request) {
     const newEvent = await prisma.event.create({
       data: {
         title,
-        date: new Date(date),
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
         location: location || null,
         eligibleCategories: eligibleCategories && eligibleCategories.length > 0 
           ? JSON.stringify(eligibleCategories) 
+          : null,
+        isInternalCompetition: isInternalCompetition || false,
+        style: style || null,
+        distance: distance || null,
+        lanes: lanes || null,
+        categoryDistances: categoryDistances && Object.keys(categoryDistances).length > 0
+          ? JSON.stringify(categoryDistances)
           : null,
         clubId,
       },
@@ -132,7 +201,8 @@ export async function POST(request: Request) {
     return NextResponse.json({
       id: newEvent.id,
       title: newEvent.title,
-      date: newEvent.date.toISOString(),
+      startDate: newEvent.startDate.toISOString(),
+      endDate: newEvent.endDate.toISOString(),
       location: newEvent.location,
       club: newEvent.club.name,
       eligibleCategories: newEvent.eligibleCategories ? JSON.parse(newEvent.eligibleCategories) : null,

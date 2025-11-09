@@ -1,14 +1,17 @@
+import { LayoutDashboard } from "lucide-react";
+
 export default function ClubDashboard() {
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Dashboard - Club Natación
+    <div className="max-w-7xl mx-auto space-y-6 pt-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+          <LayoutDashboard className="h-8 w-8 text-blue-600" />
+          Dashboard del Club
         </h1>
-        <div className="text-sm text-gray-600">
-          Club: <span className="font-semibold">Acuáticos Madrid</span>
-        </div>
+        <p className="text-gray-600 mt-2">
+          Panel de control y estadísticas generales
+        </p>
       </div>
 
       {/* Estadísticas del club */}
@@ -56,7 +59,6 @@ export default function ClubDashboard() {
             <div className="text-sm text-gray-600">Gestión financiera</div>
           </button>
         </div>
-      </div>
       </div>
     </div>
   );

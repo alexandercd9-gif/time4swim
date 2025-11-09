@@ -67,13 +67,14 @@ export async function GET(
       pending: participations.filter(p => p.status === 'INVITED').length,
     };
 
-    const competitionYear = event.date.getFullYear();
+    const competitionYear = event.startDate.getFullYear();
 
     return NextResponse.json({
       event: {
         id: event.id,
         title: event.title,
-        date: event.date.toISOString(),
+        startDate: event.startDate.toISOString(),
+        endDate: event.endDate.toISOString(),
         location: event.location,
         eligibleCategories: event.eligibleCategories ? JSON.parse(event.eligibleCategories) : null,
       },

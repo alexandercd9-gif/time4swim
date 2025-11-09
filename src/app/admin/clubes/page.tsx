@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Building2, Plus, Edit, Phone, Mail, Globe, MapPin, Key } from "lucide-react";
+import { Building2, Plus, Edit, Phone, Mail, Globe, MapPin, Key, FileText } from "lucide-react";
 import { toast } from "react-hot-toast";
 import ClubCredentialsModal from "@/components/ClubCredentialsModal";
 
@@ -171,7 +171,8 @@ export default function ClubsPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex justify-between items-start gap-6">
         {/* Título y leyenda */}
@@ -211,80 +212,143 @@ export default function ClubsPage() {
 
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button onClick={resetForm} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
+              <Button onClick={resetForm} className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 shadow-lg shadow-blue-500/30">
                 <Plus className="h-4 w-4" />
                 Nuevo Club
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>{editingClub ? 'Editar Club' : 'Crear Nuevo Club'}</DialogTitle>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader className="space-y-3 pb-4 border-b">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-lg">
+                    <Building2 className="h-6 w-6 text-white" />
+                  </div>
+                  <DialogTitle className="text-2xl">{editingClub ? 'Editar Club' : 'Crear Nuevo Club'}</DialogTitle>
+                </div>
+                <p className="text-sm text-gray-500">
+                  {editingClub ? 'Modifica la información del club' : 'Completa los datos para registrar un nuevo club'}
+                </p>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="name">Nombre del Club *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Ej: Club Natación Metropolitano"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="address">Dirección</Label>
-                  <Input
-                    id="address"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    placeholder="Ej: Av. Principal 123, Ciudad"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="phone">Teléfono</Label>
-                    <Input
-                      id="phone"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      placeholder="Ej: +1 555-0123"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      placeholder="contacto@club.com"
-                    />
+              <form onSubmit={handleSubmit} className="space-y-5 pt-4">
+                {/* Información Básica */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-blue-600" />
+                    Información Básica
+                  </h3>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pl-6">
+                    <div>
+                      <Label htmlFor="name" className="flex items-center gap-2 text-gray-700 mb-2">
+                        <Building2 className="h-3.5 w-3.5 text-blue-500" />
+                        Nombre del Club *
+                      </Label>
+                      <Input
+                        id="name"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        placeholder="Ej: Club Natación Metropolitano"
+                        required
+                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="description" className="flex items-center gap-2 text-gray-700 mb-2">
+                        <FileText className="h-3.5 w-3.5 text-blue-500" />
+                        Descripción
+                      </Label>
+                      <Textarea
+                        id="description"
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        placeholder="Características del club..."
+                        rows={2}
+                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 resize-none"
+                      />
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <Label htmlFor="website">Sitio Web</Label>
-                  <Input
-                    id="website"
-                    value={formData.website}
-                    onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                    placeholder="https://www.club.com"
-                  />
+
+                {/* Información de Contacto */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-cyan-600" />
+                    Información de Contacto
+                  </h3>
+                  <div className="space-y-3 pl-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="address" className="flex items-center gap-2 text-gray-700 mb-2">
+                          <MapPin className="h-3.5 w-3.5 text-cyan-500" />
+                          Dirección
+                        </Label>
+                        <Input
+                          id="address"
+                          value={formData.address}
+                          onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                          placeholder="Ej: Av. Principal 123"
+                          className="border-gray-300 focus:border-cyan-500 focus:ring-cyan-500"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="website" className="flex items-center gap-2 text-gray-700 mb-2">
+                          <Globe className="h-3.5 w-3.5 text-cyan-500" />
+                          Sitio Web
+                        </Label>
+                        <Input
+                          id="website"
+                          value={formData.website}
+                          onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                          placeholder="https://www.club.com"
+                          className="border-gray-300 focus:border-cyan-500 focus:ring-cyan-500"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="phone" className="flex items-center gap-2 text-gray-700 mb-2">
+                          <Phone className="h-3.5 w-3.5 text-cyan-500" />
+                          Teléfono
+                        </Label>
+                        <Input
+                          id="phone"
+                          value={formData.phone}
+                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                          placeholder="+1 555-0123"
+                          className="border-gray-300 focus:border-cyan-500 focus:ring-cyan-500"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="email" className="flex items-center gap-2 text-gray-700 mb-2">
+                          <Mail className="h-3.5 w-3.5 text-cyan-500" />
+                          Email
+                        </Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          placeholder="contacto@club.com"
+                          className="border-gray-300 focus:border-cyan-500 focus:ring-cyan-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="description">Descripción</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Descripción del club..."
-                    rows={3}
-                  />
-                </div>
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+
+                {/* Botones de Acción */}
+                <div className="flex justify-end gap-3 pt-6 border-t">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setIsDialogOpen(false)}
+                    className="min-w-[100px]"
+                  >
                     Cancelar
                   </Button>
-                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                  <Button 
+                    type="submit" 
+                    className="min-w-[100px] bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 shadow-lg shadow-blue-500/30"
+                  >
                     {editingClub ? 'Actualizar' : 'Crear'} Club
                   </Button>
                 </div>
@@ -393,6 +457,7 @@ export default function ClubsPage() {
         onSuccess={handleCredentialsSuccess}
         club={selectedClub}
       />
+      </div>
     </div>
   );
 }

@@ -23,7 +23,6 @@ const navByRole = {
     { href: "/club/dashboard", label: "Dashboard", icon: <Home size={20} /> },
     { href: "/club/nadadores", label: "Nadadores", icon: <Users size={20} /> },
     { href: "/club/entrenadores", label: "Entrenadores", icon: <User size={20} /> },
-    { href: "/club/grupos", label: "Grupos", icon: <School size={20} /> },
     { href: "/club/competencias", label: "Competiciones", icon: <Medal size={20} /> },
     { href: "/club/calendario", label: "Calendario", icon: <Calendar size={20} /> },
     { href: "/club/pagos", label: "Pagos", icon: <CreditCard size={20} /> },

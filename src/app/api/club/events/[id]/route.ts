@@ -2,6 +2,57 @@ import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
+// GET: Obtener un evento específico
+export async function GET(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const auth = await requireAuth(request as any, ['CLUB', 'ADMIN', 'TEACHER']);
+    const { id } = await context.params;
+
+    const event = await prisma.event.findUnique({
+      where: { id },
+      include: {
+        club: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        _count: {
+          select: {
+            heatLanes: true,
+          },
+        },
+      },
+    });
+
+    if (!event) {
+      return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      id: event.id,
+      title: event.title,
+      startDate: event.startDate.toISOString(),
+      endDate: event.endDate.toISOString(),
+      location: event.location,
+      club: event.club.name,
+      eligibleCategories: event.eligibleCategories ? JSON.parse(event.eligibleCategories) : null,
+      isInternalCompetition: event.isInternalCompetition,
+      lanes: event.lanes,
+      style: event.style,
+      distance: event.distance,
+      categoryDistances: event.categoryDistances ? JSON.parse(event.categoryDistances) : null,
+      _count: event._count,
+    });
+  } catch (err) {
+    console.error('GET /api/club/events/[id] error', err);
+    return NextResponse.json({ error: 'internal' }, { status: 500 });
+  }
+}
+
 // PUT: Actualizar un evento
 export async function PUT(
   request: Request,
@@ -11,10 +62,10 @@ export async function PUT(
     const auth = await requireAuth(request as any, ['CLUB', 'ADMIN']);
     const { id } = await context.params;
     const body = await request.json();
-    const { title, date, location, eligibleCategories } = body || {};
+    const { title, startDate, endDate, location, eligibleCategories } = body || {};
 
-    if (!title || !date) {
-      return NextResponse.json({ error: 'title and date required' }, { status: 400 });
+    if (!title || !startDate || !endDate) {
+      return NextResponse.json({ error: 'title, startDate and endDate required' }, { status: 400 });
     }
 
     // Verificar que el evento existe
@@ -43,7 +94,8 @@ export async function PUT(
       where: { id },
       data: {
         title,
-        date: new Date(date),
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
         location: location || null,
         eligibleCategories: eligibleCategories && eligibleCategories.length > 0
           ? JSON.stringify(eligibleCategories)
@@ -64,7 +116,8 @@ export async function PUT(
     return NextResponse.json({
       id: updatedEvent.id,
       title: updatedEvent.title,
-      date: updatedEvent.date.toISOString(),
+      startDate: updatedEvent.startDate.toISOString(),
+      endDate: updatedEvent.endDate.toISOString(),
       location: updatedEvent.location,
       club: updatedEvent.club.name,
       eligibleCategories: updatedEvent.eligibleCategories ? JSON.parse(updatedEvent.eligibleCategories) : null,

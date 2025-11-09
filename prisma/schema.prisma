@@ -150,6 +150,7 @@ model User {
   password         String
   role             UserRole      @default(PARENT)
   parentType       ParentType?   // Solo para usuarios con rol PARENT
+  profilePhoto     String?       @db.LongText // Foto de perfil en base64 (para entrenadores)
   
   // Trial system fields
   accountStatus    AccountStatus @default(TRIAL)
@@ -164,6 +165,7 @@ model User {
   // Relations
   clubs            UserClub[]
   children         UserChild[]
+  coachingLanes    HeatLane[] // Carriles que el profesor cronometra
 }
 
 // Children/Swimmers
@@ -195,6 +197,7 @@ model Child {
   records   Record[]
   trainings Training[]
   eventParticipations EventParticipation[]
+  heatLanes HeatLane[] // Participaciones en carriles de competencias internas
 
   @@index([fdpnAffiliateCode])
 }
@@ -241,7 +244,8 @@ model Training {
 model Event {
   id          String   @id @default(cuid())
   title       String
-  date        DateTime
+  startDate   DateTime // Fecha y hora de inicio del evento
+  endDate     DateTime // Fecha y hora de fin del evento
   location    String?
   description String?  @db.Text
   
@@ -250,6 +254,13 @@ model Event {
   // Si es null o vacío, el evento es para todas las categorías
   eligibleCategories String? @db.Text
   
+  // Competencias Internas
+  isInternalCompetition Boolean @default(false) // true si es competencia interna del club
+  lanes                 Int?    // Número de carriles (1-5) para competencias internas
+  style                 SwimStyle? // Estilo de nado para competencias internas
+  distance              Int?       // Distancia general en metros (50, 100, 200, etc)
+  categoryDistances     String? @db.Text // JSON object con distancias específicas por categoría {"pre_minima": "50", "minima_1": "100"}
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
@@ -257,9 +268,11 @@ model Event {
   clubId      String
   club        Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
   participations EventParticipation[]
+  heatLanes   HeatLane[] // Carriles para cronometraje
   
   @@index([clubId])
-  @@index([date])
+  @@index([startDate])
+  @@index([isInternalCompetition])
 }
 
 // Participación de nadadores en eventos
@@ -282,3 +295,40 @@ model EventParticipation {
   @@index([childId])
   @@index([status])
 }
+
+// Carriles para cronometraje en competencias internas
+model HeatLane {
+  id          String    @id @default(cuid())
+  eventId     String
+  lane        Int       // Número de carril (1-5)
+  heatNumber  Int       @default(1) // Número de serie (para múltiples tandas)
+  
+  // Nadador asignado
+  swimmerId   String
+  swimmer     Child     @relation(fields: [swimmerId], references: [id], onDelete: Cascade)
+  
+  // Profesor responsable del carril
+  coachId     String
+  coach       User      @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  
+  // Cronometraje
+  startTime   DateTime? // Hora exacta de inicio (cuando admin presiona START)
+  endTime     DateTime? // Hora exacta de llegada (cuando profesor presiona STOP)
+  finalTime   Float?    // Tiempo final en segundos (calculado: endTime - startTime)
+  
+  // Validación
+  isValidated Boolean   @default(false) // true si el tiempo fue revisado/aprobado
+  notes       String?   @db.Text // Notas adicionales (ej: descalificado, falsa salida)
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  event       Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  
+  @@unique([eventId, lane, heatNumber, swimmerId]) // Un nadador no puede estar 2 veces en el mismo carril/serie
+  @@index([eventId])
+  @@index([swimmerId])
+  @@index([coachId])
+}
+

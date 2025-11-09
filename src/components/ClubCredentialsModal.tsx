@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,9 +35,23 @@ export default function ClubCredentialsModal({ isOpen, onClose, onSuccess, club 
   const [createdCredentials, setCreatedCredentials] = useState<CreatedCredentials | null>(null);
   
   const [formData, setFormData] = useState({
-    email: "",
+    email: "@time4swim.com",
     password: ""
   });
+
+  // Resetear el modal cuando se cierra
+  useEffect(() => {
+    if (!isOpen) {
+      // Pequeño delay para que la animación de cierre se vea bien
+      const timer = setTimeout(() => {
+        setMode('form');
+        setCreatedCredentials(null);
+        setFormData({ email: "@time4swim.com", password: "" });
+        setShowPassword(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,18 +78,15 @@ export default function ClubCredentialsModal({ isOpen, onClose, onSuccess, club 
       const data = await response.json();
 
       if (response.ok) {
-        setCreatedCredentials({
-          email: formData.email,
-          password: formData.password,
-          success: true
-        });
-        setMode('result');
         toast.success('Credenciales creadas exitosamente');
         
         // Llamar callback de éxito si existe
         if (onSuccess) {
           onSuccess();
         }
+        
+        // Cerrar el modal después de crear exitosamente
+        onClose();
       } else {
         toast.error(data.error || 'Error al crear credenciales');
       }
@@ -92,15 +103,7 @@ export default function ClubCredentialsModal({ isOpen, onClose, onSuccess, club 
     toast.success(`${label} copiado al portapapeles`);
   };
 
-  const resetModal = () => {
-    setMode('form');
-    setCreatedCredentials(null);
-    setFormData({ email: "", password: "" });
-    setShowPassword(false);
-  };
-
   const handleClose = () => {
-    resetModal();
     onClose();
   };
 
@@ -109,33 +112,45 @@ export default function ClubCredentialsModal({ isOpen, onClose, onSuccess, club 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Key className="h-5 w-5 text-blue-600" />
-            Credenciales de Acceso - {club.name}
-          </DialogTitle>
+        <DialogHeader className="space-y-3 pb-4 border-b">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-lg">
+              <Key className="h-6 w-6 text-white" />
+            </div>
+            <div className="flex-1">
+              <DialogTitle className="text-2xl">Credenciales de Acceso</DialogTitle>
+              <p className="text-sm text-gray-500 font-normal">{club.name}</p>
+            </div>
+          </div>
         </DialogHeader>
 
         {mode === 'form' ? (
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5 pt-4">
             <div className="space-y-4">
               <div>
-                <Label htmlFor="email">Email de Acceso</Label>
+                <Label htmlFor="email" className="flex items-center gap-2 text-gray-700 mb-2">
+                  <User className="h-3.5 w-3.5 text-blue-500" />
+                  Email de Acceso
+                </Label>
                 <div className="flex gap-2">
                   <Input
                     id="email"
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="club@time4swim.com"
+                    placeholder="admin@time4swim.com"
                     required
-                    className="flex-1"
+                    className="flex-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
+                <p className="text-xs text-gray-500 mt-1">Este será el usuario de acceso al sistema</p>
               </div>
               
               <div>
-                <Label htmlFor="password">Contraseña</Label>
+                <Label htmlFor="password" className="flex items-center gap-2 text-gray-700 mb-2">
+                  <Key className="h-3.5 w-3.5 text-blue-500" />
+                  Contraseña
+                </Label>
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <Input
@@ -143,33 +158,40 @@ export default function ClubCredentialsModal({ isOpen, onClose, onSuccess, club 
                       type={showPassword ? "text" : "password"}
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      placeholder="Contraseña segura"
+                      placeholder="••••••••"
                       required
+                      className="pr-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="absolute right-0 top-0 h-full px-3"
+                      className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                       onClick={() => setShowPassword(!showPassword)}
                     >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showPassword ? <EyeOff className="h-4 w-4 text-gray-400" /> : <Eye className="h-4 w-4 text-gray-400" />}
                     </Button>
                   </div>
                 </div>
+                <p className="text-xs text-gray-500 mt-1">Mínimo 8 caracteres, segura y fácil de recordar</p>
               </div>
             </div>
             
-            <div className="flex justify-end gap-2 pt-4">
+            <div className="flex justify-end gap-3 pt-6 border-t">
               <Button 
                 type="button" 
                 variant="outline" 
                 onClick={handleClose}
                 disabled={isLoading}
+                className="min-w-[100px]"
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isLoading}>
+              <Button 
+                type="submit" 
+                disabled={isLoading}
+                className="min-w-[140px] bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 shadow-lg shadow-blue-500/30"
+              >
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -185,28 +207,35 @@ export default function ClubCredentialsModal({ isOpen, onClose, onSuccess, club 
             </div>
           </form>
         ) : (
-          <div className="space-y-6">
-            <Card className="bg-green-50 border-green-200">
-              <CardHeader>
+          <div className="space-y-5 pt-4">
+            <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-300 shadow-sm">
+              <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-green-800">
-                  <CheckCircle className="h-5 w-5" />
+                  <div className="p-1.5 bg-green-600 rounded-lg">
+                    <CheckCircle className="h-5 w-5 text-white" />
+                  </div>
                   Credenciales Creadas Exitosamente
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label className="text-sm font-medium">Email de Acceso</Label>
-                  <div className="flex items-center gap-2 mt-1">
+                  <Label className="flex items-center gap-2 text-gray-700 mb-2">
+                    <User className="h-3.5 w-3.5 text-green-600" />
+                    Email de Acceso
+                  </Label>
+                  <div className="flex items-center gap-2">
                     <Input 
                       value={createdCredentials?.email || ""} 
                       readOnly 
-                      className="bg-white"
+                      className="bg-white border-green-200 font-mono text-sm"
                     />
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
                       onClick={() => copyToClipboard(createdCredentials?.email || "", "Email")}
+                      className="shrink-0 border-green-300 hover:bg-green-50"
+                      title="Copiar email"
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
@@ -214,19 +243,24 @@ export default function ClubCredentialsModal({ isOpen, onClose, onSuccess, club 
                 </div>
                 
                 <div>
-                  <Label className="text-sm font-medium">Contraseña</Label>
-                  <div className="flex items-center gap-2 mt-1">
+                  <Label className="flex items-center gap-2 text-gray-700 mb-2">
+                    <Key className="h-3.5 w-3.5 text-green-600" />
+                    Contraseña
+                  </Label>
+                  <div className="flex items-center gap-2">
                     <Input 
                       type={showPassword ? "text" : "password"}
                       value={createdCredentials?.password || ""} 
                       readOnly 
-                      className="bg-white"
+                      className="bg-white border-green-200 font-mono text-sm"
                     />
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
                       onClick={() => setShowPassword(!showPassword)}
+                      className="shrink-0 border-green-300 hover:bg-green-50"
+                      title={showPassword ? "Ocultar" : "Mostrar"}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
@@ -235,6 +269,8 @@ export default function ClubCredentialsModal({ isOpen, onClose, onSuccess, club 
                       variant="outline"
                       size="sm"
                       onClick={() => copyToClipboard(createdCredentials?.password || "", "Contraseña")}
+                      className="shrink-0 border-green-300 hover:bg-green-50"
+                      title="Copiar contraseña"
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
@@ -243,15 +279,30 @@ export default function ClubCredentialsModal({ isOpen, onClose, onSuccess, club 
               </CardContent>
             </Card>
 
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <p className="text-sm text-yellow-800">
-                <strong>Importante:</strong> Guarda estas credenciales en un lugar seguro. 
-                El club podrá usar estos datos para acceder a su panel de administración.
-              </p>
+            <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-200 rounded-lg p-4 shadow-sm">
+              <div className="flex gap-3">
+                <div className="shrink-0">
+                  <div className="p-1.5 bg-amber-500 rounded-lg">
+                    <Key className="h-4 w-4 text-white" />
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm text-amber-900 font-medium mb-1">
+                    Importante: Guarda estas credenciales
+                  </p>
+                  <p className="text-xs text-amber-800">
+                    El club podrá usar estos datos para acceder a su panel de administración. 
+                    No se mostrarán nuevamente.
+                  </p>
+                </div>
+              </div>
             </div>
             
-            <div className="flex justify-end gap-2">
-              <Button onClick={handleClose}>
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <Button 
+                onClick={handleClose}
+                className="min-w-[100px] bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 shadow-lg shadow-blue-500/30"
+              >
                 Cerrar
               </Button>
             </div>

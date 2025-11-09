@@ -61,16 +61,27 @@ export default function EventParticipantsPage() {
     URL.revokeObjectURL(url);
   };
 
-  const eventDate = useMemo(() => (data?.event?.date ? new Date(data.event.date) : null), [data]);
+  const eventDate = useMemo(() => (data?.event?.startDate ? new Date(data.event.startDate) : null), [data]);
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6 pt-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Participantes</h2>
-          <p className="text-sm text-gray-600">Gestiona y revisa las confirmaciones para este evento.</p>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <Users className="h-8 w-8 text-blue-600" />
+            Participantes del Evento
+          </h1>
+          <p className="text-gray-600 mt-2">
+            Gestiona y revisa las confirmaciones para este evento
+          </p>
         </div>
-        <Link href="/club/events" className="text-sm text-blue-600 hover:underline">← Volver a eventos</Link>
+        <Link 
+          href="/club/events" 
+          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-blue-600 border border-gray-300 rounded-lg hover:border-blue-600 transition-colors"
+        >
+          ← Volver a eventos
+        </Link>
       </div>
 
       {loading ? (
