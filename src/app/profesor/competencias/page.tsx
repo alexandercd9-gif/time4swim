@@ -80,6 +80,31 @@ export default function ProfesorCompetenciasPage() {
     }
   }, [userId]);
 
+  // Pusher: Escuchar cuando se asignan nuevos carriles
+  useEffect(() => {
+    if (!userId) return;
+
+    // Importar dinámicamente para evitar errores de SSR
+    import('@/lib/pusher-client').then(({ subscribeToPusherChannel, unsubscribeFromPusherChannel }) => {
+      const channel = subscribeToPusherChannel('profesor-updates');
+      
+      if (channel) {
+        console.log('📡 Profesor suscrito a actualizaciones');
+        
+        channel.bind('lanes-assigned', (data: any) => {
+          console.log('🔔 Nuevos carriles asignados:', data);
+          toast.success('🔔 Se han actualizado las competencias', { duration: 3000 });
+          // Recargar eventos automáticamente
+          fetchEvents();
+        });
+      }
+
+      return () => {
+        unsubscribeFromPusherChannel('profesor-updates');
+      };
+    });
+  }, [userId]);
+
   // Obtener solo los carriles asignados a este profesor
   const getMyLanes = (event: Event) => {
     if (!userId) return [];

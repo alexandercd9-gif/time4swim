@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { toast } from "react-hot-toast";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Play, Square, RotateCcw, Clock, Users, CheckCircle, Save } from "lucide-react";
+import { ArrowLeft, Play, Square, RotateCcw, Clock, Users, CheckCircle, Save, Grid3x3, TableIcon } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,6 +61,7 @@ export default function EventControlPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [selectedDistance, setSelectedDistance] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid'); // Vista: cuadros o tabla
   
   // Estado de la serie actual
   const [heatStarted, setHeatStarted] = useState(false); // Si ya se dio START
@@ -485,11 +486,43 @@ export default function EventControlPage() {
     }
   };
 
-  const handleCompleteHeat = () => {
+  const handleCompleteHeat = async () => {
     // Marcar serie como completada
     setHeatCompleted([...heatCompleted, currentHeat]);
     setHeatStarted(false);
-    toast.success(`✅ Serie ${currentHeat} marcada como completada`);
+    toast.success(`✅ Serie ${currentHeat} completada`);
+    
+    // Si hay más series, avanzar automáticamente a la siguiente
+    if (currentHeat < heats.length) {
+      setTimeout(async () => {
+        const nextHeat = currentHeat + 1;
+        setCurrentHeat(nextHeat);
+        setLaneTimes(new Map());
+        toast.success(`📋 Avanzando a Serie ${nextHeat}`, { duration: 3000 });
+        
+        // Enviar evento por Pusher
+        try {
+          await fetch('/api/pusher/broadcast', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              channel: `event-${eventId}`,
+              event: 'heat-changed',
+              data: {
+                heatNumber: nextHeat,
+                totalHeats: heats.length,
+                timestamp: Date.now()
+              }
+            })
+          });
+          console.log('📡 Evento heat-changed enviado a entrenadores');
+        } catch (error) {
+          console.error('Error al enviar evento Pusher:', error);
+        }
+      }, 1500); // Esperar 1.5 segundos antes de avanzar
+    } else {
+      toast.success('🏁 ¡Todas las series completadas!', { duration: 5000 });
+    }
   };
 
   const handleReset = async () => {
@@ -575,292 +608,228 @@ export default function EventControlPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="min-h-screen">
+      <div className="max-w-[1600px] mx-auto px-3 sm:px-6 pt-8 pb-6 sm:pt-12 sm:pb-8">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-4 sm:mb-6">
           <Link 
             href={`/club/competencias/${eventId}/assign`}
-            className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4 transition-colors"
+            className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-3 sm:mb-4 transition-colors text-sm sm:text-base"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
             Volver a Asignación
           </Link>
           
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 flex items-center gap-3">
-                <Clock className="w-10 h-10 text-blue-600" />
+              <h1 className="text-xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2">
+                <Clock className="w-5 h-5 sm:w-8 sm:h-8 text-blue-600" />
                 Control de Evento
               </h1>
-              <p className="text-lg text-gray-600 mt-2">
+              <p className="text-xs sm:text-base text-gray-600 mt-1">
                 {event.title} • {event.distance}m {event.style}
               </p>
             </div>
             
-            <Badge variant="default" className="text-lg px-4 py-2">
+            <Badge variant="default" className="text-xs sm:text-base px-2 py-1 sm:px-3 sm:py-1.5 w-fit bg-black">
               {heats.length} Series
             </Badge>
           </div>
         </div>
 
-        {/* Control de Serie */}
-        <Card className="mb-8 border-2 border-blue-200 shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
-            <CardTitle className="text-center text-2xl">Control de Serie {currentHeat}</CardTitle>
-          </CardHeader>
-          <CardContent className="p-8">
-            <div className="text-center">
-              {/* Estado */}
-              <div className="mb-8">
-                {heatStarted ? (
-                  <Badge className="text-2xl px-8 py-4 bg-green-600 animate-pulse">
-                    🏊 Serie en curso - Esperando tiempos de profesores
-                  </Badge>
-                ) : (
-                  <Badge variant="secondary" className="text-2xl px-8 py-4">
-                    ⏸️ Serie detenida
-                  </Badge>
-                )}
-              </div>
-
-              {/* Tiempos recibidos */}
-              {laneTimes.size > 0 && (
-                <div className="mb-6">
-                  <p className="text-lg font-semibold text-gray-700 mb-2">
-                    Tiempos recibidos: {laneTimes.size} de {currentHeatData?.lanes.length || 0}
-                  </p>
-                  <div className="flex flex-wrap justify-center gap-2">
-                    {currentHeatData?.lanes.map(lane => (
-                      laneTimes.has(lane.id) && (
-                        <Badge key={lane.id} className="text-lg px-4 py-2 bg-blue-600">
-                          Carril {lane.lane}: {formatTime(laneTimes.get(lane.id)!)}
-                        </Badge>
-                      )
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* Controles */}
-              <div className="flex justify-center gap-4">
-                {!heatStarted ? (
-                  <>
-                    <Button
-                      size="lg"
-                      onClick={handleStart}
-                      className="bg-green-600 hover:bg-green-700 text-white px-8 py-6 text-xl"
-                    >
-                      <Play className="w-6 h-6 mr-2" />
-                      DAR START
-                    </Button>
-                    <Button
-                      size="lg"
-                      onClick={handleReset}
-                      variant="outline"
-                      className="px-8 py-6 text-xl"
-                    >
-                      <RotateCcw className="w-6 h-6 mr-2" />
-                      Reiniciar
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button
-                      size="lg"
-                      onClick={handleCompleteHeat}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-6 text-xl"
-                    >
-                      <CheckCircle className="w-6 h-6 mr-2" />
-                      Completar Serie
-                    </Button>
-                    <Button
-                      size="lg"
-                      onClick={handleReset}
-                      variant="outline"
-                      className="px-8 py-6 text-xl"
-                    >
-                      <RotateCcw className="w-6 h-6 mr-2" />
-                      Reiniciar
-                    </Button>
-                  </>
-                )}
-              </div>
-
-              <p className="text-sm text-gray-600 mt-4">
-                {!heatStarted 
-                  ? "Al dar START, todos los profesores iniciarán sus cronómetros" 
-                  : "Los profesores están cronometrando. Presiona COMPLETAR cuando todos hayan enviado sus tiempos."}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Selector de Serie */}
-        <div className="mb-6">
-          <div className="flex items-center gap-4">
-            <Button
-              onClick={() => {
-                if (currentHeat > 1) {
-                  setCurrentHeat(currentHeat - 1);
-                  setHeatStarted(false);
-                  setLaneTimes(new Map());
-                }
-              }}
-              disabled={currentHeat === 1}
-              variant="outline"
-            >
-              Serie Anterior
-            </Button>
-            
-            <div className="flex-1 text-center">
-              <h2 className="text-2xl font-bold text-gray-900">
-                Serie {currentHeat} de {heats.length}
-              </h2>
-              {heatCompleted.includes(currentHeat) && (
-                <Badge variant="default" className="bg-green-600 mt-2">
-                  <CheckCircle className="w-4 h-4 mr-1" />
-                  Completada
-                </Badge>
-              )}
-            </div>
-            
-            <Button
-              onClick={handleNextHeat}
-              disabled={currentHeat === heats.length || !heatCompleted.includes(currentHeat)}
-              variant="outline"
-            >
-              Serie Siguiente
-            </Button>
+        {/* Selector de Serie - Compacto */}
+        <div className="mb-4 sm:mb-6 flex items-center justify-between">
+          <Button
+            onClick={() => {
+              if (currentHeat > 1) {
+                setCurrentHeat(currentHeat - 1);
+                setHeatStarted(false);
+                setLaneTimes(new Map());
+              }
+            }}
+            disabled={currentHeat === 1}
+            variant="outline"
+            size="sm"
+            className="text-xs sm:text-sm"
+          >
+            Serie Anterior
+          </Button>
+          
+          <div className="text-center">
+            <h2 className="text-base sm:text-xl font-bold text-gray-900">
+              Serie {currentHeat} de {heats.length}
+            </h2>
+            {heatCompleted.includes(currentHeat) && (
+              <Badge variant="default" className="bg-green-600 mt-1 text-xs">
+                <CheckCircle className="w-3 h-3 mr-1" />
+                Completada
+              </Badge>
+            )}
           </div>
+          
+          <Button
+            onClick={handleNextHeat}
+            disabled={currentHeat === heats.length || !heatCompleted.includes(currentHeat)}
+            variant="outline"
+            size="sm"
+            className="text-xs sm:text-sm"
+          >
+            Serie Siguiente
+          </Button>
         </div>
 
-        {/* Selector de Distancia */}
-        {getAvailableDistances().length > 1 && (
-          <Card className="mb-6 border-2 border-blue-200">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-4">
-                <label className="text-sm font-semibold text-gray-700 whitespace-nowrap">
-                  Distancia de esta serie:
-                </label>
-                <Select
-                  value={selectedDistance?.toString() || ""}
-                  onValueChange={(value) => setSelectedDistance(Number(value))}
-                >
-                  <SelectTrigger className="w-full max-w-md">
-                    <SelectValue placeholder="Seleccionar distancia" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getAvailableDistances().map(({ distance, categories }) => {
-                      let label = `${distance}m`;
-                      if (categories && categories.length > 0) {
-                        label += ` - ${categories.join(", ")}`;
-                      } else if (distance === event?.distance) {
-                        // Obtener categorías que usan la distancia general
-                        const eligibleCats = getEligibleCategories();
-                        if (event?.categoryDistances) {
-                          try {
-                            const customDist = typeof event.categoryDistances === 'string'
-                              ? JSON.parse(event.categoryDistances)
-                              : event.categoryDistances;
-                              
-                            const catsWithCustom = Object.keys(customDist);
-                            const generalCats = eligibleCats.filter((c: string) => !catsWithCustom.includes(c));
-                            if (generalCats.length > 0) {
-                              label += ` - ${generalCats.join(", ")}`;
+        {/* Layout de 2 columnas: 70% Nadadores + 30% Control */}
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
+          
+          {/* COLUMNA IZQUIERDA: Asignación de Nadadores (70%) */}
+          <div className="lg:w-[70%] space-y-4 order-2 lg:order-1">
+            {/* Selector de Distancia */}
+            {getAvailableDistances().length > 1 && (
+              <Card className="border border-gray-300">
+                <CardContent className="p-2">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-bold text-gray-700 whitespace-nowrap">
+                      Distancia:
+                    </label>
+                    <Select
+                      value={selectedDistance?.toString() || ""}
+                      onValueChange={(value) => setSelectedDistance(Number(value))}
+                    >
+                      <SelectTrigger className="flex-1 text-xs font-medium h-8">
+                        <SelectValue placeholder="Seleccionar distancia" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getAvailableDistances().map(({ distance, categories }) => {
+                          let label = `${distance}m`;
+                          if (categories && categories.length > 0) {
+                            label += ` - ${categories.join(", ")}`;
+                          } else if (distance === event?.distance) {
+                            const eligibleCats = getEligibleCategories();
+                            if (event?.categoryDistances) {
+                              try {
+                                const customDist = typeof event.categoryDistances === 'string'
+                                  ? JSON.parse(event.categoryDistances)
+                                  : event.categoryDistances;
+                                  
+                                const catsWithCustom = Object.keys(customDist);
+                                const generalCats = eligibleCats.filter((c: string) => !catsWithCustom.includes(c));
+                                if (generalCats.length > 0) {
+                                  label += ` - ${generalCats.join(", ")}`;
+                                }
+                              } catch (e) {
+                                // ignore
+                              }
                             }
-                          } catch (e) {
-                            // ignore
                           }
-                        }
-                      }
-                      return (
-                        <SelectItem key={distance} value={distance.toString()}>
-                          {label}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-                {selectedDistance && (
-                  <Badge variant="outline" className="bg-blue-50">
-                    {selectedDistance}m seleccionados
-                  </Badge>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Asignación de Nadadores */}
-        {currentHeatData && (
-          <Card className="mb-6">
-            <CardHeader className="bg-blue-50">
-              <CardTitle className="flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  Asignar Nadadores - Serie {currentHeat}
-                </span>
-                {!heatCompleted.includes(currentHeat) && (
-                  <Button 
-                    onClick={handleSaveSwimmers}
-                    disabled={saving || heatStarted}
-                    size="sm"
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    {saving ? (
-                      <>
-                        <svg className="animate-spin mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Guardando...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-4 h-4 mr-2" />
-                        Guardar Nadadores
-                      </>
+                          return (
+                            <SelectItem key={distance} value={distance.toString()}>
+                              {label}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                    {selectedDistance && (
+                      <Badge className="bg-blue-600 text-white text-xs font-bold px-2 py-1">
+                        {selectedDistance}m
+                      </Badge>
                     )}
-                  </Button>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              {/* Alerta si no hay distancia seleccionada */}
-              {getAvailableDistances().length > 1 && !selectedDistance && (
-                <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800">
-                    ⚠️ <strong>Selecciona una distancia</strong> arriba para filtrar los nadadores según categoría
-                  </p>
-                </div>
-              )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Asignación de Nadadores */}
+            {currentHeatData && (
+              <Card className="border border-gray-200 overflow-hidden p-0">
+                <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-3 m-0">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="flex items-center gap-2 text-sm font-bold">
+                        <Users className="w-4 h-4" />
+                        Serie {currentHeat} - Nadadores
+                      </span>
+                      
+                      {/* Toggle Vista: Cuadros / Tabla */}
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setViewMode('grid')}
+                          className={`h-7 px-3 text-xs font-semibold ${viewMode === 'grid' ? 'bg-white/20 text-white' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+                        >
+                          <Grid3x3 className="w-3 h-3 mr-1" />
+                          Cuadros
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setViewMode('table')}
+                          className={`h-7 px-3 text-xs font-semibold ${viewMode === 'table' ? 'bg-white/20 text-white' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+                        >
+                          <TableIcon className="w-3 h-3 mr-1" />
+                          Tabla
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {!heatCompleted.includes(currentHeat) && (
+                      <Button 
+                        onClick={handleSaveSwimmers}
+                        disabled={saving || heatStarted}
+                        size="sm"
+                        className="bg-white text-blue-600 hover:bg-blue-50 text-xs font-semibold h-7"
+                      >
+                        {saving ? (
+                          <>
+                            <svg className="animate-spin mr-1 h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Guardando...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-3 h-3 mr-1" />
+                            Guardar
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="p-2">
+                  {/* Alertas */}
+                  {getAvailableDistances().length > 1 && !selectedDistance && (
+                    <div className="mb-2 p-1.5 bg-yellow-50 border border-yellow-300 rounded text-xs font-medium">
+                      ⚠️ <strong>Selecciona una distancia</strong> arriba
+                    </div>
+                  )}
+                  
+                  {selectedDistance && getFilteredSwimmers().length === 0 && (
+                    <div className="mb-2 p-1.5 bg-red-50 border border-red-300 rounded text-xs font-medium">
+                      ❌ No hay nadadores para {selectedDistance}m
+                    </div>
+                  )}
               
-              {/* Alerta si no hay nadadores disponibles */}
-              {selectedDistance && getFilteredSwimmers().length === 0 && (
-                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-sm text-red-800">
-                    ❌ No hay nadadores disponibles para la distancia de <strong>{selectedDistance}m</strong>
-                  </p>
-                </div>
-              )}
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {currentHeatData.lanes
+                  {/* Vista de Carriles - Grid o Tabla */}
+                  {viewMode === 'grid' ? (
+                    /* VISTA EN CUADROS */
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-2">
+                      {currentHeatData.lanes
                   .sort((a, b) => a.lane - b.lane)
                   .map((lane) => {
                     // Primero filtrar por distancia seleccionada
                     let availableSwimmers = getFilteredSwimmers();
                     
-                    // Luego filtrar nadadores que ya compitieron en series anteriores
+                    // Filtrar nadadores que ya compitieron en CUALQUIER serie (completada o no)
                     availableSwimmers = availableSwimmers.filter(swimmer => {
-                      // Si estamos en la primera serie, mostrar todos
-                      if (currentHeat === 1) return true;
-                      
-                      // Verificar si el nadador ya compitió en series completadas
-                      const hasCompeted = heats
-                        .filter(h => h.number < currentHeat && heatCompleted.includes(h.number))
-                        .some(h => h.lanes.some(l => l.swimmer?.id === swimmer.id));
+                      // Verificar si el nadador ya tiene tiempo registrado en alguna serie
+                      const hasCompeted = heats.some(h => 
+                        h.lanes.some(l => 
+                          l.swimmer?.id === swimmer.id && l.finalTime != null
+                        )
+                      );
                       
                       return !hasCompeted;
                     });
@@ -877,40 +846,77 @@ export default function EventControlPage() {
 
                     const isCompleted = heatCompleted.includes(currentHeat);
 
+                    return {
+                      ...lane,
+                      availableSwimmers,
+                      isCompleted
+                    };
+                  })
+                  // Ordenar por tiempo final (más rápido primero), los sin tiempo al final
+                  .sort((a, b) => {
+                    if (!a.finalTime && !b.finalTime) return a.lane - b.lane; // Sin tiempo: orden por carril
+                    if (!a.finalTime) return 1; // a sin tiempo va al final
+                    if (!b.finalTime) return -1; // b sin tiempo va al final
+                    return a.finalTime - b.finalTime; // Ordenar por tiempo ascendente
+                  })
+                  .map((lane, index) => {
+                    const position = lane.finalTime ? index + 1 : null;
+                    const isFirst = position === 1;
+                    const isSecond = position === 2;
+                    const isThird = position === 3;
+
                     return (
-                      <Card key={lane.id} className="border-2">
-                        <CardHeader className="pb-3">
-                          <div className="flex items-center justify-between">
-                            <Badge variant="outline" className="text-lg">
-                              Carril {lane.lane}
-                            </Badge>
-                            {lane.coach && (
-                              <Badge variant="secondary" className="text-xs">
-                                {lane.coach.name}
-                              </Badge>
-                            )}
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-3">
+                      <Card 
+                        key={lane.id} 
+                        className={`border-2 transition-all ${
+                          isFirst ? 'border-yellow-400 bg-yellow-50' : 
+                          isSecond ? 'border-gray-400 bg-gray-50' : 
+                          isThird ? 'border-orange-400 bg-orange-50' : 
+                          'border-gray-200'
+                        }`}
+                      >
+                        <CardContent className="p-3">
+                          <div className="space-y-2">
+                            {/* Header con carril, entrenador y posición */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="font-bold text-sm px-2 py-0.5">
+                                  C{lane.lane}
+                                </Badge>
+                                {position && (
+                                  <Badge className={`text-sm font-bold ${
+                                    isFirst ? 'bg-yellow-500' : 
+                                    isSecond ? 'bg-gray-500' : 
+                                    isThird ? 'bg-orange-500' : 
+                                    'bg-blue-500'
+                                  }`}>
+                                    {isFirst ? '🥇' : isSecond ? '🥈' : isThird ? '🥉' : `#${position}`}
+                                  </Badge>
+                                )}
+                              </div>
+                              {lane.coach && (
+                                <span className="text-xs text-gray-600 font-medium">{lane.coach.name}</span>
+                              )}
+                            </div>
+                            
+                            {/* Nadador con select más grande */}
                             <div>
-                              <p className="text-xs text-gray-600 mb-2">Nadador</p>
-                              {isCompleted ? (
-                                <p className="font-semibold text-gray-900">
+                              {lane.isCompleted || lane.finalTime ? (
+                                <p className="font-bold text-base text-gray-900">
                                   {lane.swimmer?.name || "Sin asignar"}
                                 </p>
                               ) : (
                                 <Select
                                   value={lane.swimmerId || lane.swimmer?.id || ""}
                                   onValueChange={(value) => updateSwimmer(lane.id, value || undefined)}
-                                  disabled={heatStarted}
+                                  disabled={heatStarted || lane.finalTime != null}
                                 >
-                                  <SelectTrigger className="w-full">
+                                  <SelectTrigger className="w-full text-sm font-medium h-9">
                                     <SelectValue placeholder="Seleccionar nadador" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {availableSwimmers.map((swimmer) => (
-                                      <SelectItem key={swimmer.id} value={swimmer.id}>
+                                    {lane.availableSwimmers.map((swimmer) => (
+                                      <SelectItem key={swimmer.id} value={swimmer.id} className="text-sm">
                                         {swimmer.name}
                                       </SelectItem>
                                     ))}
@@ -919,80 +925,270 @@ export default function EventControlPage() {
                               )}
                             </div>
                             
-                            {/* Mostrar tiempo registrado */}
+                            {/* Tiempo registrado - MÁS GRANDE */}
                             {lane.finalTime && (
-                              <div className="pt-2 border-t">
-                                <p className="text-xs text-gray-600 mb-1">Tiempo Final</p>
-                                <div className="flex items-center gap-2">
-                                  <Clock className="w-4 h-4 text-green-600" />
-                                  <p className="text-lg font-bold text-green-600 font-mono">
+                              <div className={`pt-2 border-t-2 ${
+                                isFirst ? 'border-yellow-300' : 
+                                isSecond ? 'border-gray-300' : 
+                                isThird ? 'border-orange-300' : 
+                                'border-gray-200'
+                              }`}>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-gray-600 font-medium">Tiempo</span>
+                                  <p className={`text-xl font-bold font-mono ${
+                                    isFirst ? 'text-yellow-600' : 
+                                    isSecond ? 'text-gray-600' : 
+                                    isThird ? 'text-orange-600' : 
+                                    'text-green-600'
+                                  }`}>
                                     {formatTime(lane.finalTime)}
                                   </p>
                                 </div>
                               </div>
                             )}
                             
-                            {/* Enlace para el profesor de este carril */}
-                            {(lane.swimmerId || lane.swimmer) && (
-                              <div className="pt-2 border-t">
-                                <Link
-                                  href={`/profesor/competencias/${eventId}/lane/${lane.id}`}
-                                  target="_blank"
-                                  className="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
-                                >
-                                  <Clock className="w-3 h-3" />
-                                  Abrir control de carril
-                                </Link>
-                              </div>
+                            {/* Enlace control - más compacto */}
+                            {(lane.swimmerId || lane.swimmer) && !lane.isCompleted && (
+                              <Link
+                                href={`/profesor/competencias/${eventId}/lane/${lane.id}`}
+                                target="_blank"
+                                className="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 mt-1"
+                              >
+                                <Clock className="w-3 h-3" />
+                                Abrir control
+                              </Link>
                             )}
                           </div>
                         </CardContent>
                       </Card>
                     );
                   })}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                    </div>
+                  ) : (
+                    /* VISTA EN TABLA */
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-100 border-b-2 border-gray-300">
+                          <tr>
+                            <th className="px-2 py-2 text-left font-bold">Pos.</th>
+                            <th className="px-2 py-2 text-left font-bold">Carril</th>
+                            <th className="px-2 py-2 text-left font-bold">Entrenador</th>
+                            <th className="px-2 py-2 text-left font-bold">Nadador</th>
+                            <th className="px-2 py-2 text-left font-bold">Tiempo</th>
+                            <th className="px-2 py-2 text-left font-bold">Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {currentHeatData.lanes
+                            .sort((a, b) => a.lane - b.lane)
+                            .map((lane) => {
+                              let availableSwimmers = getFilteredSwimmers();
+                              availableSwimmers = availableSwimmers.filter(swimmer => {
+                                const hasCompeted = heats.some(h => 
+                                  h.lanes.some(l => l.swimmer?.id === swimmer.id && l.finalTime != null)
+                                );
+                                return !hasCompeted;
+                              });
+                              const swimmersInCurrentHeat = currentHeatData.lanes
+                                .filter(l => l.id !== lane.id)
+                                .map(l => l.swimmerId)
+                                .filter(Boolean);
+                              availableSwimmers = availableSwimmers.filter(swimmer => 
+                                !swimmersInCurrentHeat.includes(swimmer.id)
+                              );
+                              const isCompleted = heatCompleted.includes(currentHeat);
+                              return { ...lane, availableSwimmers, isCompleted };
+                            })
+                            .sort((a, b) => {
+                              if (!a.finalTime && !b.finalTime) return a.lane - b.lane;
+                              if (!a.finalTime) return 1;
+                              if (!b.finalTime) return -1;
+                              return a.finalTime - b.finalTime;
+                            })
+                            .map((lane, index) => {
+                              const position = lane.finalTime ? index + 1 : null;
+                              const isFirst = position === 1;
+                              const isSecond = position === 2;
+                              const isThird = position === 3;
 
-        {/* Alerta para pasar a siguiente serie */}
-        {heatCompleted.includes(currentHeat) && currentHeat < heats.length && (
-          <Card className="mb-6 bg-green-50 border-2 border-green-400">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="w-8 h-8 text-green-600" />
-                  <div>
-                    <h3 className="font-semibold text-green-900 text-lg">Serie {currentHeat} Completada</h3>
-                    <p className="text-green-700">Puedes pasar a la siguiente serie</p>
-                  </div>
+                              return (
+                                <tr 
+                                  key={lane.id}
+                                  className={`border-b transition-colors ${
+                                    isFirst ? 'bg-yellow-50 hover:bg-yellow-100' : 
+                                    isSecond ? 'bg-gray-50 hover:bg-gray-100' : 
+                                    isThird ? 'bg-orange-50 hover:bg-orange-100' : 
+                                    'hover:bg-gray-50'
+                                  }`}
+                                >
+                                  <td className="px-2 py-2">
+                                    {position && (
+                                      <Badge className={`text-xs font-bold ${
+                                        isFirst ? 'bg-yellow-500' : 
+                                        isSecond ? 'bg-gray-500' : 
+                                        isThird ? 'bg-orange-500' : 
+                                        'bg-blue-500'
+                                      }`}>
+                                        {isFirst ? '🥇' : isSecond ? '🥈' : isThird ? '🥉' : `#${position}`}
+                                      </Badge>
+                                    )}
+                                  </td>
+                                  <td className="px-2 py-2 font-bold">C{lane.lane}</td>
+                                  <td className="px-2 py-2 text-gray-600">{lane.coach?.name || '-'}</td>
+                                  <td className="px-2 py-2">
+                                    {lane.isCompleted || lane.finalTime ? (
+                                      <span className="font-semibold">{lane.swimmer?.name || "Sin asignar"}</span>
+                                    ) : (
+                                      <Select
+                                        value={lane.swimmerId || lane.swimmer?.id || ""}
+                                        onValueChange={(value) => updateSwimmer(lane.id, value || undefined)}
+                                        disabled={heatStarted || lane.finalTime != null}
+                                      >
+                                        <SelectTrigger className="w-full text-xs h-8">
+                                          <SelectValue placeholder="Seleccionar nadador" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {lane.availableSwimmers.map((swimmer) => (
+                                            <SelectItem key={swimmer.id} value={swimmer.id} className="text-xs">
+                                              {swimmer.name}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    )}
+                                  </td>
+                                  <td className="px-2 py-2">
+                                    {lane.finalTime ? (
+                                      <span className={`font-mono font-bold text-base ${
+                                        isFirst ? 'text-yellow-600' : 
+                                        isSecond ? 'text-gray-600' : 
+                                        isThird ? 'text-orange-600' : 
+                                        'text-green-600'
+                                      }`}>
+                                        {formatTime(lane.finalTime)}
+                                      </span>
+                                    ) : (
+                                      <span className="text-gray-400 text-xs">Esperando...</span>
+                                    )}
+                                  </td>
+                                  <td className="px-2 py-2">
+                                    {(lane.swimmerId || lane.swimmer) && !lane.isCompleted && (
+                                      <Link
+                                        href={`/profesor/competencias/${eventId}/lane/${lane.id}`}
+                                        target="_blank"
+                                        className="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
+                                      >
+                                        <Clock className="w-3 h-3" />
+                                        Abrir
+                                      </Link>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* COLUMNA DERECHA: Control de Serie (30%) */}
+          <div className="lg:w-[30%] order-1 lg:order-2 space-y-4">
+            {/* Panel de Control - Adapta altura */}
+            <Card className="border-2 border-blue-500 shadow-lg lg:sticky lg:top-4">
+              <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-3">
+                <CardTitle className="text-center text-lg font-bold">
+                  Control de Serie {currentHeat}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 space-y-3">
+                {/* Estado */}
+                <div className="text-center">
+                  {heatStarted ? (
+                    <Badge className="text-sm px-4 py-2 bg-green-600 animate-pulse font-bold">
+                      🏊 Serie en curso
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="text-sm px-4 py-2 font-bold">
+                      ⏸️ Serie detenida
+                    </Badge>
+                  )}
                 </div>
-                <Button
-                  onClick={handleNextHeat}
-                  className="bg-green-600 hover:bg-green-700"
-                  size="lg"
-                >
-                  Ir a Serie {currentHeat + 1}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
-        {/* Información sobre sincronización */}
-        <Card className="mt-8 bg-blue-50 border-blue-200">
-          <CardContent className="p-4">
-            <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
-              📡 Sincronización en Tiempo Real
-            </h3>
-            <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Los profesores pueden abrir el control de su carril haciendo clic en "Abrir control de carril"</li>
-              <li>• Cuando inicies/detengas el cronómetro global, los profesores lo verán en tiempo real</li>
-              <li>• Cuando los profesores marquen tiempos en sus carriles, tú los verás aquí automáticamente</li>
-              <li>• La sincronización funciona a través de Pusher (WebSockets)</li>
-            </ul>
-          </CardContent>
-        </Card>
+                {/* Tiempos recibidos */}
+                {laneTimes.size > 0 && (
+                  <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                    <p className="text-sm font-bold text-gray-700 mb-2 text-center">
+                      Tiempos recibidos
+                    </p>
+                    <p className="text-3xl font-bold text-blue-600 text-center mb-2">
+                      {laneTimes.size} / {currentHeatData?.lanes.length || 0}
+                    </p>
+                    <div className="flex flex-wrap justify-center gap-1">
+                      {currentHeatData?.lanes.map(lane => (
+                        laneTimes.has(lane.id) && (
+                          <Badge key={lane.id} className="text-xs px-2 py-1 bg-green-600 font-mono">
+                            C{lane.lane}: {formatTime(laneTimes.get(lane.id)!)}
+                          </Badge>
+                        )
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Botones de Control */}
+                <div className="space-y-2 pt-2">
+                  {!heatStarted ? (
+                    <>
+                      <Button
+                        onClick={handleStart}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white py-6 text-base font-bold shadow-md"
+                      >
+                        <Play className="w-5 h-5 mr-2" />
+                        DAR START
+                      </Button>
+                      <Button
+                        onClick={handleReset}
+                        variant="outline"
+                        className="w-full py-3 text-sm font-semibold"
+                      >
+                        <RotateCcw className="w-4 h-4 mr-2" />
+                        Reiniciar
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        onClick={handleCompleteHeat}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-base font-bold shadow-md"
+                      >
+                        <CheckCircle className="w-5 h-5 mr-2" />
+                        Completar Serie
+                      </Button>
+                      <Button
+                        onClick={handleReset}
+                        variant="outline"
+                        className="w-full py-3 text-sm font-semibold"
+                      >
+                        <RotateCcw className="w-4 h-4 mr-2" />
+                        Reiniciar
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+                <div className="text-xs text-gray-600 text-center bg-gray-50 p-2 rounded border border-gray-200">
+                  {!heatStarted 
+                    ? "💡 Al dar START, todos los profesores iniciarán sus cronómetros simultáneamente" 
+                    : "⏱️ Los profesores están cronometrando. Presiona COMPLETAR cuando todos hayan enviado sus tiempos."}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

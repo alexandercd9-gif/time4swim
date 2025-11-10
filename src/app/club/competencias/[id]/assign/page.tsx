@@ -121,46 +121,39 @@ export default function AssignLanesPage() {
 
   async function fetchExistingAssignments() {
     try {
-      const res = await fetch(`/api/club/heats/${eventId}/coaches`, {
-        credentials: 'include'
-      });
-      
-      if (res.ok) {
-        const data = await res.json();
-        if (data.laneCoaches && data.laneCoaches.length > 0) {
-          setLaneCoaches(data.laneCoaches);
-          setNumLanes(data.laneCoaches.length);
-        }
-      }
+      // Esta funcionalidad ya no existe, los carriles se crean al guardar
+      // Simplemente marcamos como cargado
+      setLoading(false);
     } catch (err) {
       console.error(err);
-    } finally {
       setLoading(false);
     }
   }
 
   async function handleStartEvent() {
+    // Validar que todos los carriles tengan profesor
+    const incomplete = laneCoaches.filter(lc => !lc.coachId);
+    
+    if (incomplete.length > 0) {
+      toast.error(`Faltan profesores en ${incomplete.length} ${incomplete.length === 1 ? 'carril' : 'carriles'}`);
+      return;
+    }
+
     setSaving(true);
     try {
-      // Guardar asignaciones de entrenadores
-      const lanes = laneCoaches.map(lc => ({
-        lane: lc.lane,
-        coachId: lc.coachId,
-        swimmerId: null // Se asignará en la página de control
-      }));
-
-      const res = await fetch(`/api/club/heats/${eventId}/assign`, {
+      // Guardar la asignación de profesores a carriles en la base de datos
+      const response = await fetch(`/api/club/events/${eventId}/heats/assign`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ lanes })
+        body: JSON.stringify({ laneCoaches })
       });
 
-      if (res.ok) {
-        toast.success('Carriles guardados correctamente');
+      if (response.ok) {
+        toast.success('✅ Carriles asignados correctamente');
         router.push(`/club/competencias/${eventId}/control`);
       } else {
-        const error = await res.json();
+        const error = await response.json();
         toast.error(error.error || 'Error al guardar');
       }
     } catch (err) {
@@ -180,37 +173,8 @@ export default function AssignLanesPage() {
   }
 
   async function handleSaveCoaches() {
-    // Validar que todos los carriles tengan profesor
-    const incomplete = laneCoaches.filter(lc => !lc.coachId);
-    
-    if (incomplete.length > 0) {
-      toast.error(`Faltan profesores en ${incomplete.length} ${incomplete.length === 1 ? 'carril' : 'carriles'}`);
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const res = await fetch(`/api/club/heats/${eventId}/assign-coaches`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ laneCoaches }),
-      });
-
-      if (res.ok) {
-        toast.success('✅ Profesores asignados correctamente');
-        // Redirigir a la página de series
-        router.push(`/club/competencias/${eventId}/series`);
-      } else {
-        const err = await res.json();
-        toast.error(err?.error || 'Error al guardar profesores');
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error('Error de red');
-    } finally {
-      setSaving(false);
-    }
+    // Esta función ya no se usa, pero la dejamos por si acaso
+    handleStartEvent();
   }
 
   const getStyleName = (style: string) => {
@@ -323,37 +287,48 @@ export default function AssignLanesPage() {
 
               {!allAssigned && (
                 <div className="space-y-1.5 pl-8">
-                  {laneCoaches.map((laneCoach) => (
-                    <div
-                      key={laneCoach.lane}
-                      className={`flex items-center gap-3 p-2 rounded border ${
-                        laneCoach.coachId ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'
-                      }`}
-                    >
-                      <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0">
-                        {laneCoach.lane}
-                      </span>
-                      <span className="text-sm font-medium w-16">Carril {laneCoach.lane}</span>
-                      <Select
-                        value={laneCoach.coachId}
-                        onValueChange={(value) => updateCoach(laneCoach.lane, value)}
+                  {laneCoaches.map((laneCoach) => {
+                    // Filtrar entrenadores ya asignados en otros carriles
+                    const assignedCoachIds = laneCoaches
+                      .filter(lc => lc.lane !== laneCoach.lane && lc.coachId) // Excluir el carril actual
+                      .map(lc => lc.coachId);
+                    
+                    const availableCoaches = coaches.filter(
+                      coach => !assignedCoachIds.includes(coach.id)
+                    );
+
+                    return (
+                      <div
+                        key={laneCoach.lane}
+                        className={`flex items-center gap-3 p-2 rounded border ${
+                          laneCoach.coachId ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'
+                        }`}
                       >
-                        <SelectTrigger className="flex-1 bg-white h-8 text-sm">
-                          <SelectValue placeholder="Seleccionar entrenador" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {coaches.map((coach) => (
-                            <SelectItem key={coach.id} value={coach.id}>
-                              {coach.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {laneCoach.coachId && (
-                        <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
-                      )}
-                    </div>
-                  ))}
+                        <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0">
+                          {laneCoach.lane}
+                        </span>
+                        <span className="text-sm font-medium w-16">Carril {laneCoach.lane}</span>
+                        <Select
+                          value={laneCoach.coachId}
+                          onValueChange={(value) => updateCoach(laneCoach.lane, value)}
+                        >
+                          <SelectTrigger className="flex-1 bg-white h-8 text-sm">
+                            <SelectValue placeholder="Seleccionar entrenador" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableCoaches.map((coach) => (
+                              <SelectItem key={coach.id} value={coach.id}>
+                                {coach.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {laneCoach.coachId && (
+                          <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 

@@ -219,7 +219,10 @@ export default function ProfesorLaneControlPage({
       });
 
       if (response.ok) {
-        toast.success('✅ Tiempo guardado y enviado al administrador');
+        toast.success('✅ Tiempo enviado al administrador', {
+          duration: 5000,
+          icon: '📤'
+        });
 
         // Notificar al admin con el tiempo final
         await fetch('/api/pusher/broadcast', {
@@ -237,12 +240,27 @@ export default function ProfesorLaneControlPage({
             }
           })
         });
+
+        // Mostrar mensaje de espera para la siguiente serie
+        setTimeout(() => {
+          toast('⏳ Esperando Serie 2...', {
+            duration: 10000,
+            icon: '🏊'
+          });
+        }, 2000);
+
       } else {
         toast.error('Error al guardar tiempo');
+        // Si hubo error, permitir reenvío
+        setRecordedTime(null);
+        setLocalRunning(false);
       }
     } catch (error) {
       console.error('Error saving time:', error);
       toast.error('Error de conexión');
+      // Si hubo error, permitir reenvío
+      setRecordedTime(null);
+      setLocalRunning(false);
     }
   };
 
@@ -280,55 +298,55 @@ export default function ProfesorLaneControlPage({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-4 sm:mb-8">
           <Link 
             href="/profesor/competencias"
-            className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4 transition-colors"
+            className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-3 sm:mb-4 transition-colors text-sm sm:text-base"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
             Volver a Competiciones
           </Link>
           
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-                <Clock className="w-8 h-8 text-blue-600" />
-                Control de Carril {lane.laneNumber}
+              <h1 className="text-xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2 sm:gap-3">
+                <Clock className="w-5 h-5 sm:w-8 sm:h-8 text-blue-600" />
+                Control Carril {lane.laneNumber}
               </h1>
-              <p className="text-lg text-gray-600 mt-2">
+              <p className="text-sm sm:text-lg text-gray-600 mt-1 sm:mt-2">
                 {event.title} • {event.distance}m {event.style}
               </p>
             </div>
             
-            <Badge variant="default" className="text-xl px-6 py-3">
-              <Hash className="w-5 h-5 mr-2" />
+            <Badge variant="default" className="text-base sm:text-xl px-4 py-2 sm:px-6 sm:py-3 w-fit">
+              <Hash className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
               Carril {lane.laneNumber}
             </Badge>
           </div>
         </div>
 
         {/* Nadador Asignado */}
-        <Card className="mb-8 border-2 border-blue-200">
-          <CardHeader className="bg-blue-50">
-            <CardTitle className="flex items-center gap-2">
-              <User className="w-5 h-5" />
+        <Card className="mb-4 sm:mb-8 border-2 border-blue-200">
+          <CardHeader className="bg-blue-50 p-3 sm:p-6">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <User className="w-4 h-4 sm:w-5 sm:h-5" />
               Nadador Asignado
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             {lane.swimmer ? (
               <div className="text-center">
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-lg sm:text-2xl font-bold text-gray-900">
                   {lane.swimmer.name} {lane.swimmer.lastName}
                 </p>
-                <p className="text-gray-600 mt-2">
+                <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">
                   Fecha de nacimiento: {new Date(lane.swimmer.birthDate).toLocaleDateString()}
                 </p>
               </div>
             ) : (
-              <p className="text-center text-gray-500">
+              <p className="text-center text-gray-500 text-sm sm:text-base">
                 No hay nadador asignado en este carril
               </p>
             )}
@@ -336,23 +354,23 @@ export default function ProfesorLaneControlPage({
         </Card>
 
         {/* Cronómetro Local del Profesor */}
-        <Card className={`mb-8 border-4 transition-all ${localRunning ? 'border-green-500 bg-green-50 shadow-lg shadow-green-200' : recordedTime !== null ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}>
-          <CardHeader className={localRunning ? 'bg-green-100' : recordedTime !== null ? 'bg-blue-100' : 'bg-gray-50'}>
-            <CardTitle className="text-center flex items-center justify-center gap-2">
-              <Clock className={`w-6 h-6 ${localRunning ? 'text-green-600 animate-pulse' : recordedTime !== null ? 'text-blue-600' : 'text-gray-600'}`} />
+        <Card className={`mb-4 sm:mb-8 border-4 transition-all ${localRunning ? 'border-green-500 bg-green-50 shadow-lg shadow-green-200' : recordedTime !== null ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}>
+          <CardHeader className={`p-3 sm:p-6 ${localRunning ? 'bg-green-100' : recordedTime !== null ? 'bg-blue-100' : 'bg-gray-50'}`}>
+            <CardTitle className="text-center flex items-center justify-center gap-2 text-sm sm:text-base">
+              <Clock className={`w-5 h-5 sm:w-6 sm:h-6 ${localRunning ? 'text-green-600 animate-pulse' : recordedTime !== null ? 'text-blue-600' : 'text-gray-600'}`} />
               <span className={localRunning ? 'text-green-900' : recordedTime !== null ? 'text-blue-900' : 'text-gray-900'}>
                 Tu Cronómetro - Carril {lane.laneNumber}
               </span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-8">
+          <CardContent className="p-4 sm:p-8">
             <div className="text-center">
-              <div className={`text-7xl font-mono font-bold mb-4 ${localRunning ? 'text-green-600' : recordedTime !== null ? 'text-blue-600' : 'text-gray-400'}`}>
+              <div className={`text-4xl sm:text-7xl font-mono font-bold mb-3 sm:mb-4 ${localRunning ? 'text-green-600' : recordedTime !== null ? 'text-blue-600' : 'text-gray-400'}`}>
                 {formatTime(localTime)}
               </div>
               <Badge 
                 variant={localRunning ? "default" : recordedTime !== null ? "default" : "secondary"} 
-                className={`text-lg px-4 py-2 ${localRunning ? 'bg-green-600 animate-pulse' : recordedTime !== null ? 'bg-blue-600' : ''}`}
+                className={`text-xs sm:text-lg px-3 py-1.5 sm:px-4 sm:py-2 ${localRunning ? 'bg-green-600 animate-pulse' : recordedTime !== null ? 'bg-blue-600' : ''}`}
               >
                 {localRunning ? "⏱️ CORRIENDO - Presiona STOP cuando llegue" : recordedTime !== null ? "✅ TIEMPO REGISTRADO" : "⏸️ Esperando señal del administrador"}
               </Badge>
@@ -361,63 +379,63 @@ export default function ProfesorLaneControlPage({
         </Card>
 
         {/* Control de Registro de Tiempo */}
-        <Card className="mb-8 border-2 border-blue-200 shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
-            <CardTitle className="text-center text-2xl">
+        <Card className="mb-4 sm:mb-8 border-2 border-blue-200 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-3 sm:p-6">
+            <CardTitle className="text-center text-base sm:text-2xl">
               Registro de Tiempo - Carril {lane.laneNumber}
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-8">
+          <CardContent className="p-4 sm:p-8">
             <div className="text-center">
               {recordedTime !== null ? (
                 // Ya se registró un tiempo
-                <div className="space-y-6">
-                  <div className="text-9xl font-mono font-bold text-blue-600 mb-4 tracking-wider">
+                <div className="space-y-3 sm:space-y-6">
+                  <div className="text-5xl sm:text-9xl font-mono font-bold text-blue-600 mb-2 sm:mb-4 tracking-wider">
                     {formatTime(recordedTime)}
                   </div>
-                  <Badge variant="default" className="text-2xl px-8 py-4 bg-blue-600">
+                  <Badge variant="default" className="text-sm sm:text-2xl px-4 py-2 sm:px-8 sm:py-4 bg-blue-600">
                     ✅ Tiempo Enviado al Administrador
                   </Badge>
-                  <p className="text-lg text-gray-600 mt-4">
+                  <p className="text-sm sm:text-lg text-gray-600 mt-2 sm:mt-4">
                     El administrador ha recibido el tiempo de este carril
                   </p>
                 </div>
               ) : localRunning ? (
                 // Cronómetro local corriendo - mostrar botón STOP
-                <div className="space-y-6">
-                  <p className="text-xl text-gray-700 font-semibold mb-4">
+                <div className="space-y-3 sm:space-y-6">
+                  <p className="text-base sm:text-xl text-gray-700 font-semibold mb-2 sm:mb-4">
                     👀 Observa tu cronómetro arriba
                   </p>
                   <Button
                     size="lg"
                     onClick={handleStopLane}
                     disabled={!lane.swimmer}
-                    className="bg-red-600 hover:bg-red-700 text-white px-16 py-10 text-3xl shadow-2xl hover:shadow-red-500/50 transition-all transform hover:scale-105 disabled:opacity-50 animate-pulse"
+                    className="bg-red-600 hover:bg-red-700 text-white px-8 py-6 sm:px-16 sm:py-10 text-xl sm:text-3xl shadow-2xl hover:shadow-red-500/50 transition-all transform hover:scale-105 disabled:opacity-50 animate-pulse w-full sm:w-auto"
                   >
-                    <Square className="w-10 h-10 mr-4" />
+                    <Square className="w-6 h-6 sm:w-10 sm:h-10 mr-2 sm:mr-4" />
                     STOP - Registrar Llegada
                   </Button>
-                  <p className="text-sm text-gray-600 mt-4">
+                  <p className="text-xs sm:text-sm text-gray-600 mt-2 sm:mt-4">
                     🏁 Presiona cuando tu nadador toque la pared
                   </p>
                   {!lane.swimmer && (
-                    <p className="text-red-600 font-semibold mt-2">
+                    <p className="text-red-600 font-semibold mt-1 sm:mt-2 text-xs sm:text-base">
                       ⚠️ No hay nadador asignado
                     </p>
                   )}
                 </div>
               ) : (
                 // Esperando que el admin inicie
-                <div className="space-y-6">
-                  <Clock className="w-24 h-24 mx-auto text-gray-400" />
-                  <p className="text-xl text-gray-600">
+                <div className="space-y-3 sm:space-y-6">
+                  <Clock className="w-16 h-16 sm:w-24 sm:h-24 mx-auto text-gray-400" />
+                  <p className="text-base sm:text-xl text-gray-600">
                     Esperando que el administrador dé la señal de START...
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-xs sm:text-sm text-gray-500">
                     Tu cronómetro iniciará automáticamente
                   </p>
                   {!lane.swimmer && (
-                    <p className="text-red-600 font-semibold">
+                    <p className="text-red-600 font-semibold text-xs sm:text-base">
                       ⚠️ No hay nadador asignado en este carril
                     </p>
                   )}
@@ -429,11 +447,11 @@ export default function ProfesorLaneControlPage({
 
         {/* Instrucciones */}
         <Card className="border-2 border-blue-200 bg-blue-50">
-          <CardContent className="p-6">
-            <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
+          <CardContent className="p-4 sm:p-6">
+            <h3 className="font-bold text-base sm:text-lg mb-2 sm:mb-3 flex items-center gap-2">
               📋 Cómo Funciona - Nueva Lógica
             </h3>
-            <ul className="space-y-2 text-gray-700">
+            <ul className="space-y-1.5 sm:space-y-2 text-gray-700 text-xs sm:text-base">
               <li>• <strong>El administrador da la señal de START</strong> cuando comienza la carrera</li>
               <li>• <strong>Tu cronómetro inicia automáticamente</strong> al recibir la señal</li>
               <li>• <strong>Observa a tu nadador</strong> y tu cronómetro (arriba)</li>
