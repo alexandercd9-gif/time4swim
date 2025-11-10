@@ -46,6 +46,8 @@ const navByRole = {
   // Profesor (TEACHER)
   profesor: [
     { href: "/profesor/dashboard", label: "Mis Nadadores", icon: Users, description: "Alumnos asignados" },
+    { href: "/profesor/competencias", label: "Competiciones", icon: Medal, description: "Competencias internas" },
+    { href: "/profesor/eventos", label: "Eventos", icon: Calendar, description: "Eventos externos" },
     { href: "/profesor/planes", label: "Planes", icon: BarChart, description: "Entrenamientos" },
     { href: "/profesor/progreso", label: "Progreso", icon: Medal, description: "Evolución" },
   ],

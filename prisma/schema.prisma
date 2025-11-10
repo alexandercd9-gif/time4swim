@@ -303,9 +303,9 @@ model HeatLane {
   lane        Int       // Número de carril (1-5)
   heatNumber  Int       @default(1) // Número de serie (para múltiples tandas)
   
-  // Nadador asignado
-  swimmerId   String
-  swimmer     Child     @relation(fields: [swimmerId], references: [id], onDelete: Cascade)
+  // Nadador asignado (opcional hasta que se asigne en el control)
+  swimmerId   String?
+  swimmer     Child?    @relation(fields: [swimmerId], references: [id], onDelete: Cascade)
   
   // Profesor responsable del carril
   coachId     String
@@ -326,7 +326,7 @@ model HeatLane {
   // Relations
   event       Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
   
-  @@unique([eventId, lane, heatNumber, swimmerId]) // Un nadador no puede estar 2 veces en el mismo carril/serie
+  @@unique([eventId, lane, heatNumber]) // Un carril por serie
   @@index([eventId])
   @@index([swimmerId])
   @@index([coachId])
