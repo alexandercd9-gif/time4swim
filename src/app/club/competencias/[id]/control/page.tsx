@@ -67,6 +67,10 @@ export default function EventControlPage() {
   const [heatStarted, setHeatStarted] = useState(false); // Si ya se dio START
   const [heatCompleted, setHeatCompleted] = useState<number[]>([]); // Series completadas
   const [laneTimes, setLaneTimes] = useState<Map<string, number>>(new Map()); // Tiempos recibidos por carril
+  
+  // Estado para el modal de finalizar evento
+  const [showFinishModal, setShowFinishModal] = useState(false);
+  const [unassignedSwimmers, setUnassignedSwimmers] = useState<Swimmer[]>([]);
 
   // Helper function para formatear tiempo (necesaria antes de los useEffect)
   const formatTime = (milliseconds: number) => {
@@ -387,7 +391,6 @@ export default function EventControlPage() {
     const swimmerObject = fullSwimmer ? {
       id: fullSwimmer.id,
       name: fullSwimmer.name,
-      lastName: fullSwimmer.lastName || '',
       birthDate: fullSwimmer.birthDate
     } : undefined;
     
@@ -760,6 +763,79 @@ export default function EventControlPage() {
       } catch (error) {
         console.error('Error al enviar evento Pusher:', error);
       }
+    }
+  };
+
+  // Función para verificar nadadores sin asignar
+  const checkUnassignedSwimmers = () => {
+    const swimmersThatCompeted = new Set<string>();
+    heats.forEach(h => {
+      h.lanes.forEach(l => {
+        if (l.swimmer?.id) {
+          swimmersThatCompeted.add(l.swimmer.id);
+        }
+      });
+    });
+    
+    return getFilteredSwimmers().filter(s => !swimmersThatCompeted.has(s.id));
+  };
+
+  // Función para iniciar proceso de finalización
+  const handleFinishEvent = () => {
+    const remaining = checkUnassignedSwimmers();
+    
+    if (remaining.length > 0) {
+      // Hay nadadores sin asignar, mostrar modal de confirmación
+      setUnassignedSwimmers(remaining);
+      setShowFinishModal(true);
+    } else {
+      // No hay nadadores pendientes, finalizar directamente
+      confirmFinishEvent();
+    }
+  };
+
+  // Función para confirmar y finalizar el evento
+  const confirmFinishEvent = async () => {
+    try {
+      // Aquí puedes agregar la lógica para marcar el evento como finalizado en la BD
+      // Por ejemplo: actualizar el estado del evento a "COMPLETED"
+      
+      const response = await fetch(`/api/club/events/${eventId}/finish`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          unassignedSwimmers: unassignedSwimmers.map(s => s.id)
+        })
+      });
+
+      if (response.ok) {
+        toast.success('🏁 Evento finalizado exitosamente', { duration: 5000 });
+        setShowFinishModal(false);
+        
+        // Enviar notificación por Pusher
+        await fetch('/api/pusher/broadcast', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            channel: `event-${eventId}`,
+            event: 'event-finished',
+            data: {
+              timestamp: Date.now()
+            }
+          })
+        });
+        
+        // Redirigir a la página de competencias después de 2 segundos
+        setTimeout(() => {
+          router.push('/club/competencias');
+        }, 2000);
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Error al finalizar el evento');
+      }
+    } catch (error) {
+      console.error('Error finishing event:', error);
+      toast.error('Error de conexión');
     }
   };
 
@@ -1409,10 +1485,77 @@ export default function EventControlPage() {
                         return `⏱️ Esperando tiempos: ${lanesWithTimes}/${lanesWithSwimmers.length} completados`;
                       })()}
                 </div>
+
+                {/* Botón Finalizar Evento */}
+                <div className="pt-3 border-t-2 border-gray-200">
+                  <Button
+                    onClick={handleFinishEvent}
+                    variant="destructive"
+                    className="w-full bg-red-600 hover:bg-red-700 text-white py-4 text-sm font-bold shadow-md"
+                  >
+                    🏁 FINALIZAR EVENTO
+                  </Button>
+                  <p className="text-xs text-gray-500 text-center mt-2">
+                    Finaliza el evento actual
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </div>
         </div>
+
+        {/* Modal de Confirmación para Finalizar Evento */}
+        {showFinishModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <Card className="max-w-md w-full">
+              <CardHeader className="bg-yellow-100 border-b-2 border-yellow-300">
+                <CardTitle className="text-center text-lg font-bold text-gray-900 flex items-center justify-center gap-2">
+                  ⚠️ ¿Finalizar evento?
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-4">
+                {unassignedSwimmers.length > 0 && (
+                  <>
+                    <p className="text-sm text-gray-700 font-medium">
+                      Hay <strong>{unassignedSwimmers.length} nadador{unassignedSwimmers.length !== 1 ? 'es' : ''}</strong> sin asignar que no participarán:
+                    </p>
+                    <div className="max-h-48 overflow-y-auto bg-gray-50 rounded border border-gray-200 p-3">
+                      <ul className="space-y-1">
+                        {unassignedSwimmers.map(swimmer => (
+                          <li key={swimmer.id} className="text-sm text-gray-800">
+                            • {swimmer.name}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      Estos nadadores se marcarán automáticamente como ausentes.
+                    </p>
+                  </>
+                )}
+                
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    onClick={() => {
+                      setShowFinishModal(false);
+                      setUnassignedSwimmers([]);
+                    }}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={confirmFinishEvent}
+                    className="flex-1 bg-red-600 hover:bg-red-700"
+                  >
+                    Sí, Finalizar Evento
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );
