@@ -809,7 +809,7 @@ export default function EventControlPage() {
       });
 
       if (response.ok) {
-        toast.success('🏁 Evento finalizado exitosamente', { duration: 5000 });
+        toast.success('🏁 Evento finalizado exitosamente - Ver resultados...', { duration: 3000 });
         setShowFinishModal(false);
         
         // Enviar notificación por Pusher
@@ -825,9 +825,9 @@ export default function EventControlPage() {
           })
         });
         
-        // Redirigir a la página de competencias después de 2 segundos
+        // Redirigir a la página de resultados después de 2 segundos
         setTimeout(() => {
-          router.push('/club/competencias');
+          router.push(`/club/competencias/${eventId}/results`);
         }, 2000);
       } else {
         const error = await response.json();

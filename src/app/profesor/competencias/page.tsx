@@ -37,6 +37,7 @@ export default function ProfesorCompetenciasPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'proximas' | 'completadas'>('proximas');
 
   const fetchEvents = async () => {
     try {
@@ -134,6 +135,17 @@ export default function ProfesorCompetenciasPage() {
     );
   }
 
+  // Filtrar eventos por pestaña
+  const now = new Date();
+  const filteredEvents = events.filter(event => {
+    const eventDate = new Date(event.eventDate);
+    if (activeTab === 'proximas') {
+      return eventDate >= now;
+    } else {
+      return eventDate < now;
+    }
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -161,28 +173,59 @@ export default function ProfesorCompetenciasPage() {
           </div>
         </div>
 
+        {/* Pestañas */}
+        <div className="flex gap-4 mb-6 border-b-2 border-gray-200">
+          <button
+            onClick={() => setActiveTab('proximas')}
+            className={`px-6 py-3 font-semibold transition-colors border-b-4 ${
+              activeTab === 'proximas'
+                ? 'text-blue-600 border-blue-600'
+                : 'text-gray-500 border-transparent hover:text-gray-700'
+            }`}
+          >
+            Próximas ({events.filter(e => new Date(e.eventDate) >= now).length})
+          </button>
+          <button
+            onClick={() => setActiveTab('completadas')}
+            className={`px-6 py-3 font-semibold transition-colors border-b-4 ${
+              activeTab === 'completadas'
+                ? 'text-green-600 border-green-600'
+                : 'text-gray-500 border-transparent hover:text-gray-700'
+            }`}
+          >
+            Completadas ({events.filter(e => new Date(e.eventDate) < now).length})
+          </button>
+        </div>
+
         {/* Lista de Competencias */}
-        {events.length === 0 ? (
+        {filteredEvents.length === 0 ? (
           <Card className="border-2 border-gray-200">
             <CardContent className="p-12 text-center">
               <Waves className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                No hay competencias internas activas
+                {activeTab === 'proximas' 
+                  ? 'No hay competencias próximas' 
+                  : 'No hay competencias completadas'}
               </h3>
               <p className="text-gray-500">
-                Las competencias aparecerán aquí cuando estén disponibles
+                {activeTab === 'proximas'
+                  ? 'Las competencias aparecerán aquí cuando estén disponibles'
+                  : 'Las competencias completadas aparecerán aquí'}
               </p>
             </CardContent>
           </Card>
         ) : (
           <div className="grid gap-6">
-            {events.map((event) => {
+            {filteredEvents.map((event) => {
               const myLanes = getMyLanes(event);
               const eventDate = new Date(event.eventDate);
               const isToday = eventDate.toDateString() === new Date().toDateString();
+              const isPast = eventDate < now;
               
               return (
-                <Card key={event.id} className="border-2 border-blue-200 hover:shadow-lg transition-shadow">
+                <Card key={event.id} className={`border-2 hover:shadow-lg transition-shadow ${
+                  isPast ? 'border-green-200' : 'border-blue-200'
+                }`}>
                   <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -224,6 +267,18 @@ export default function ProfesorCompetenciasPage() {
                   </CardHeader>
                   
                   <CardContent className="p-6">
+                    {/* Botón Ver Resultados para eventos completados */}
+                    {isPast && (
+                      <div className="mb-4">
+                        <Link href={`/club/competencias/${event.id}/results`}>
+                          <Button className="w-full bg-green-600 hover:bg-green-700 gap-2" size="lg">
+                            🏆 Ver Resultados
+                            <ArrowRight className="w-5 h-5" />
+                          </Button>
+                        </Link>
+                      </div>
+                    )}
+                    
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <h4 className="font-semibold text-lg">Carriles Asignados</h4>
