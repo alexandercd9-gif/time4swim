@@ -169,10 +169,12 @@ export default function ClubEventsPage() {
     return <div className="text-center py-8">Cargando eventos...</div>;
   }
 
-  // Filtrar eventos por fecha
+  // Filtrar eventos por fecha y excluir competencias internas
   const now = new Date();
-  const upcomingEvents = events.filter(e => new Date(e.startDate) >= now);
-  const pastEvents = events.filter(e => new Date(e.startDate) < now);
+  // Solo mostrar eventos que NO sean competencias internas
+  const regularEvents = events.filter(e => !e.isInternalCompetition);
+  const upcomingEvents = regularEvents.filter(e => new Date(e.startDate) >= now);
+  const pastEvents = regularEvents.filter(e => new Date(e.startDate) < now);
   const displayedEvents = filter === 'upcoming' ? upcomingEvents : pastEvents;
 
   return (

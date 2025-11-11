@@ -19,6 +19,8 @@ interface InternalEvent {
   distance: number;
   categoryDistances: string | null;
   eligibleCategories: string | null;
+  updatedAt: string;
+  isCompleted?: boolean; // Indica si el evento fue finalizado explícitamente
   _count: {
     heatLanes: number;
   };
@@ -42,7 +44,10 @@ export default function CompetenciasInternasPage() {
       
       if (res.ok) {
         const data = await res.json();
-        setEvents(data.events || []);
+        // Ensure updatedAt is present and parsed as string
+        const mappedEvents = (data.events || []).map((e: any) => ({ ...e, updatedAt: e.updatedAt || e.createdAt }));
+        console.log('📊 Eventos cargados:', mappedEvents);
+        setEvents(mappedEvents);
       } else {
         toast.error('Error al cargar competencias internas');
       }
@@ -76,11 +81,44 @@ export default function CompetenciasInternasPage() {
     );
   }
 
-  // Filtrar eventos por fecha
-  const now = new Date();
-  const upcomingEvents = events.filter(e => new Date(e.startDate) >= now);
-  const pastEvents = events.filter(e => new Date(e.startDate) < now);
+  // Filtrar eventos por estado
+  // Obtener solo la fecha de hoy (sin horas) en formato YYYY-MM-DD
+  const today = new Date();
+  const todayDateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   
+  // Un evento se considera completado si:
+  // 1. Tiene isCompleted = true (fue finalizado explícitamente)
+  // 2. O si su endDate YA PASÓ (día anterior, no hoy)
+  const upcomingEvents = events.filter(e => {
+    // Extraer solo la fecha (YYYY-MM-DD) del endDate sin conversiones de timezone
+    const endDateStr = e.endDate.substring(0, 10); // "2025-11-11"
+    const isPast = endDateStr < todayDateStr; // Comparación de strings YYYY-MM-DD
+    const isCompleted = e.isCompleted || false;
+    
+    console.log(`🔍 Evento ${e.title}:`, {
+      endDateStr,
+      todayDateStr,
+      isCompleted,
+      isPast,
+      shouldBeInUpcoming: !isCompleted && !isPast
+    });
+    
+    // Mostrar en próximas si NO está finalizado Y NO es del pasado (incluye hoy)
+    return !isCompleted && !isPast;
+  });
+  
+  const pastEvents = events.filter(e => {
+    const endDateStr = e.endDate.substring(0, 10);
+    const isPast = endDateStr < todayDateStr;
+    const isCompleted = e.isCompleted || false;
+    // Mostrar en completadas si está finalizado O si la fecha ya pasó
+    return isCompleted || isPast;
+  });
+  console.log('📋 Resultados filtrado:', {
+    total: events.length,
+    upcoming: upcomingEvents.length,
+    completed: pastEvents.length
+  });
   const displayedEvents = filter === 'upcoming' ? upcomingEvents : pastEvents;
 
   return (
@@ -163,6 +201,7 @@ export default function CompetenciasInternasPage() {
             const assignedLanes = event._count.heatLanes;
             const progress = totalLanes > 0 ? (assignedLanes / totalLanes) * 100 : 0;
 
+            const isFinalizado = event.isCompleted || false;
             return (
               <Card
                 key={event.id}
@@ -187,6 +226,11 @@ export default function CompetenciasInternasPage() {
                             year: 'numeric'
                           })}
                         </span>
+                        {isFinalizado && (
+                          <span className="ml-2 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-semibold border border-green-300">
+                            Evento Finalizado
+                          </span>
+                        )}
                       </div>
                       {event.location && (
                         <div className="text-sm text-gray-600 mt-1">
@@ -199,7 +243,7 @@ export default function CompetenciasInternasPage() {
                   {/* Prueba */}
                   <div className="bg-gray-50 rounded-lg p-2.5 mb-3">
                     <span className="text-sm font-semibold text-gray-700">
-                      200m {getStyleName(event.style)}
+                      {event.distance ? `${event.distance}m` : ''} {getStyleName(event.style)}
                     </span>
                   </div>
 

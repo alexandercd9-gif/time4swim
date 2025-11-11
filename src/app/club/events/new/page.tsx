@@ -97,11 +97,12 @@ export default function NewClubEventPage() {
     setLoading(true);
     try {
       // Convertir las fechas a formato datetime ISO con horas por defecto
-      const startDateObj = new Date(startDate);
-      startDateObj.setHours(9, 0, 0, 0); // Inicio a las 9:00 AM
+      // Parsear correctamente para evitar problemas de timezone
+      const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
+      const startDateObj = new Date(startYear, startMonth - 1, startDay, 9, 0, 0, 0); // Inicio a las 9:00 AM
       
-      const endDateObj = new Date(endDate);
-      endDateObj.setHours(18, 0, 0, 0); // Fin a las 6:00 PM
+      const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
+      const endDateObj = new Date(endYear, endMonth - 1, endDay, 18, 0, 0, 0); // Fin a las 6:00 PM
       
       const res = await fetch('/api/club/events', {
         method: 'POST',
@@ -490,17 +491,25 @@ export default function NewClubEventPage() {
                       <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3.5 w-3.5" />
-                          {new Date(startDate).toLocaleDateString('es-ES', { 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric' 
-                          })}
-                          {startDate !== endDate && (
-                            <> - {new Date(endDate).toLocaleDateString('es-ES', { 
+                          {(() => {
+                            const [year, month, day] = startDate.split('-');
+                            const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                            return date.toLocaleDateString('es-ES', { 
                               year: 'numeric', 
                               month: 'long', 
                               day: 'numeric' 
-                            })}</>
+                            });
+                          })()}
+                          {startDate !== endDate && (
+                            <> - {(() => {
+                              const [year, month, day] = endDate.split('-');
+                              const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                              return date.toLocaleDateString('es-ES', { 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric' 
+                              });
+                            })()}</>
                           )}
                         </span>
                         {location && (

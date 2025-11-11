@@ -36,17 +36,20 @@ export async function POST(
     }
 
     // Actualizar el estado del evento a finalizado
-    // Nota: Asumiendo que tienes un campo 'status' o 'isCompleted' en tu modelo Event
-    // Si no existe, puedes agregarlo al schema de Prisma
+    // Actualizamos el updatedAt para que sea diferente del createdAt
+    // Esto nos permite identificar eventos finalizados
+    const finishedEvent = await prisma.event.update({
+      where: { id },
+      data: {
+        updatedAt: new Date()
+      }
+    });
+    
+    // Marcar el evento como finalizado actualizando su descripción con un flag
     await prisma.event.update({
       where: { id },
       data: {
-        // Si tienes un campo status:
-        // status: 'COMPLETED'
-        // O si tienes un campo booleano:
-        // isCompleted: true
-        // Por ahora, solo actualizamos updatedAt
-        updatedAt: new Date()
+        description: `COMPLETED:${new Date().toISOString()}|${finishedEvent.description || ''}`
       }
     });
 

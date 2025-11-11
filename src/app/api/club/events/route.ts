@@ -87,24 +87,30 @@ export async function GET(request: Request) {
     }
 
     // Formatear para compatibilidad con el frontend
-    const formattedEvents = events.map(event => ({
-      id: event.id,
-      title: event.title,
-      startDate: event.startDate.toISOString(),
-      endDate: event.endDate.toISOString(),
-      location: event.location,
-      club: event.club.name,
-      eligibleCategories: event.eligibleCategories ? JSON.parse(event.eligibleCategories) : null,
-      createdAt: event.createdAt.toISOString(),
-      confirmedParticipants: event.participations.length,
-      // Datos de competencia interna
-      isInternalCompetition: event.isInternalCompetition,
-      lanes: event.lanes,
-      style: event.style,
-      distance: event.distance,
-      categoryDistances: event.categoryDistances ? JSON.parse(event.categoryDistances) : null,
-      _count: event._count,
-    }));
+    const formattedEvents = events.map(event => {
+      // Verificar si el evento está finalizado (descripción comienza con "COMPLETED:")
+      const isCompleted = event.description?.startsWith('COMPLETED:') || false;
+      return {
+        id: event.id,
+        title: event.title,
+        startDate: event.startDate.toISOString(),
+        endDate: event.endDate.toISOString(),
+        location: event.location,
+        club: event.club.name,
+        eligibleCategories: event.eligibleCategories ? JSON.parse(event.eligibleCategories) : null,
+        createdAt: event.createdAt.toISOString(),
+        updatedAt: event.updatedAt ? event.updatedAt.toISOString() : null,
+        confirmedParticipants: event.participations.length,
+        // Datos de competencia interna
+        isInternalCompetition: event.isInternalCompetition,
+        isCompleted: isCompleted,
+        lanes: event.lanes,
+        style: event.style,
+        distance: event.distance,
+        categoryDistances: event.categoryDistances ? JSON.parse(event.categoryDistances) : null,
+        _count: event._count,
+      };
+    });
 
     return NextResponse.json({ events: formattedEvents });
   } catch (err) {
@@ -136,9 +142,9 @@ export async function POST(request: Request) {
     }
 
     // Validación para competencias internas
-    if (isInternalCompetition && (!style || !distance || !lanes)) {
+    if (isInternalCompetition && (!style || !distance)) {
       return NextResponse.json({ 
-        error: 'Para competencias internas se requiere: style, distance y lanes' 
+        error: 'Para competencias internas se requiere: style y distance' 
       }, { status: 400 });
     }
 

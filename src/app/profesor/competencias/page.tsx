@@ -136,13 +136,16 @@ export default function ProfesorCompetenciasPage() {
   }
 
   // Filtrar eventos por pestaña
-  const now = new Date();
+  // Usar comparación de strings para evitar problemas de timezone
+  const today = new Date();
+  const todayDateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  
   const filteredEvents = events.filter(event => {
-    const eventDate = new Date(event.eventDate);
+    const eventDateStr = event.eventDate.substring(0, 10); // "YYYY-MM-DD"
     if (activeTab === 'proximas') {
-      return eventDate >= now;
+      return eventDateStr >= todayDateStr; // Incluye eventos de hoy
     } else {
-      return eventDate < now;
+      return eventDateStr < todayDateStr; // Solo eventos del pasado
     }
   });
 
@@ -183,7 +186,7 @@ export default function ProfesorCompetenciasPage() {
                 : 'text-gray-500 border-transparent hover:text-gray-700'
             }`}
           >
-            Próximas ({events.filter(e => new Date(e.eventDate) >= now).length})
+            Próximas ({events.filter(e => e.eventDate.substring(0, 10) >= todayDateStr).length})
           </button>
           <button
             onClick={() => setActiveTab('completadas')}
@@ -193,7 +196,7 @@ export default function ProfesorCompetenciasPage() {
                 : 'text-gray-500 border-transparent hover:text-gray-700'
             }`}
           >
-            Completadas ({events.filter(e => new Date(e.eventDate) < now).length})
+            Completadas ({events.filter(e => e.eventDate.substring(0, 10) < todayDateStr).length})
           </button>
         </div>
 
@@ -219,8 +222,9 @@ export default function ProfesorCompetenciasPage() {
             {filteredEvents.map((event) => {
               const myLanes = getMyLanes(event);
               const eventDate = new Date(event.eventDate);
-              const isToday = eventDate.toDateString() === new Date().toDateString();
-              const isPast = eventDate < now;
+              const eventDateStr = event.eventDate.substring(0, 10);
+              const isToday = eventDateStr === todayDateStr;
+              const isPast = eventDateStr < todayDateStr;
               
               return (
                 <Card key={event.id} className={`border-2 hover:shadow-lg transition-shadow ${
@@ -354,22 +358,6 @@ export default function ProfesorCompetenciasPage() {
             })}
           </div>
         )}
-
-        {/* Instrucciones */}
-        <Card className="mt-8 border-2 border-yellow-200 bg-yellow-50">
-          <CardContent className="p-6">
-            <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
-              📋 Instrucciones
-            </h3>
-            <ul className="space-y-2 text-gray-700">
-              <li>• Aquí verás las competencias internas donde tienes carriles asignados</li>
-              <li>• Haz clic en "Abrir Control" para acceder al cronómetro de tu carril</li>
-              <li>• Podrás controlar el tiempo de tu nadador de forma independiente</li>
-              <li>• Los tiempos se sincronizan automáticamente con el administrador</li>
-              <li>• El cronómetro global lo controla el administrador de la competencia</li>
-            </ul>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
