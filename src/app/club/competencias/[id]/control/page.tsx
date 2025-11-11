@@ -105,15 +105,30 @@ export default function EventControlPage() {
           icon: '⏱️'
         });
         
-        // Actualizar tiempos locales
+        // Actualizar tiempos locales (Map)
         setLaneTimes(prev => {
           const newMap = new Map(prev);
           newMap.set(data.laneId, data.finalTime);
           return newMap;
         });
         
-        // Recargar heats para actualizar la UI con el tiempo guardado en BD
-        fetchHeats();
+        // Actualizar estado de heats inmediatamente con el tiempo
+        // NO volver a cargar desde BD para evitar perder el estado
+        setHeats(prevHeats => 
+          prevHeats.map(heat => ({
+            ...heat,
+            lanes: heat.lanes.map(lane => {
+              if (lane.id === data.laneId) {
+                console.log('✅ Actualizando lane con finalTime:', data.finalTime);
+                return { 
+                  ...lane, 
+                  finalTime: data.finalTime 
+                };
+              }
+              return lane;
+            })
+          }))
+        );
       });
     }
 
@@ -367,6 +382,15 @@ export default function EventControlPage() {
   };
 
   const updateSwimmer = (laneId: string, swimmerId: string | undefined) => {
+    // Buscar el objeto swimmer y crear una versión simplificada
+    const fullSwimmer = swimmerId ? swimmers.find(s => s.id === swimmerId) : undefined;
+    const swimmerObject = fullSwimmer ? {
+      id: fullSwimmer.id,
+      name: fullSwimmer.name,
+      lastName: fullSwimmer.lastName || '',
+      birthDate: fullSwimmer.birthDate
+    } : undefined;
+    
     setHeats(prevHeats => 
       prevHeats.map(heat => 
         heat.number === currentHeat
@@ -374,7 +398,11 @@ export default function EventControlPage() {
               ...heat,
               lanes: heat.lanes.map(lane =>
                 lane.id === laneId
-                  ? { ...lane, swimmerId }
+                  ? { 
+                      ...lane, 
+                      swimmerId,
+                      swimmer: swimmerObject // Guardar versión simplificada
+                    }
                   : lane
               )
             }
@@ -387,33 +415,122 @@ export default function EventControlPage() {
     const currentHeatData = heats.find(h => h.number === currentHeat);
     if (!currentHeatData) return;
 
-    // Validar que todos los carriles tengan nadador asignado
-    const unassigned = currentHeatData.lanes.filter(lane => !lane.swimmerId);
-    if (unassigned.length > 0) {
-      toast.error(`Faltan nadadores en ${unassigned.length} ${unassigned.length === 1 ? 'carril' : 'carriles'}`);
+    // Validar que al menos UN carril tenga nadador asignado
+    const assigned = currentHeatData.lanes.filter(lane => lane.swimmerId);
+    if (assigned.length === 0) {
+      toast.error('⚠️ Debes asignar al menos UN nadador antes de guardar');
       return;
     }
 
     setSaving(true);
+    console.log('💾 Iniciando guardado de nadadores...', { currentHeat, assigned: assigned.length });
+    
     try {
-      const assignments = currentHeatData.lanes.map(lane => ({
-        laneId: lane.id,
-        swimmerId: lane.swimmerId
-      }));
-
-      const response = await fetch(`/api/club/events/${eventId}/heats/${currentHeatData.id}/assign-swimmers`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assignments })
-      });
-
-      if (response.ok) {
-        toast.success('✅ Nadadores asignados correctamente');
-        await fetchHeats(); // Recargar para obtener datos actualizados
+      // Si la serie tiene ID temporal, primero crear los carriles en la BD
+      if (currentHeatData.id.startsWith('temp-heat-')) {
+        console.log('🔧 Creando carriles para Serie', currentHeat);
         
-        // Enviar evento por Pusher para notificar a profesores
+        // Crear SOLO los carriles que tienen nadadores asignados
+        const firstHeat = heats[0];
+        const lanesToCreate = assigned.map(assignedLane => {
+          const originalLane = firstHeat.lanes.find(l => l.lane === assignedLane.lane);
+          return {
+            lane: assignedLane.lane,
+            coachId: originalLane?.coach?.id
+          };
+        });
+        
+        const createResponse = await fetch(`/api/club/events/${eventId}/heats/assign`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            lanes: lanesToCreate,
+            heatNumber: currentHeat
+          })
+        });
+
+        if (!createResponse.ok) {
+          toast.error('Error al crear carriles para esta serie');
+          setSaving(false);
+          return;
+        }
+
+        // Recargar heats para obtener los IDs reales
+        await fetchHeats();
+        
+        // Obtener la serie recién creada con IDs reales
+        const updatedHeats = await fetch(`/api/club/events/${eventId}/heats`).then(r => r.json());
+        const realHeat = updatedHeats.find((h: any) => h.number === currentHeat);
+        
+        if (!realHeat) {
+          toast.error('Error al crear la serie');
+          setSaving(false);
+          return;
+        }
+
+        // Actualizar el currentHeatData con los IDs reales
+        const assignments = assigned.map(assignedLane => {
+          const realLane = realHeat.lanes.find((l: any) => l.lane === assignedLane.lane);
+          return {
+            laneId: realLane?.id,
+            swimmerId: assignedLane.swimmerId
+          };
+        }).filter(a => a.laneId);
+
+        // Ahora sí asignar nadadores
+        const response = await fetch(`/api/club/events/${eventId}/heats/${realHeat.id}/assign-swimmers`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ assignments })
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          toast.error(error.error || 'Error al asignar nadadores');
+          setSaving(false);
+          return;
+        }
+      } else {
+        // Serie ya existe en BD, asignar nadadores normalmente
+        const assignments = assigned.map(lane => ({
+          laneId: lane.id,
+          swimmerId: lane.swimmerId
+        }));
+
+        const response = await fetch(`/api/club/events/${eventId}/heats/${currentHeatData.id}/assign-swimmers`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ assignments })
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          toast.error(error.error || 'Error al asignar nadadores');
+          setSaving(false);
+          return;
+        }
+      }
+
+      // Si llegamos aquí, todo salió bien
+      toast.success('✅ Nadadores asignados correctamente', { duration: 3000 });
+      
+      // Obtener los heats actualizados con IDs reales para enviar evento Pusher
+      const updatedHeatsResponse = await fetch(`/api/club/events/${eventId}/heats`);
+      if (!updatedHeatsResponse.ok) {
+        console.error('Error al recargar heats');
+        setSaving(false);
+        return;
+      }
+      
+      const updatedHeats = await updatedHeatsResponse.json();
+      const updatedHeat = updatedHeats.find((h: any) => h.number === currentHeat);
+      
+      // Actualizar estado local con los datos de la BD (incluyendo objeto swimmer completo)
+      setHeats(updatedHeats);
+        
+      // Enviar evento por Pusher para notificar a profesores CON IDs REALES
+      if (updatedHeat) {
         try {
-          // Evento general al canal del evento
           await fetch('/api/pusher/broadcast', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -422,24 +539,23 @@ export default function EventControlPage() {
               event: 'swimmers-assigned',
               data: {
                 heatNumber: currentHeat,
-                heatId: currentHeatData.id,
-                assignments: currentHeatData.lanes.map(lane => ({
-                  laneId: lane.id,
-                  laneNumber: lane.lane,
-                  swimmerId: lane.swimmerId,
-                  swimmerName: swimmers.find(s => s.id === lane.swimmerId)?.name
-                })),
+                heatId: updatedHeat.id,
+                assignments: updatedHeat.lanes
+                  .filter((lane: any) => lane.swimmer)
+                  .map((lane: any) => ({
+                    laneId: lane.id,
+                    laneNumber: lane.lane,
+                    swimmerId: lane.swimmer.id,
+                    swimmerName: lane.swimmer.name
+                  })),
                 timestamp: Date.now()
               }
             })
           });
-          console.log('📡 Evento swimmers-assigned enviado a profesores');
+          console.log('📡 Evento swimmers-assigned enviado a profesores con IDs reales');
         } catch (pushError) {
           console.error('Error al enviar evento Pusher:', pushError);
         }
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Error al asignar nadadores');
       }
     } catch (error) {
       console.error("Error saving swimmers:", error);
@@ -453,17 +569,38 @@ export default function EventControlPage() {
     const currentHeatData = heats.find(h => h.number === currentHeat);
     if (!currentHeatData) return;
 
-    // Validar que todos los carriles tengan nadador asignado
-    const hasAllSwimmers = currentHeatData.lanes.every(lane => lane.swimmer || lane.swimmerId);
-    if (!hasAllSwimmers) {
-      toast.error('Debes asignar todos los nadadores antes de iniciar');
+    // Validar que AL MENOS UN carril tenga nadador asignado EN LA BASE DE DATOS
+    // Permitir que algunos carriles estén vacíos (solo los con nadador verán cronómetro)
+    const lanesWithSwimmer = currentHeatData.lanes.filter(lane => lane.swimmer);
+    
+    if (lanesWithSwimmer.length === 0) {
+      toast.error('⚠️ Debes asignar al menos UN nadador antes de dar START', {
+        duration: 5000
+      });
+      return;
+    }
+    
+    // Verificar que los nadadores asignados estén guardados en BD
+    const lanesWithUnsavedSwimmer = currentHeatData.lanes.filter(lane => 
+      lane.swimmerId && !lane.swimmer // Tiene swimmerId local pero no swimmer de BD
+    );
+    
+    if (lanesWithUnsavedSwimmer.length > 0) {
+      const laneNumbers = lanesWithUnsavedSwimmer.map(l => `C${l.lane}`).join(', ');
+      toast.error(`⚠️ Debes GUARDAR los nadadores antes de dar START. Carriles sin guardar: ${laneNumbers}`, {
+        duration: 5000
+      });
       return;
     }
 
     try {
       setHeatStarted(true);
       setLaneTimes(new Map()); // Limpiar tiempos previos
-      toast.success("🏁 ¡Serie iniciada! Los profesores han activado sus cronómetros");
+      
+      const activeSwimmers = lanesWithSwimmer.length;
+      toast.success(`🏁 ¡Serie iniciada! ${activeSwimmers} nadador${activeSwimmers !== 1 ? 'es' : ''} en competencia`, {
+        duration: 3000
+      });
       
       // Enviar señal START a todos los profesores vía Pusher
       await fetch('/api/pusher/broadcast', {
@@ -492,36 +629,81 @@ export default function EventControlPage() {
     setHeatStarted(false);
     toast.success(`✅ Serie ${currentHeat} completada`);
     
-    // Si hay más series, avanzar automáticamente a la siguiente
-    if (currentHeat < heats.length) {
-      setTimeout(async () => {
-        const nextHeat = currentHeat + 1;
+    const nextHeat = currentHeat + 1;
+    
+    // Verificar si hay nadadores disponibles que no han nadado
+    const currentHeatData = heats.find(h => h.number === currentHeat);
+    if (!currentHeatData) return;
+    
+    // Contar cuántos nadadores únicos han competido
+    const swimmersThatCompeted = new Set<string>();
+    heats.forEach(h => {
+      h.lanes.forEach(l => {
+        if (l.swimmer?.id && l.finalTime != null) {
+          swimmersThatCompeted.add(l.swimmer.id);
+        }
+      });
+    });
+    
+    // Verificar si hay nadadores disponibles que no han competido
+    const remainingSwimmers = swimmers.filter(s => !swimmersThatCompeted.has(s.id));
+    const hasMoreSwimmers = remainingSwimmers.length > 0;
+    
+    console.log(`📊 Nadadores restantes: ${remainingSwimmers.length}/${swimmers.length}`);
+    
+    // Si hay más nadadores O si ya existe una serie siguiente, continuar
+    if (hasMoreSwimmers || currentHeat < heats.length) {
+      // Enviar evento INMEDIATAMENTE por Pusher para notificar cambio de serie
+      try {
+        await fetch('/api/pusher/broadcast', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            channel: `event-${eventId}`,
+            event: 'heat-changed',
+            data: {
+              heatNumber: nextHeat,
+              totalHeats: Math.max(heats.length, nextHeat),
+              timestamp: Date.now()
+            }
+          })
+        });
+        console.log(`📡 Evento heat-changed enviado inmediatamente: Serie ${nextHeat}`);
+      } catch (error) {
+        console.error('Error al enviar evento Pusher:', error);
+      }
+      
+      // Si no existe la serie siguiente en heats[], crearla localmente
+      if (currentHeat >= heats.length) {
+        // Crear nueva serie con los mismos carriles que la Serie 1
+        const firstHeat = heats[0];
+        if (firstHeat) {
+          const newHeat: Heat = {
+            id: `temp-heat-${nextHeat}`,
+            number: nextHeat,
+            lanes: firstHeat.lanes.map(lane => ({
+              id: `temp-lane-${lane.lane}-${nextHeat}`,
+              lane: lane.lane,
+              swimmerId: undefined,
+              swimmer: undefined,
+              coach: lane.coach,
+              finalTime: undefined
+            }))
+          };
+          setHeats([...heats, newHeat]);
+          console.log(`✅ Serie ${nextHeat} creada localmente`);
+        }
+      }
+      
+      // Luego avanzar la UI del admin después de un breve delay
+      setTimeout(() => {
         setCurrentHeat(nextHeat);
         setLaneTimes(new Map());
-        toast.success(`📋 Avanzando a Serie ${nextHeat}`, { duration: 3000 });
-        
-        // Enviar evento por Pusher
-        try {
-          await fetch('/api/pusher/broadcast', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              channel: `event-${eventId}`,
-              event: 'heat-changed',
-              data: {
-                heatNumber: nextHeat,
-                totalHeats: heats.length,
-                timestamp: Date.now()
-              }
-            })
-          });
-          console.log('📡 Evento heat-changed enviado a entrenadores');
-        } catch (error) {
-          console.error('Error al enviar evento Pusher:', error);
-        }
-      }, 1500); // Esperar 1.5 segundos antes de avanzar
+        toast.success(`📋 Serie ${nextHeat} - Asigna nadadores y da START`, { duration: 4000 });
+      }, 1000); // Delay corto solo para la UI del admin
     } else {
-      toast.success('🏁 ¡Todas las series completadas!', { duration: 5000 });
+      // Última serie completada - no hay más nadadores
+      toast.success('🏁 ¡Todas las series completadas! Evento finalizado', { duration: 5000 });
     }
   };
 
@@ -822,13 +1004,12 @@ export default function EventControlPage() {
                     // Primero filtrar por distancia seleccionada
                     let availableSwimmers = getFilteredSwimmers();
                     
-                    // Filtrar nadadores que ya compitieron en CUALQUIER serie (completada o no)
+                    // Filtrar nadadores que ya compitieron en series ANTERIORES (completadas)
                     availableSwimmers = availableSwimmers.filter(swimmer => {
-                      // Verificar si el nadador ya tiene tiempo registrado en alguna serie
+                      // Verificar si el nadador participó en alguna serie anterior (número < currentHeat)
                       const hasCompeted = heats.some(h => 
-                        h.lanes.some(l => 
-                          l.swimmer?.id === swimmer.id && l.finalTime != null
-                        )
+                        h.number < currentHeat && // Solo series anteriores
+                        h.lanes.some(l => l.swimmer?.id === swimmer.id) // Nadador asignado
                       );
                       
                       return !hasCompeted;
@@ -899,29 +1080,43 @@ export default function EventControlPage() {
                               )}
                             </div>
                             
-                            {/* Nadador con select más grande */}
+                            {/* Nadador con select más grande y botón X */}
                             <div>
                               {lane.isCompleted || lane.finalTime ? (
                                 <p className="font-bold text-base text-gray-900">
                                   {lane.swimmer?.name || "Sin asignar"}
                                 </p>
                               ) : (
-                                <Select
-                                  value={lane.swimmerId || lane.swimmer?.id || ""}
-                                  onValueChange={(value) => updateSwimmer(lane.id, value || undefined)}
-                                  disabled={heatStarted || lane.finalTime != null}
-                                >
-                                  <SelectTrigger className="w-full text-sm font-medium h-9">
-                                    <SelectValue placeholder="Seleccionar nadador" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {lane.availableSwimmers.map((swimmer) => (
-                                      <SelectItem key={swimmer.id} value={swimmer.id} className="text-sm">
-                                        {swimmer.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                                <div className="flex items-center gap-2">
+                                  <Select
+                                    key={`${lane.id}-${currentHeat}`}
+                                    value={lane.swimmerId || lane.swimmer?.id || ""}
+                                    onValueChange={(value) => updateSwimmer(lane.id, value || undefined)}
+                                    disabled={heatStarted || lane.finalTime != null}
+                                  >
+                                    <SelectTrigger className="w-full text-sm font-medium h-9">
+                                      <SelectValue placeholder="Seleccionar nadador" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {lane.availableSwimmers.map((swimmer) => (
+                                        <SelectItem key={swimmer.id} value={swimmer.id} className="text-sm">
+                                          {swimmer.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  {(lane.swimmerId || lane.swimmer) && !heatStarted && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-9 w-9 flex-shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                      onClick={() => updateSwimmer(lane.id, undefined)}
+                                      title="Borrar nadador"
+                                    >
+                                      ✕
+                                    </Button>
+                                  )}
+                                </div>
                               )}
                             </div>
                             
@@ -984,8 +1179,10 @@ export default function EventControlPage() {
                             .map((lane) => {
                               let availableSwimmers = getFilteredSwimmers();
                               availableSwimmers = availableSwimmers.filter(swimmer => {
+                                // Verificar si el nadador participó en alguna serie anterior (número < currentHeat)
                                 const hasCompeted = heats.some(h => 
-                                  h.lanes.some(l => l.swimmer?.id === swimmer.id && l.finalTime != null)
+                                  h.number < currentHeat && // Solo series anteriores
+                                  h.lanes.some(l => l.swimmer?.id === swimmer.id) // Nadador asignado
                                 );
                                 return !hasCompeted;
                               });
@@ -1039,22 +1236,36 @@ export default function EventControlPage() {
                                     {lane.isCompleted || lane.finalTime ? (
                                       <span className="font-semibold">{lane.swimmer?.name || "Sin asignar"}</span>
                                     ) : (
-                                      <Select
-                                        value={lane.swimmerId || lane.swimmer?.id || ""}
-                                        onValueChange={(value) => updateSwimmer(lane.id, value || undefined)}
-                                        disabled={heatStarted || lane.finalTime != null}
-                                      >
-                                        <SelectTrigger className="w-full text-xs h-8">
-                                          <SelectValue placeholder="Seleccionar nadador" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          {lane.availableSwimmers.map((swimmer) => (
-                                            <SelectItem key={swimmer.id} value={swimmer.id} className="text-xs">
-                                              {swimmer.name}
-                                            </SelectItem>
-                                          ))}
-                                        </SelectContent>
-                                      </Select>
+                                      <div className="flex items-center gap-2">
+                                        <Select
+                                          key={`${lane.id}-${currentHeat}`}
+                                          value={lane.swimmerId || lane.swimmer?.id || ""}
+                                          onValueChange={(value) => updateSwimmer(lane.id, value || undefined)}
+                                          disabled={heatStarted || lane.finalTime != null}
+                                        >
+                                          <SelectTrigger className="w-full text-xs h-8">
+                                            <SelectValue placeholder="Seleccionar nadador" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {lane.availableSwimmers.map((swimmer) => (
+                                              <SelectItem key={swimmer.id} value={swimmer.id} className="text-xs">
+                                                {swimmer.name}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                        {(lane.swimmerId || lane.swimmer) && !heatStarted && (
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 flex-shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                            onClick={() => updateSwimmer(lane.id, undefined)}
+                                            title="Borrar nadador"
+                                          >
+                                            ✕
+                                          </Button>
+                                        )}
+                                      </div>
                                     )}
                                   </td>
                                   <td className="px-2 py-2">
@@ -1125,7 +1336,7 @@ export default function EventControlPage() {
                       Tiempos recibidos
                     </p>
                     <p className="text-3xl font-bold text-blue-600 text-center mb-2">
-                      {laneTimes.size} / {currentHeatData?.lanes.length || 0}
+                      {laneTimes.size} / {currentHeatData?.lanes.filter(lane => lane.swimmer).length || 0}
                     </p>
                     <div className="flex flex-wrap justify-center gap-1">
                       {currentHeatData?.lanes.map(lane => (
@@ -1163,7 +1374,16 @@ export default function EventControlPage() {
                     <>
                       <Button
                         onClick={handleCompleteHeat}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-base font-bold shadow-md"
+                        disabled={(() => {
+                          // Solo verificar carriles con nadadores asignados
+                          const lanesWithSwimmers = currentHeatData?.lanes.filter(lane => lane.swimmer) || [];
+                          if (lanesWithSwimmers.length === 0) return true; // No hay nadadores
+                          
+                          // Verificar que TODOS los carriles con nadadores tengan tiempo EN laneTimes
+                          const allSwimmerLanesHaveTimes = lanesWithSwimmers.every(lane => laneTimes.has(lane.id));
+                          return !allSwimmerLanesHaveTimes;
+                        })()}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-base font-bold shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <CheckCircle className="w-5 h-5 mr-2" />
                         Completar Serie
@@ -1182,8 +1402,12 @@ export default function EventControlPage() {
 
                 <div className="text-xs text-gray-600 text-center bg-gray-50 p-2 rounded border border-gray-200">
                   {!heatStarted 
-                    ? "💡 Al dar START, todos los profesores iniciarán sus cronómetros simultáneamente" 
-                    : "⏱️ Los profesores están cronometrando. Presiona COMPLETAR cuando todos hayan enviado sus tiempos."}
+                    ? "💡 Al dar START, solo los profesores con nadadores asignados iniciarán sus cronómetros" 
+                    : (() => {
+                        const lanesWithSwimmers = currentHeatData?.lanes.filter(lane => lane.swimmer) || [];
+                        const lanesWithTimes = lanesWithSwimmers.filter(lane => lane.finalTime != null).length;
+                        return `⏱️ Esperando tiempos: ${lanesWithTimes}/${lanesWithSwimmers.length} completados`;
+                      })()}
                 </div>
               </CardContent>
             </Card>

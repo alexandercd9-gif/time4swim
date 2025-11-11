@@ -115,16 +115,28 @@ export default function ProfesorLaneControlPage({
       channel.bind('heat-start', (data: any) => {
         console.log('🏁 Admin dio START a la carrera:', data);
         
-        // Iniciar cronómetro LOCAL inmediatamente
-        const startTime = Date.now();
-        localStartTimeRef.current = startTime;
-        setLocalTime(0);
-        setLocalRunning(true);
-        
-        toast.success('🏁 ¡CARRERA INICIADA! Cronómetro en marcha', { 
-          duration: 3000,
-          icon: '🏊' 
-        });
+        // Solo iniciar cronómetro si este carril tiene un nadador asignado
+        if (lane?.swimmer) {
+          // Iniciar cronómetro LOCAL inmediatamente
+          const startTime = Date.now();
+          localStartTimeRef.current = startTime;
+          setLocalTime(0);
+          setLocalRunning(true);
+          
+          toast.dismiss(); // Limpiar toasts anteriores
+          toast.success('🏁 ¡CARRERA INICIADA! Cronómetro en marcha', { 
+            duration: 3000,
+            icon: '🏊',
+            id: 'heat-start' // ID único para evitar duplicados
+          });
+        } else {
+          // Si no hay nadador asignado, mostrar mensaje informativo
+          toast.dismiss();
+          toast('ℹ️ Carrera iniciada - Tu carril no tiene nadador asignado', {
+            duration: 3000,
+            id: 'heat-start-no-swimmer'
+          });
+        }
       });
 
       // Escuchar cuando el admin reinicia (nueva serie)
@@ -143,31 +155,73 @@ export default function ProfesorLaneControlPage({
       // Escuchar cuando el admin cambia de serie
       channel.bind('heat-changed', (data: any) => {
         console.log('📋 Admin cambió de serie:', data);
-        toast(`📋 Cambiando a Serie ${data.heatNumber}`, { duration: 3000 });
+        toast.dismiss(); // Limpiar toasts anteriores
+        toast(`📋 Serie ${data.heatNumber} - Esperando asignación de nadador`, { 
+          duration: 4000,
+          id: 'heat-changed' // ID único para evitar duplicados
+        });
         
         // Reiniciar estados del cronómetro local
         setLocalRunning(false);
         setLocalTime(0);
         localStartTimeRef.current = null;
         setRecordedTime(null);
+        
+        // Limpiar datos del nadador anterior (no recargar desde BD porque Serie 2+ no existe ahí)
+        if (lane) {
+          setLane({
+            ...lane,
+            swimmer: undefined,
+            finalTime: undefined
+          });
+        }
       });
 
       // Escuchar cuando el admin asigna nadadores
       channel.bind('swimmers-assigned', (data: any) => {
-        console.log('👤 Nadadores asignados:', data);
+        console.log('👤 Evento swimmers-assigned recibido:', data);
+        console.log('🔍 Mi laneId actual:', laneId);
+        console.log('🔍 Mi número de carril:', lane?.lane);
         
-        // Buscar si hay asignación para este carril
-        const myLaneAssignment = data.assignments?.find((a: any) => a.laneId === laneId);
+        // Buscar asignación por laneId O por número de carril (para Series 2+)
+        const myLaneAssignment = data.assignments?.find((a: any) => {
+          const matchById = a.laneId === laneId;
+          const matchByNumber = lane && a.laneNumber === lane.lane;
+          console.log(`🔎 Comparando asignación - laneId: ${a.laneId} vs ${laneId} = ${matchById}, laneNumber: ${a.laneNumber} vs ${lane?.lane} = ${matchByNumber}`);
+          return matchById || matchByNumber;
+        });
+        
+        console.log('✅ Mi asignación encontrada:', myLaneAssignment);
         
         if (myLaneAssignment) {
-          if (myLaneAssignment.swimmerName) {
-            toast.success(`🏊 Nadador asignado: ${myLaneAssignment.swimmerName}`, { 
-              duration: 5000,
-              icon: '👤'
+          // SIEMPRE actualizar el estado con los datos del evento Pusher
+          // No intentar buscar en BD porque Serie 2+ puede no existir ahí aún
+          if (lane) {
+            console.log('📝 Actualizando lane con nadador:', myLaneAssignment.swimmerName);
+            setLane({
+              ...lane,
+              id: myLaneAssignment.laneId, // Actualizar al nuevo laneId de Serie 2+
+              swimmer: myLaneAssignment.swimmerName ? {
+                id: myLaneAssignment.swimmerId,
+                name: myLaneAssignment.swimmerName.split(' ')[0] || myLaneAssignment.swimmerName,
+                lastName: myLaneAssignment.swimmerName.split(' ').slice(1).join(' ') || '',
+                birthDate: ''
+              } : undefined,
+              finalTime: undefined // Resetear tiempo de serie anterior
             });
           }
-          // Recargar datos del carril para actualizar la UI
-          fetchLaneData();
+          
+          // Mostrar notificación
+          if (myLaneAssignment.swimmerName) {
+            toast.dismiss();
+            toast.success(`🏊 Nadador asignado: ${myLaneAssignment.swimmerName}`, { 
+              duration: 5000,
+              icon: '👤',
+              id: `swimmer-assigned-${myLaneAssignment.laneId}`
+            });
+          }
+        } else {
+          console.log('❌ No se encontró asignación para este carril');
         }
       });
     }

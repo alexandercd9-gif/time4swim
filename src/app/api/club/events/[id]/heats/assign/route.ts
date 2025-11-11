@@ -9,9 +9,13 @@ export async function POST(
   try {
     const { user } = await requireAuth(request, ["CLUB"]);
     const { id: eventId } = await params;
-    const { laneCoaches } = await request.json();
+    const { laneCoaches, lanes, heatNumber } = await request.json();
 
-    if (!laneCoaches || !Array.isArray(laneCoaches)) {
+    // Soporte para ambos formatos: laneCoaches (viejo) y lanes (nuevo)
+    const lanesData = lanes || laneCoaches;
+    const serieNumber = heatNumber || 1;
+
+    if (!lanesData || !Array.isArray(lanesData)) {
       return NextResponse.json(
         { error: "Datos inválidos" },
         { status: 400 }
@@ -46,18 +50,20 @@ export async function POST(
       );
     }
 
-    // Eliminar carriles existentes del evento
-    await prisma.heatLane.deleteMany({
-      where: { eventId }
-    });
+    // Si es Serie 1, eliminar carriles existentes (comportamiento original)
+    // Si es Serie 2+, NO eliminar, solo agregar nuevos carriles
+    if (serieNumber === 1) {
+      await prisma.heatLane.deleteMany({
+        where: { eventId }
+      });
+    }
 
     // Crear los nuevos carriles con los profesores asignados
-    // Crear solo una serie inicial
-    const heatLanesToCreate = laneCoaches.map((lc: any) => ({
+    const heatLanesToCreate = lanesData.map((lc: any) => ({
       eventId,
       lane: lc.lane,
-      heatNumber: 1, // Serie 1 por defecto
-      coachId: lc.coachId,
+      heatNumber: serieNumber,
+      coachId: lc.coachId || lc.coach?.id,
       swimmerId: null // Se asignará después en el control
     }));
 
