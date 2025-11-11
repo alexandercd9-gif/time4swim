@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Play, Square, Clock, User, Hash, ArrowLeft } from "lucide-react";
 import { toast } from "react-hot-toast";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { getPusherClient, subscribeToPusherChannel, unsubscribeFromPusherChannel } from "@/lib/pusher-client";
 
 interface Lane {
@@ -35,6 +36,7 @@ export default function ProfesorLaneControlPage({
 }) {
   const resolvedParams = use(params);
   const { id: eventId, laneId } = resolvedParams;
+  const router = useRouter();
 
   const [event, setEvent] = useState<Event | null>(null);
   const [lane, setLane] = useState<Lane | null>(null);
@@ -235,7 +237,7 @@ export default function ProfesorLaneControlPage({
         // Mostrar notificación prominente
         toast.dismiss(); // Limpiar todos los toasts anteriores
         toast.success('🏁 EVENTO FINALIZADO', {
-          duration: 10000,
+          duration: 3000,
           icon: '🎉',
           id: 'event-finished',
           style: {
@@ -247,16 +249,17 @@ export default function ProfesorLaneControlPage({
           }
         });
 
-        // Mensaje adicional después de 2 segundos
+        // Redirigir a competencias después de 3 segundos
         setTimeout(() => {
-          toast('Gracias por tu participación 👏', {
-            duration: 8000,
-            icon: '✅',
-            style: {
-              fontSize: '16px',
-            }
+          toast.loading('Redirigiendo a competencias...', {
+            duration: 1000,
+            id: 'redirecting'
           });
-        }, 2000);
+          
+          setTimeout(() => {
+            router.push('/profesor/competencias');
+          }, 1000);
+        }, 3000);
       });
     }
 
