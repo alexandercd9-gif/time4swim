@@ -224,6 +224,40 @@ export default function ProfesorLaneControlPage({
           console.log('❌ No se encontró asignación para este carril');
         }
       });
+
+      // Escuchar cuando el admin finaliza el evento
+      channel.bind('event-finished', (data: any) => {
+        console.log('🏁 Evento finalizado por el administrador:', data);
+        
+        // Detener cronómetro si estaba corriendo
+        setLocalRunning(false);
+        
+        // Mostrar notificación prominente
+        toast.dismiss(); // Limpiar todos los toasts anteriores
+        toast.success('🏁 EVENTO FINALIZADO', {
+          duration: 10000,
+          icon: '🎉',
+          id: 'event-finished',
+          style: {
+            background: '#22c55e',
+            color: '#fff',
+            fontSize: '18px',
+            fontWeight: 'bold',
+            padding: '20px',
+          }
+        });
+
+        // Mensaje adicional después de 2 segundos
+        setTimeout(() => {
+          toast('Gracias por tu participación 👏', {
+            duration: 8000,
+            icon: '✅',
+            style: {
+              fontSize: '16px',
+            }
+          });
+        }, 2000);
+      });
     }
 
     return () => {
