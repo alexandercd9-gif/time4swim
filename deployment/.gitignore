@@ -1,0 +1,8 @@
+# Variables de entorno locales
+.env.production.local
+
+# Logs temporales
+*.log
+
+# Backups locales
+*.backup
