@@ -3,9 +3,10 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string; heatId: string } }
+  { params }: { params: Promise<{ id: string; heatId: string }> }
 ) {
   try {
+    const { id, heatId } = await params;
     const { times } = await request.json();
     
     if (!Array.isArray(times) || times.length === 0) {
@@ -16,7 +17,7 @@ export async function POST(
     }
 
     console.log('💾 Guardando tiempos en BD:', {
-      heatId: params.heatId,
+      heatId: heatId,
       timesCount: times.length,
       times
     });

@@ -341,8 +341,9 @@ export default function ParentTrainingsAnalysisPage() {
                       const isSelected = expandedStyle === s.style;
                       
                       // Mapear fuente a etiqueta legible
-                      const getSourceLabel = (src: string) => {
-                        switch(src) {
+                      const getSourceLabel = (src: string | number) => {
+                        const sourceStr = String(src);
+                        switch(sourceStr) {
                           case 'COMPETITION': return '🏆 Competencia';
                           case 'TRAINING': return '🏊 Práctica';
                           case 'INTERNAL_COMPETITION': return '⏱️ Comp. Interna';

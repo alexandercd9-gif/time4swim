@@ -183,13 +183,13 @@ export default function ProfesorLaneControlPage({
       channel.bind('swimmers-assigned', (data: any) => {
         console.log('👤 Evento swimmers-assigned recibido:', data);
         console.log('🔍 Mi laneId actual:', laneId);
-        console.log('🔍 Mi número de carril:', lane?.lane);
+        console.log('🔍 Mi número de carril:', lane?.laneNumber);
         
         // Buscar asignación por laneId O por número de carril (para Series 2+)
         const myLaneAssignment = data.assignments?.find((a: any) => {
           const matchById = a.laneId === laneId;
-          const matchByNumber = lane && a.laneNumber === lane.lane;
-          console.log(`🔎 Comparando asignación - laneId: ${a.laneId} vs ${laneId} = ${matchById}, laneNumber: ${a.laneNumber} vs ${lane?.lane} = ${matchByNumber}`);
+          const matchByNumber = lane && a.laneNumber === lane.laneNumber;
+          console.log(`🔎 Comparando asignación - laneId: ${a.laneId} vs ${laneId} = ${matchById}, laneNumber: ${a.laneNumber} vs ${lane?.laneNumber} = ${matchByNumber}`);
           return matchById || matchByNumber;
         });
         
