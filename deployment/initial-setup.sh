@@ -216,9 +216,9 @@ echo -e "${YELLOW}🔒 Configurando SSL...${NC}"
 echo "Esto solicitará un certificado SSL gratuito de Let's Encrypt"
 echo ""
 
-# Pedir email para el certificado SSL
-echo "Ingresa tu email para el certificado SSL de Let's Encrypt:"
-read -p "Email: " SSL_EMAIL
+# Email configurado para el certificado SSL
+SSL_EMAIL="acasaverde@compuimpact.pe"
+echo "📧 Usando email: $SSL_EMAIL"
 
 certbot --nginx -d $DOMAIN --non-interactive --agree-tos --email $SSL_EMAIL --redirect
 

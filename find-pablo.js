@@ -1,0 +1,11 @@
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+
+prisma.child.findMany({ 
+  where: { name: { contains: 'Pablo' } }, 
+  select: { id: true, name: true } 
+})
+.then(r => { 
+  console.log(JSON.stringify(r, null, 2)); 
+})
+.finally(() => prisma.$disconnect());
