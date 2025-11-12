@@ -15,7 +15,7 @@ echo "=================================================="
 echo ""
 
 # Variables de configuración
-DOMAIN="tudominio.com"  # 👈 CAMBIAR POR TU DOMINIO
+DOMAIN="time4swim.com"  # 👈 CAMBIAR POR TU DOMINIO
 APP_NAME="time4swim"
 APP_DIR="/var/www/$APP_NAME"
 GITHUB_REPO="https://github.com/alexandercd9-gif/time4swim.git"
@@ -216,7 +216,11 @@ echo -e "${YELLOW}🔒 Configurando SSL...${NC}"
 echo "Esto solicitará un certificado SSL gratuito de Let's Encrypt"
 echo ""
 
-certbot --nginx -d $DOMAIN --non-interactive --agree-tos --email tu_email@ejemplo.com --redirect
+# Pedir email para el certificado SSL
+echo "Ingresa tu email para el certificado SSL de Let's Encrypt:"
+read -p "Email: " SSL_EMAIL
+
+certbot --nginx -d $DOMAIN --non-interactive --agree-tos --email $SSL_EMAIL --redirect
 
 # =============================================================================
 # INICIAR APLICACIÓN CON PM2
