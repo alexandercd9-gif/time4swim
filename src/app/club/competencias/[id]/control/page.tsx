@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { toast } from "react-hot-toast";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Play, Square, RotateCcw, Clock, Users, CheckCircle, Save, Grid3x3, TableIcon } from "lucide-react";
+import { ArrowLeft, Play, Square, RotateCcw, Clock, Users, CheckCircle, Save, Grid3x3, TableIcon, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,6 +67,7 @@ export default function EventControlPage() {
   const [heatStarted, setHeatStarted] = useState(false); // Si ya se dio START
   const [heatCompleted, setHeatCompleted] = useState<number[]>([]); // Series completadas
   const [laneTimes, setLaneTimes] = useState<Map<string, number>>(new Map()); // Tiempos recibidos por carril
+  const [swimmersSaved, setSwimmersSaved] = useState<Set<number>>(new Set()); // Series con nadadores guardados
   
   // Estado para el modal de finalizar evento
   const [showFinishModal, setShowFinishModal] = useState(false);
@@ -530,6 +531,9 @@ export default function EventControlPage() {
       
       // Actualizar estado local con los datos de la BD (incluyendo objeto swimmer completo)
       setHeats(updatedHeats);
+      
+      // Marcar esta serie como guardada para habilitar el panel de control
+      setSwimmersSaved(prev => new Set(prev).add(currentHeat));
         
       // Enviar evento por Pusher para notificar a profesores CON IDs REALES
       if (updatedHeat) {
@@ -627,6 +631,41 @@ export default function EventControlPage() {
   };
 
   const handleCompleteHeat = async () => {
+    // PRIMERO: Guardar todos los tiempos de laneTimes en la BD
+    const heatData = heats.find(h => h.number === currentHeat);
+    if (heatData && laneTimes.size > 0) {
+      try {
+        console.log('💾 Guardando tiempos finales en BD...', {
+          heatNumber: currentHeat,
+          timesCount: laneTimes.size
+        });
+        
+        // Preparar datos para guardar
+        const updates = Array.from(laneTimes.entries()).map(([laneId, finalTime]) => ({
+          laneId,
+          finalTime
+        }));
+        
+        // Guardar en BD
+        const response = await fetch(`/api/club/events/${eventId}/heats/${heatData.id}/save-times`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ times: updates })
+        });
+        
+        if (!response.ok) {
+          toast.error('Error al guardar tiempos en la base de datos');
+          return;
+        }
+        
+        console.log('✅ Tiempos guardados en BD');
+      } catch (error) {
+        console.error('Error al guardar tiempos:', error);
+        toast.error('Error al guardar tiempos');
+        return;
+      }
+    }
+    
     // Marcar serie como completada
     setHeatCompleted([...heatCompleted, currentHeat]);
     setHeatStarted(false);
@@ -1185,11 +1224,11 @@ export default function EventControlPage() {
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="h-9 w-9 flex-shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                      className="h-9 w-9 flex-shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md"
                                       onClick={() => updateSwimmer(lane.id, undefined)}
                                       title="Borrar nadador"
                                     >
-                                      ✕
+                                      <Trash2 className="w-4 h-4" />
                                     </Button>
                                   )}
                                 </div>
@@ -1216,18 +1255,6 @@ export default function EventControlPage() {
                                   </p>
                                 </div>
                               </div>
-                            )}
-                            
-                            {/* Enlace control - más compacto */}
-                            {(lane.swimmerId || lane.swimmer) && !lane.isCompleted && (
-                              <Link
-                                href={`/profesor/competencias/${eventId}/lane/${lane.id}`}
-                                target="_blank"
-                                className="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 mt-1"
-                              >
-                                <Clock className="w-3 h-3" />
-                                Abrir control
-                              </Link>
                             )}
                           </div>
                         </CardContent>
@@ -1334,11 +1361,11 @@ export default function EventControlPage() {
                                           <Button
                                             variant="ghost"
                                             size="icon"
-                                            className="h-8 w-8 flex-shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                            className="h-8 w-8 flex-shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md"
                                             onClick={() => updateSwimmer(lane.id, undefined)}
                                             title="Borrar nadador"
                                           >
-                                            ✕
+                                            <Trash2 className="w-4 h-4" />
                                           </Button>
                                         )}
                                       </div>
@@ -1385,25 +1412,52 @@ export default function EventControlPage() {
           {/* COLUMNA DERECHA: Control de Serie (30%) */}
           <div className="lg:w-[30%] order-1 lg:order-2 space-y-4">
             {/* Panel de Control - Adapta altura */}
-            <Card className="border-2 border-blue-500 shadow-lg lg:sticky lg:top-4">
-              <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-3">
-                <CardTitle className="text-center text-lg font-bold">
-                  Control de Serie {currentHeat}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-3 space-y-3">
-                {/* Estado */}
-                <div className="text-center">
-                  {heatStarted ? (
-                    <Badge className="text-sm px-4 py-2 bg-green-600 animate-pulse font-bold">
-                      🏊 Serie en curso
-                    </Badge>
-                  ) : (
-                    <Badge variant="secondary" className="text-sm px-4 py-2 font-bold">
-                      ⏸️ Serie detenida
-                    </Badge>
-                  )}
-                </div>
+            {(() => {
+              // Verificar si esta serie ha sido guardada usando el Set de series guardadas
+              const hasAssignedSwimmers = swimmersSaved.has(currentHeat);
+              
+              return (
+                <div className="overflow-hidden rounded-lg">
+                  {/* Título pegado al Card */}
+                  <div className={`p-3 text-center font-bold text-lg ${
+                    hasAssignedSwimmers
+                      ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white'
+                      : 'bg-gray-300 text-gray-600'
+                  }`}>
+                    Control de Serie {currentHeat}
+                  </div>
+                  
+                  <Card className={`border-2 border-t-0 shadow-lg lg:sticky lg:top-4 transition-all rounded-t-none ${
+                    hasAssignedSwimmers 
+                      ? 'border-blue-500' 
+                      : 'border-gray-300 opacity-60'
+                  }`}>
+                    <CardContent className="p-3 space-y-3">
+                    {!hasAssignedSwimmers ? (
+                      // Mensaje cuando no hay nadadores guardados
+                      <div className="text-center py-8">
+                        <div className="text-4xl mb-3">🔒</div>
+                        <p className="text-sm font-semibold text-gray-700 mb-2">
+                          Panel bloqueado
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          Asigna nadadores y presiona <span className="font-bold">"Guardar"</span> para habilitar el control
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Estado */}
+                        <div className="text-center">
+                          {heatStarted ? (
+                            <Badge className="text-sm px-4 py-2 bg-green-600 animate-pulse font-bold">
+                              🏊 Serie en curso
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-sm px-4 py-2 font-bold">
+                              ⏸️ Serie detenida
+                            </Badge>
+                          )}
+                        </div>
 
                 {/* Tiempos recibidos */}
                 {laneTimes.size > 0 && (
@@ -1486,21 +1540,27 @@ export default function EventControlPage() {
                       })()}
                 </div>
 
-                {/* Botón Finalizar Evento */}
-                <div className="pt-3 border-t-2 border-gray-200">
-                  <Button
-                    onClick={handleFinishEvent}
-                    variant="destructive"
-                    className="w-full bg-red-600 hover:bg-red-700 text-white py-4 text-sm font-bold shadow-md"
-                  >
-                    🏁 FINALIZAR EVENTO
-                  </Button>
-                  <p className="text-xs text-gray-500 text-center mt-2">
-                    Finaliza el evento actual
-                  </p>
+                      </>
+                    )}
+                  </CardContent>
+                  
+                  {/* Botón Finalizar Evento - Siempre visible */}
+                  <div className="p-3 border-t-2 border-gray-200">
+                    <Button
+                      onClick={handleFinishEvent}
+                      variant="destructive"
+                      className="w-full bg-red-600 hover:bg-red-700 text-white py-4 text-sm font-bold shadow-md"
+                    >
+                      🏁 FINALIZAR EVENTO
+                    </Button>
+                    <p className="text-xs text-gray-500 text-center mt-2">
+                      Finaliza el evento actual
+                    </p>
+                  </div>
+                </Card>
                 </div>
-              </CardContent>
-            </Card>
+              );
+            })()}
           </div>
         </div>
 

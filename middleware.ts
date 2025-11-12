@@ -54,8 +54,16 @@ export function middleware(request: NextRequest) {
     if (pathname.startsWith('/parents') && userRole !== 'PARENTS' && userRole !== 'PARENT') {
       return NextResponse.redirect(new URL('/login', request.url))
     }
-    if (pathname.startsWith('/club') && userRole !== 'CLUB') {
-      return NextResponse.redirect(new URL('/login', request.url))
+    // Permitir acceso a resultados para profesores y club
+    if (pathname.startsWith('/club')) {
+      const isResultsPage = pathname.includes('/results');
+      if (!isResultsPage && userRole !== 'CLUB') {
+        return NextResponse.redirect(new URL('/login', request.url))
+      }
+      // Si es página de resultados, permitir acceso a CLUB y PROFESOR
+      if (isResultsPage && userRole !== 'CLUB' && userRole !== 'PROFESOR' && userRole !== 'TEACHER') {
+        return NextResponse.redirect(new URL('/login', request.url))
+      }
     }
     if (pathname.startsWith('/profesor') && userRole !== 'PROFESOR' && userRole !== 'TEACHER') {
       return NextResponse.redirect(new URL('/login', request.url))

@@ -205,80 +205,89 @@ export default function CompetenciasInternasPage() {
             return (
               <Card
                 key={event.id}
-                className="border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all"
+                className="border-2 hover:shadow-lg transition-shadow overflow-hidden py-0 border-blue-200"
               >
-                <CardContent className="p-4 sm:p-6">
-                  {/* Header con título y fecha */}
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className="bg-blue-100 rounded-lg p-2 shrink-0">
-                      <Timer className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1 truncate">
-                        {event.title}
-                      </h3>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Calendar className="h-4 w-4 shrink-0" />
-                        <span className="truncate">
-                          {new Date(event.startDate).toLocaleDateString('es-ES', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric'
-                          })}
-                        </span>
-                        {isFinalizado && (
-                          <span className="ml-2 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-semibold border border-green-300">
-                            Evento Finalizado
-                          </span>
-                        )}
-                      </div>
-                      {event.location && (
-                        <div className="text-sm text-gray-600 mt-1">
-                          📍 {event.location}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Prueba */}
-                  <div className="bg-gray-50 rounded-lg p-2.5 mb-3">
-                    <span className="text-sm font-semibold text-gray-700">
-                      {event.distance ? `${event.distance}m` : ''} {getStyleName(event.style)}
+                <CardHeader className="bg-gradient-to-r from-blue-100 to-indigo-100 p-4 px-6">
+                  <div className="flex items-center gap-3 mb-2">
+                    <CardTitle className="text-xl">{event.title}</CardTitle>
+                    {isFinalizado && (
+                      <span className="px-2 py-1 rounded-full bg-green-500 text-white text-xs font-semibold">
+                        ✓ Completada
+                      </span>
+                    )}
+                    <span className="px-2 py-1 rounded-full bg-blue-500 text-white text-xs font-semibold">
+                      Interna
                     </span>
                   </div>
-
-                  {/* Botón y badge */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {filter === 'past' ? (
-                      <Button
-                        onClick={() => router.push(`/club/competencias/${event.id}/results`)}
-                        variant="outline"
-                        className="flex-1 min-w-[180px] border-blue-300 text-blue-700 hover:bg-blue-50"
-                        size="sm"
-                      >
-                        <Trophy className="h-4 w-4 mr-2" />
-                        Ver Resultados
-                        <ChevronRight className="h-4 w-4 ml-2" />
-                      </Button>
-                    ) : (
-                      <>
-                        <Button
-                          onClick={() => router.push(`/club/competencias/${event.id}/assign`)}
-                          className="flex-1 min-w-[180px] bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
-                          size="sm"
-                        >
-                          <Timer className="h-4 w-4 mr-2" />
-                          Iniciar Competencia
-                          <ChevronRight className="h-4 w-4 ml-2" />
-                        </Button>
-                        {isConfigured && (
-                          <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-blue-100 text-blue-700 whitespace-nowrap">
-                            ⏱ Listo para configurar
-                          </span>
-                        )}
-                      </>
+                  
+                  <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                    <div className="flex items-center gap-1">
+                      <Trophy className="w-4 h-4" />
+                      {event.distance}m {getStyleName(event.style)}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      {new Date(event.startDate).toLocaleDateString('es-ES', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </div>
+                    {event.location && (
+                      <div className="flex items-center gap-1">
+                        📍 {event.location}
+                      </div>
                     )}
                   </div>
+                </CardHeader>
+                
+                <CardContent className="p-4">
+                  {filter === 'past' ? (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-green-100">
+                          <span className="text-2xl">🏆</span>
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">Competencia Finalizada</p>
+                          <p className="text-sm text-gray-500">Los resultados están disponibles</p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => router.push(`/club/competencias/${event.id}/results`)}
+                        className="bg-green-600 hover:bg-green-700 gap-2"
+                      >
+                        <Trophy className="w-4 h-4" />
+                        Ver Resultados
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-100">
+                          <Timer className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            {isConfigured ? 'Listo para iniciar' : 'Configurar competencia'}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {assignedLanes} de {totalLanes} carriles asignados
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => router.push(`/club/competencias/${event.id}/assign`)}
+                        className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 gap-2"
+                      >
+                        <Timer className="w-4 h-4" />
+                        Iniciar Competencia
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );

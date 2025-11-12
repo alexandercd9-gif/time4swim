@@ -195,9 +195,13 @@ export default function ParentChildrenPage() {
       {/* Modal Crear/Editar */}
       <SwimmerForm
         isOpen={openForm}
-        onClose={() => setOpenForm(false)}
+        onClose={() => {
+          setOpenForm(false);
+          setEditing(null);
+        }}
         onSuccess={() => {
           setOpenForm(false);
+          setEditing(null);
           loadChildren();
         }}
         swimmer={editing ? {

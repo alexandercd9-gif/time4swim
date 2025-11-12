@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, Calendar, Waves, MapPin, ArrowRight, RefreshCw } from "lucide-react";
+import { Clock, Calendar, Waves, MapPin, ArrowRight, RefreshCw, Trophy } from "lucide-react";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
 
@@ -16,6 +16,7 @@ interface Event {
   eventDate: string;
   location?: string;
   competitionType: string;
+  description?: string;
   heats: {
     id: string;
     number: number;
@@ -136,21 +137,18 @@ export default function ProfesorCompetenciasPage() {
   }
 
   // Filtrar eventos por pestaña
-  // Usar comparación de strings para evitar problemas de timezone
-  const today = new Date();
-  const todayDateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-  
+  // Un evento está completado si su descripción comienza con "COMPLETED:"
   const filteredEvents = events.filter(event => {
-    const eventDateStr = event.eventDate.substring(0, 10); // "YYYY-MM-DD"
+    const isCompleted = event.description?.startsWith('COMPLETED:');
     if (activeTab === 'proximas') {
-      return eventDateStr >= todayDateStr; // Incluye eventos de hoy
+      return !isCompleted; // Eventos no completados
     } else {
-      return eventDateStr < todayDateStr; // Solo eventos del pasado
+      return isCompleted; // Solo eventos completados
     }
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -186,7 +184,7 @@ export default function ProfesorCompetenciasPage() {
                 : 'text-gray-500 border-transparent hover:text-gray-700'
             }`}
           >
-            Próximas ({events.filter(e => e.eventDate.substring(0, 10) >= todayDateStr).length})
+            Próximas ({events.filter(e => !e.description?.startsWith('COMPLETED:')).length})
           </button>
           <button
             onClick={() => setActiveTab('completadas')}
@@ -196,7 +194,7 @@ export default function ProfesorCompetenciasPage() {
                 : 'text-gray-500 border-transparent hover:text-gray-700'
             }`}
           >
-            Completadas ({events.filter(e => e.eventDate.substring(0, 10) < todayDateStr).length})
+            Completadas ({events.filter(e => e.description?.startsWith('COMPLETED:')).length})
           </button>
         </div>
 
@@ -218,72 +216,83 @@ export default function ProfesorCompetenciasPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {filteredEvents.map((event) => {
               const myLanes = getMyLanes(event);
               const eventDate = new Date(event.eventDate);
+              const isCompleted = event.description?.startsWith('COMPLETED:');
               const eventDateStr = event.eventDate.substring(0, 10);
+              const todayDateStr = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
               const isToday = eventDateStr === todayDateStr;
-              const isPast = eventDateStr < todayDateStr;
               
               return (
-                <Card key={event.id} className={`border-2 hover:shadow-lg transition-shadow ${
-                  isPast ? 'border-green-200' : 'border-blue-200'
+                <Card key={event.id} className={`border-2 hover:shadow-lg transition-shadow overflow-hidden py-0 ${
+                  isCompleted ? 'border-green-200' : 'border-blue-200'
                 }`}>
-                  <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <CardTitle className="text-2xl">{event.title}</CardTitle>
-                          {isToday && (
-                            <Badge className="bg-red-500 text-white">
-                              ¡HOY!
-                            </Badge>
-                          )}
-                          <Badge variant="outline" className="capitalize">
-                            {event.competitionType === 'internal' ? 'Interna' : 'Externa'}
-                          </Badge>
-                        </div>
-                        
-                        <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                          <div className="flex items-center gap-1">
-                            <Waves className="w-4 h-4" />
-                            {event.distance}m {event.style}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            {eventDate.toLocaleDateString('es-ES', { 
-                              weekday: 'long', 
-                              year: 'numeric', 
-                              month: 'long', 
-                              day: 'numeric' 
-                            })}
-                          </div>
-                          {event.location && (
-                            <div className="flex items-center gap-1">
-                              <MapPin className="w-4 h-4" />
-                              {event.location}
-                            </div>
-                          )}
-                        </div>
+                  <CardHeader className="bg-gradient-to-r from-blue-100 to-indigo-100 p-4 px-6">
+                    <div className="flex items-center gap-3 mb-2">
+                      <CardTitle className="text-xl">{event.title}</CardTitle>
+                      {isToday && !isCompleted && (
+                        <Badge className="bg-red-500 text-white">
+                          ¡HOY!
+                        </Badge>
+                      )}
+                      {isCompleted && (
+                        <Badge className="bg-green-500 text-white">
+                          ✓ Completada
+                        </Badge>
+                      )}
+                      <Badge variant="outline" className="capitalize">
+                        {event.competitionType === 'internal' ? 'Interna' : 'Externa'}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                      <div className="flex items-center gap-1">
+                        <Waves className="w-4 h-4" />
+                        {event.distance}m {event.style}
                       </div>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        {eventDate.toLocaleDateString('es-ES', { 
+                          weekday: 'long', 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })}
+                      </div>
+                      {event.location && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-4 h-4" />
+                          {event.location}
+                        </div>
+                      )}
                     </div>
                   </CardHeader>
                   
-                  <CardContent className="p-6">
-                    {/* Botón Ver Resultados para eventos completados */}
-                    {isPast && (
-                      <div className="mb-4">
-                        <Link href={`/club/competencias/${event.id}/results`}>
-                          <Button className="w-full bg-green-600 hover:bg-green-700 gap-2" size="lg">
-                            🏆 Ver Resultados
-                            <ArrowRight className="w-5 h-5" />
+                  <CardContent className="p-4">
+                    {/* Si el evento está completado, mostrar solo botón de resultados */}
+                    {isCompleted ? (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-green-100">
+                            <span className="text-2xl">🏆</span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">Competencia Finalizada</p>
+                            <p className="text-sm text-gray-500">Los resultados están disponibles</p>
+                          </div>
+                        </div>
+                        <a href={`/club/competencias/${event.id}/results`} target="_blank" rel="noopener noreferrer">
+                          <Button className="bg-green-600 hover:bg-green-700 gap-2">
+                            <Trophy className="w-4 h-4" />
+                            Ver Resultados
+                            <ArrowRight className="w-4 h-4" />
                           </Button>
-                        </Link>
+                        </a>
                       </div>
-                    )}
-                    
-                    <div className="space-y-4">
+                    ) : (
+                      <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <h4 className="font-semibold text-lg">Carriles Asignados</h4>
                         <Badge variant="secondary" className="text-sm">
@@ -352,6 +361,7 @@ export default function ProfesorCompetenciasPage() {
                         </div>
                       )}
                     </div>
+                    )}
                   </CardContent>
                 </Card>
               );

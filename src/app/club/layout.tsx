@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import ModernSidebar from "@/components/ModernSidebar";
 import TopBar from "@/components/TopBar";
 import { useUser } from "@/context/UserContext";
@@ -14,17 +14,26 @@ export default function ClubLayout({
 }) {
   const { user, loading } = useUser();
   const router = useRouter();
+  const pathname = usePathname();
   const { isSidebarCollapsed } = useSidebar();
 
   useEffect(() => {
     if (!loading && user && user.role && user.role !== "CLUB") {
+      // Allow PROFESOR and TEACHER to access results pages
+      const isResultsPage = pathname?.includes('/results');
+      const isAllowedRole = ['PROFESOR', 'TEACHER'].includes(user.role);
+      
+      if (isResultsPage && isAllowedRole) {
+        return; // Allow access
+      }
+      
       const role = String(user.role).toLowerCase();
       const target = ["admin", "parents", "profesor"].includes(role)
         ? `/${role}`
         : "/";
       router.replace(target);
     }
-  }, [loading, user, router]);
+  }, [loading, user, router, pathname]);
 
   return (
     <div className="flex min-h-screen bg-gray-50">

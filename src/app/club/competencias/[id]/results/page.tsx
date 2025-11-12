@@ -4,9 +4,15 @@ import { useState, useEffect, use } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, ArrowLeft, Calendar, MapPin, Download } from "lucide-react";
+import { Trophy, ArrowLeft, Calendar, MapPin, Download, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 
 interface Swimmer {
   id: string;
@@ -23,6 +29,8 @@ interface Result {
 
 interface Category {
   code: string;
+  categoryCode: string;
+  gender: string;
   name: string;
   results: Result[];
 }
@@ -131,7 +139,7 @@ export default function CompetenciaResultsPage({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -171,9 +179,6 @@ export default function CompetenciaResultsPage({
                   </div>
                 )}
               </div>
-              <Badge className="mt-3 text-lg px-4 py-2 bg-blue-600">
-                {data.event.distance}m {getStyleName(data.event.style)}
-              </Badge>
             </div>
             
             <Button
@@ -201,72 +206,225 @@ export default function CompetenciaResultsPage({
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {data.categories.map((category) => (
-              <Card key={category.code} className="border-2 border-blue-200 shadow-lg">
-                <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
-                  <CardTitle className="text-center text-xl">
-                    {category.name}
-                  </CardTitle>
-                  <p className="text-center text-sm text-blue-100">
-                    {data.event.distance}m {getStyleName(data.event.style)}
-                  </p>
-                </CardHeader>
-                <CardContent className="p-4">
-                  <div className="space-y-2">
-                    {category.results.map((result) => (
-                      <div
-                        key={`${result.swimmer.id}-${result.heatNumber}-${result.laneNumber}`}
-                        className={`flex items-center justify-between p-3 rounded-lg border-2 transition-all ${getPositionColor(result.position)}`}
-                      >
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-sm flex-shrink-0">
-                            <span className="text-lg font-bold">
-                              {getMedalEmoji(result.position) || result.position}
-                            </span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-base truncate">
-                              {result.swimmer.name}
-                            </p>
-                            <p className="text-xs text-gray-600">
-                              Serie {result.heatNumber} • Carril {result.laneNumber}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right flex-shrink-0 ml-2">
-                          <p className="text-xl font-bold font-mono">
-                            {formatTime(result.time)}
-                          </p>
-                          {result.position <= 3 && (
-                            <p className="text-xs font-semibold">
-                              {result.position === 1 ? "ORO" : result.position === 2 ? "PLATA" : "BRONCE"}
-                            </p>
-                          )}
-                        </div>
+          <Tabs defaultValue={Array.from(new Set(data.categories.map(cat => cat.categoryCode)))[0]} className="w-full">
+            <TabsList className="w-full flex flex-wrap justify-center gap-2 h-auto p-2 bg-white border-2 border-gray-200 rounded-lg">
+              {/* Agrupar por categoría base (sin género) */}
+              {(() => {
+                // Orden estándar de categorías
+                const categoryOrder = [
+                  'pre_minima',
+                  'minima_1',
+                  'minima_2',
+                  'infantil_a1',
+                  'infantil_a2',
+                  'infantil_b1',
+                  'infantil_b2',
+                  'juvenil_a',
+                  'juvenil_b',
+                  'juvenil_c',
+                  'junior',
+                  'senior',
+                  'master'
+                ];
+                
+                // Obtener categorías únicas
+                const uniqueCategories = Array.from(
+                  new Set(data.categories.map(cat => cat.categoryCode))
+                );
+                
+                // Ordenar según el orden estándar
+                const sortedCategories = uniqueCategories.sort((a, b) => {
+                  const indexA = categoryOrder.indexOf(a);
+                  const indexB = categoryOrder.indexOf(b);
+                  // Si no está en el orden, poner al final
+                  if (indexA === -1) return 1;
+                  if (indexB === -1) return -1;
+                  return indexA - indexB;
+                });
+                
+                return sortedCategories.map((categoryCode) => {
+                  // Obtener el nombre limpio de la categoría (sin el sufijo de género)
+                  const categoryInfo = [
+                    { code: 'pre_minima', name: 'PRE-MÍNIMA' },
+                    { code: 'minima_1', name: 'MÍNIMA 1' },
+                    { code: 'minima_2', name: 'MÍNIMA 2' },
+                    { code: 'infantil_a1', name: 'INFANTIL A1' },
+                    { code: 'infantil_a2', name: 'INFANTIL A2' },
+                    { code: 'infantil_b1', name: 'INFANTIL B1' },
+                    { code: 'infantil_b2', name: 'INFANTIL B2' },
+                    { code: 'juvenil_a', name: 'JUVENIL A' },
+                    { code: 'juvenil_b', name: 'JUVENIL B' },
+                    { code: 'juvenil_c', name: 'JUVENIL C' },
+                    { code: 'junior', name: 'JUNIOR' },
+                    { code: 'senior', name: 'SENIOR' },
+                    { code: 'master', name: 'MASTER' },
+                  ].find(c => c.code === categoryCode);
+                  
+                  const categoryName = categoryInfo?.name || categoryCode.toUpperCase();
+                  
+                  return (
+                    <TabsTrigger 
+                      key={categoryCode} 
+                      value={categoryCode}
+                      className="px-6 py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white"
+                    >
+                      <div className="flex flex-col items-center">
+                        <span className="text-sm font-bold">{categoryName}</span>
+                        <span className="text-xs opacity-80">
+                          {data.event.distance}m {getStyleName(data.event.style)}
+                        </span>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+                    </TabsTrigger>
+                  );
+                });
+              })()}
+            </TabsList>
 
-        {/* Nota de impresión */}
-        <Card className="mt-8 border-2 border-yellow-200 bg-yellow-50 print:hidden">
-          <CardContent className="p-6">
-            <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
-              💡 Información
-            </h3>
-            <ul className="space-y-2 text-gray-700">
-              <li>• Los resultados se muestran agrupados por categoría</li>
-              <li>• Los tiempos están ordenados de menor a mayor (más rápido primero)</li>
-              <li>• Puedes imprimir esta página usando el botón "Imprimir Resultados"</li>
-              <li>• Las medallas 🥇🥈🥉 representan los primeros 3 lugares de cada categoría</li>
-            </ul>
-          </CardContent>
-        </Card>
+            {/* Contenido de cada categoría */}
+            {(() => {
+              // Orden estándar de categorías
+              const categoryOrder = [
+                'pre_minima',
+                'minima_1',
+                'minima_2',
+                'infantil_a1',
+                'infantil_a2',
+                'infantil_b1',
+                'infantil_b2',
+                'juvenil_a',
+                'juvenil_b',
+                'juvenil_c',
+                'junior',
+                'senior',
+                'master'
+              ];
+              
+              const uniqueCategories = Array.from(
+                new Set(data.categories.map(cat => cat.categoryCode))
+              );
+              
+              // Ordenar según el orden estándar
+              const sortedCategories = uniqueCategories.sort((a, b) => {
+                const indexA = categoryOrder.indexOf(a);
+                const indexB = categoryOrder.indexOf(b);
+                if (indexA === -1) return 1;
+                if (indexB === -1) return -1;
+                return indexA - indexB;
+              });
+              
+              return sortedCategories.map((categoryCode) => {
+                // Encontrar todas las categorías con este código
+                const categoriesWithCode = data.categories.filter(c => c.categoryCode === categoryCode);
+                const damas = categoriesWithCode.find(c => c.gender === 'FEMALE');
+                const varones = categoriesWithCode.find(c => c.gender === 'MALE');
+                
+                return (
+                  <TabsContent key={categoryCode} value={categoryCode} className="mt-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* VARONES */}
+                      {varones && (
+                        <div className="border-2 border-blue-200 rounded-lg overflow-hidden">
+                          <div className="bg-blue-600 text-white px-4 py-3">
+                            <h3 className="text-center font-bold text-lg">VARONES</h3>
+                          </div>
+                          <div className="p-4 bg-white">
+                            <div className="space-y-2">
+                              {varones.results.map((result) => (
+                                <div
+                                  key={`${result.swimmer.id}-${result.heatNumber}-${result.laneNumber}`}
+                                  className={`flex items-center justify-between p-3 rounded-lg border-2 transition-all ${getPositionColor(result.position)}`}
+                                >
+                                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-sm flex-shrink-0">
+                                      <span className="text-base font-bold">
+                                        {getMedalEmoji(result.position) || result.position}
+                                      </span>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-semibold truncate">
+                                        {result.swimmer.name}
+                                      </p>
+                                      <p className="text-sm text-gray-600">
+                                        Serie {result.heatNumber} • Carril {result.laneNumber}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="text-right flex-shrink-0 ml-3">
+                                    <p className="text-lg font-bold font-mono">
+                                      {formatTime(result.time)}
+                                    </p>
+                                    {result.position <= 3 && (
+                                      <p className="text-xs font-semibold">
+                                        {result.position === 1 ? "ORO" : result.position === 2 ? "PLATA" : "BRONCE"}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* DAMAS */}
+                      {damas && (
+                        <div className="border-2 border-pink-200 rounded-lg overflow-hidden">
+                          <div className="bg-pink-600 text-white px-4 py-3">
+                            <h3 className="text-center font-bold text-lg">DAMAS</h3>
+                          </div>
+                          <div className="p-4 bg-white">
+                            <div className="space-y-2">
+                              {damas.results.map((result) => (
+                                <div
+                                  key={`${result.swimmer.id}-${result.heatNumber}-${result.laneNumber}`}
+                                  className={`flex items-center justify-between p-3 rounded-lg border-2 transition-all ${getPositionColor(result.position)}`}
+                                >
+                                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-sm flex-shrink-0">
+                                      <span className="text-base font-bold">
+                                        {getMedalEmoji(result.position) || result.position}
+                                      </span>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-semibold truncate">
+                                        {result.swimmer.name}
+                                      </p>
+                                      <p className="text-sm text-gray-600">
+                                        Serie {result.heatNumber} • Carril {result.laneNumber}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="text-right flex-shrink-0 ml-3">
+                                    <p className="text-lg font-bold font-mono">
+                                      {formatTime(result.time)}
+                                    </p>
+                                    {result.position <= 3 && (
+                                      <p className="text-xs font-semibold">
+                                        {result.position === 1 ? "ORO" : result.position === 2 ? "PLATA" : "BRONCE"}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {!damas && !varones && (
+                        <Card className="col-span-full border-2 border-gray-200">
+                          <CardContent className="p-8 text-center">
+                            <p className="text-gray-500">Sin resultados disponibles</p>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+                  </TabsContent>
+                );
+              });
+            })()}
+          </Tabs>
+        )}
       </div>
     </div>
   );

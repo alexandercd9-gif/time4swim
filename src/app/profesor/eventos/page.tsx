@@ -58,17 +58,17 @@ export default function ProfesorEventosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 flex items-center gap-3">
-                <Calendar className="w-10 h-10 text-blue-600" />
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                <Calendar className="w-8 h-8 text-blue-600" />
                 Eventos
               </h1>
-              <p className="text-lg text-gray-600 mt-2">
+              <p className="text-gray-600 mt-2">
                 Eventos externos próximos
               </p>
             </div>
@@ -98,59 +98,55 @@ export default function ProfesorEventosPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {events.map((event) => {
               const eventDate = new Date(event.eventDate);
               const isToday = eventDate.toDateString() === new Date().toDateString();
               
               return (
-                <Card key={event.id} className="border-2 border-purple-200 hover:shadow-lg transition-shadow">
-                  <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <CardTitle className="text-2xl">{event.title}</CardTitle>
-                          {isToday && (
-                            <Badge className="bg-red-500 text-white">
-                              ¡HOY!
-                            </Badge>
-                          )}
-                          <Badge variant="outline" className="capitalize">
-                            Externa
-                          </Badge>
-                        </div>
-                        
-                        <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            {eventDate.toLocaleDateString('es-ES', { 
-                              weekday: 'long', 
-                              year: 'numeric', 
-                              month: 'long', 
-                              day: 'numeric' 
-                            })}
-                          </div>
-                          {event.location && (
-                            <div className="flex items-center gap-1">
-                              <MapPin className="w-4 h-4" />
-                              {event.location}
-                            </div>
-                          )}
-                        </div>
+                <Card key={event.id} className="border-2 border-purple-200 hover:shadow-lg transition-shadow overflow-hidden py-0">
+                  <CardHeader className="bg-gradient-to-r from-blue-100 to-indigo-100 p-4 px-6">
+                    <div className="flex items-center gap-3 mb-2">
+                      <CardTitle className="text-xl">{event.title}</CardTitle>
+                      {isToday && (
+                        <Badge className="bg-red-500 text-white">
+                          ¡HOY!
+                        </Badge>
+                      )}
+                      <Badge className="bg-purple-500 text-white">
+                        Externa
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        {eventDate.toLocaleDateString('es-ES', { 
+                          weekday: 'long', 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })}
                       </div>
+                      {event.location && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-4 h-4" />
+                          {event.location}
+                        </div>
+                      )}
                     </div>
                   </CardHeader>
                   
-                  <CardContent className="p-6">
-                    <div className="space-y-4">
-                      <div className="text-center py-8 bg-purple-50 rounded-lg">
-                        <ExternalLink className="w-12 h-12 text-purple-500 mx-auto mb-3" />
-                        <p className="text-gray-700 font-medium">
-                          Evento externo programado
-                        </p>
-                        <p className="text-sm text-gray-500 mt-1">
-                          Consulta los detalles con el administrador
-                        </p>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-center py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-100">
+                          <ExternalLink className="w-6 h-6 text-purple-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">Evento Externo</p>
+                          <p className="text-sm text-gray-500">Competencia fuera del club</p>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
@@ -159,21 +155,6 @@ export default function ProfesorEventosPage() {
             })}
           </div>
         )}
-
-        {/* Información */}
-        <Card className="mt-8 border-2 border-blue-200 bg-blue-50">
-          <CardContent className="p-6">
-            <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
-              ℹ️ Información
-            </h3>
-            <ul className="space-y-2 text-gray-700">
-              <li>• Aquí verás los eventos externos próximos</li>
-              <li>• Los eventos externos son competencias fuera del club</li>
-              <li>• Para más detalles, contacta con el administrador del club</li>
-              <li>• Las competencias internas las encuentras en "Competiciones"</li>
-            </ul>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

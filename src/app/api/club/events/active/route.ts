@@ -60,6 +60,7 @@ export async function GET() {
         style: event.style || '',
         eventDate: event.startDate,
         location: event.location,
+        description: event.description,
         competitionType: event.isInternalCompetition ? 'internal' : 'external',
         heats: Array.from(heatMap.values())
       };

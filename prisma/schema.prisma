@@ -260,6 +260,7 @@ model Event {
   style                 SwimStyle? // Estilo de nado para competencias internas
   distance              Int?       // Distancia general en metros (50, 100, 200, etc)
   categoryDistances     String? @db.Text // JSON object con distancias específicas por categoría {"pre_minima": "50", "minima_1": "100"}
+  isCompleted           Boolean @default(false) // true cuando el evento ha sido finalizado
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
