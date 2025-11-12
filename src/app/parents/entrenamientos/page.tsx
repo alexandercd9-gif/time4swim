@@ -27,7 +27,7 @@ export default function ParentTrainingsAnalysisPage() {
   const [selectedChild, setSelectedChild] = useState("");
   const [styles, setStyles] = useState<SwimStyle[]>([]);
   const [selectedSource, setSelectedSource] = useState("");
-  const [selectedDistance, setSelectedDistance] = useState("");
+  const [selectedDistance, setSelectedDistance] = useState("25");
   const [selectedDateRange, setSelectedDateRange] = useState("Mes");
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
@@ -87,27 +87,42 @@ export default function ParentTrainingsAnalysisPage() {
   }, [selectedChild]);
 
   // Mapeo simple para el origen de datos hacia valores esperados por la API
-  function mapSourceToApi(value: string): "COMPETITION" | "TRAINING" | undefined {
+  function mapSourceToApi(value: string): "COMPETITION" | "TRAINING" | "INTERNAL_COMPETITION" | undefined {
     if (!value) return undefined;
     if (value === "COMPETENCIA") return "COMPETITION";
     if (value === "PRACTICA") return "TRAINING";
+    if (value === "INTERNAL_COMPETITION") return "INTERNAL_COMPETITION";
     return undefined;
   }
 
   async function onBuscar() {
+    // Validación: nadador y distancia son obligatorios
+    if (!selectedChild) {
+      alert("Por favor selecciona un nadador");
+      return;
+    }
+    if (!selectedDistance) {
+      alert("Por favor selecciona una distancia");
+      return;
+    }
+
     try {
       setSearching(true);
       const params = new URLSearchParams();
       const apiSource = mapSourceToApi(selectedSource);
-      if (apiSource) params.set("source", apiSource);
-      if (selectedChild) params.set("childId", selectedChild);
-      // Nota: Por ahora la API de mejores tiempos no filtra por estilo/distancia/fechas.
-      // Estos filtros se implementarán en endpoints específicos en siguientes iteraciones.
+      // Solo agregar source si hay una fuente seleccionada
+      if (apiSource) {
+        params.set("source", apiSource);
+      }
+      params.set("childId", selectedChild);
+      params.set("distance", selectedDistance);
+      // Nota: Si no se especifica source, la API busca en TODAS las fuentes (Competencias, Prácticas, Competencias Internas)
 
       const res = await fetch(`/api/parent/best-times?${params.toString()}`);
       if (!res.ok) throw new Error("Error al buscar mejores tiempos");
       const data = await res.json();
-      setBestTimes(data?.bestTimes || {});
+      const newBestTimes = data?.bestTimes || {};
+      setBestTimes(newBestTimes);
       setOpenSection("best");
       
       // Scroll suave hacia los resultados
@@ -144,10 +159,12 @@ export default function ParentTrainingsAnalysisPage() {
             </AccordionTrigger>
             <AccordionContent>
               <div className="rounded-lg border bg-white p-6 shadow-sm">
-                {/* Primera fila: Nadador, Fuente, Distancia */}
+                {/* Primera fila: Nadador, Distancia, Fuente */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                   <div className="space-y-2">
-                    <Label htmlFor="nadador" className="text-sm font-medium">Nadador</Label>
+                    <Label htmlFor="nadador" className="text-sm font-medium">
+                      Nadador <span className="text-red-500">*</span>
+                    </Label>
                     <Select value={selectedChild} onValueChange={setSelectedChild} disabled={loading}>
                       <SelectTrigger id="nadador" className="w-full">
                         <SelectValue placeholder={loading ? "Cargando..." : "Selecciona un nadador"} />
@@ -161,6 +178,24 @@ export default function ParentTrainingsAnalysisPage() {
                   </div>
 
                   <div className="space-y-2">
+                    <Label htmlFor="distancia" className="text-sm font-medium">
+                      Distancia <span className="text-red-500">*</span>
+                    </Label>
+                    <Select value={selectedDistance} onValueChange={setSelectedDistance}>
+                      <SelectTrigger id="distancia" className="w-full">
+                        <SelectValue placeholder="Selecciona distancia" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="25">25m</SelectItem>
+                        <SelectItem value="50">50m</SelectItem>
+                        <SelectItem value="100">100m</SelectItem>
+                        <SelectItem value="200">200m</SelectItem>
+                        <SelectItem value="400">400m</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
                     <Label htmlFor="fuente" className="text-sm font-medium">Fuente de datos</Label>
                     <Select value={selectedSource} onValueChange={setSelectedSource}>
                       <SelectTrigger id="fuente" className="w-full">
@@ -169,22 +204,7 @@ export default function ParentTrainingsAnalysisPage() {
                       <SelectContent>
                         <SelectItem value="COMPETENCIA">🏆 Competencias</SelectItem>
                         <SelectItem value="PRACTICA">🏊 Prácticas</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="distancia" className="text-sm font-medium">Distancia</Label>
-                    <Select value={selectedDistance} onValueChange={setSelectedDistance}>
-                      <SelectTrigger id="distancia" className="w-full">
-                        <SelectValue placeholder="Todas las distancias" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="25">25m</SelectItem>
-                        <SelectItem value="50">50m</SelectItem>
-                        <SelectItem value="100">100m</SelectItem>
-                        <SelectItem value="200">200m</SelectItem>
-                        <SelectItem value="400">400m</SelectItem>
+                        <SelectItem value="INTERNAL_COMPETITION">⏱️ Competencias Internas</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -274,7 +294,12 @@ export default function ParentTrainingsAnalysisPage() {
                 </div>
 
                 <div className="mt-6 flex justify-center">
-                  <Button onClick={onBuscar} disabled={searching} size="lg" className="px-8 py-6 text-lg bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 shadow-lg">
+                  <Button 
+                    onClick={onBuscar} 
+                    disabled={searching || !selectedChild || !selectedDistance} 
+                    size="lg" 
+                    className="px-8 py-6 text-lg bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     {searching ? (
                       <>
                         <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
@@ -286,9 +311,9 @@ export default function ParentTrainingsAnalysisPage() {
                     ) : (
                       <>
                         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        Buscar entrenamientos
+                        Buscar tiempos
                       </>
                     )}
                   </Button>
@@ -302,17 +327,29 @@ export default function ParentTrainingsAnalysisPage() {
             <AccordionTrigger className="flex items-center gap-3 text-left px-4 py-3 font-semibold text-green-700 hover:bg-green-100/40 rounded-xl transition-all">
               <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               Mejores tiempos por estilo
-              <span className="ml-auto"><span className={`bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full ${Object.keys(bestTimes).length ? '' : 'opacity-50'}`}>{Object.keys(bestTimes).length ? 'Resultados' : 'Sin datos'}</span></span>
+              <span className="ml-auto"><span className={`bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full ${styles.some(s => bestTimes[s.style] != null) ? '' : 'opacity-50'}`}>{styles.some(s => bestTimes[s.style] != null) ? 'Resultados' : 'Sin datos'}</span></span>
             </AccordionTrigger>
             <AccordionContent>
               <div ref={resultsRef} className="rounded-lg border bg-white p-6 shadow-sm">
-                {Object.keys(bestTimes).length === 0 ? (
+                {styles.length === 0 || styles.every(s => bestTimes[s.style] == null) ? (
                   <div className="text-center text-gray-600">No hay resultados aún. Realiza una búsqueda.</div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {styles.map((s) => {
                       const time = bestTimes[s.style];
+                      const source = bestTimes[`${s.style}_source`];
                       const isSelected = expandedStyle === s.style;
+                      
+                      // Mapear fuente a etiqueta legible
+                      const getSourceLabel = (src: string) => {
+                        switch(src) {
+                          case 'COMPETITION': return '🏆 Competencia';
+                          case 'TRAINING': return '🏊 Práctica';
+                          case 'INTERNAL_COMPETITION': return '⏱️ Comp. Interna';
+                          default: return '';
+                        }
+                      };
+                      
                       return (
                         <div key={s.style}
                              onClick={() => {
@@ -329,9 +366,12 @@ export default function ParentTrainingsAnalysisPage() {
                                 : 'bg-gray-50 border-gray-200 hover:border-gray-300'
                              }`}>
                           <div className="flex items-center justify-between">
-                            <div>
+                            <div className="flex-1">
                               <p className="text-sm font-medium text-gray-600">{s.nameEs}</p>
                               <p className={`text-2xl font-bold ${time != null ? 'text-blue-700' : 'text-gray-400'}`}>{time != null ? formatSeconds(time) : '—'}</p>
+                              {time != null && source && (
+                                <p className="text-xs text-gray-500 mt-1">{getSourceLabel(source)}</p>
+                              )}
                             </div>
                             <div className={`p-3 rounded-full ${time != null ? 'bg-blue-200' : 'bg-gray-200'}`}>
                               <svg className={`w-6 h-6 ${time != null ? 'text-blue-600' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -477,6 +517,6 @@ export default function ParentTrainingsAnalysisPage() {
 function formatSeconds(secs: number) {
   const m = Math.floor(secs / 60);
   const s = Math.floor(secs % 60);
-  const c = Math.round((secs - Math.floor(secs)) * 100);
+  const c = Math.floor((secs - Math.floor(secs)) * 100);
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}.${String(c).padStart(2, "0")}`;
 }

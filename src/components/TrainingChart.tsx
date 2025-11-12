@@ -56,7 +56,7 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
   const formatTime = (secs: number) => {
     const minutes = Math.floor(secs / 60);
     const seconds = Math.floor(secs % 60);
-    const centi = Math.round((secs - Math.floor(secs)) * 100);
+    const centi = Math.floor((secs - Math.floor(secs)) * 100);
     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(centi).padStart(2, '0')}`;
   };
 
@@ -383,7 +383,32 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
     );
   };
 
-  // Resumen por estilo: mejor tiempo del período actual
+  // Mejores tiempos de TODAS las fuentes (Competencias, Prácticas, Competencias Internas)
+  const [bestTimesAllSources, setBestTimesAllSources] = useState<Record<string, any>>({});
+  const [loadingBestTimes, setLoadingBestTimes] = useState(false);
+
+  useEffect(() => {
+    const fetchBestTimes = async () => {
+      if (!selectedChildId || distance === "ALL") return;
+      setLoadingBestTimes(true);
+      try {
+        const params = new URLSearchParams({
+          childId: selectedChildId,
+          distance: distance
+        });
+        const res = await fetch(`/api/parent/best-times?${params.toString()}`);
+        const data = await res.json();
+        setBestTimesAllSources(data?.bestTimes || {});
+      } catch (err) {
+        console.error('Error fetching best times:', err);
+      } finally {
+        setLoadingBestTimes(false);
+      }
+    };
+    fetchBestTimes();
+  }, [selectedChildId, distance]);
+
+  // Resumen por estilo: mejor tiempo del período actual (del gráfico)
   const bestByStyle = useMemo(() => {
     const map = new Map<string, number>();
     let dataToAnalyze = allData;
@@ -403,6 +428,16 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
       time: map.get(opt.value) ?? null,
     }));
   }, [allData, distance]);
+
+  // Mejores tiempos de todas las fuentes
+  const bestTimesByStyleAllSources = useMemo(() => {
+    return STYLE_OPTIONS.map((opt) => ({
+      style: opt.label,
+      key: opt.value,
+      time: bestTimesAllSources[opt.value] ?? null,
+      source: bestTimesAllSources[`${opt.value}_source`] ?? null,
+    }));
+  }, [bestTimesAllSources]);
 
   return (
     <div className="space-y-4">
@@ -635,20 +670,45 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
               <span>📊</span>
               Tiempos por Estilo
             </h4>
-            {/* Distribuir los 6 estilos en filas iguales: grid con 6 filas y ocupar el espacio restante */}
-            <div className="mt-1 grid grid-rows-6 gap-2 flex-1">
-              {bestByStyle.map((row) => (
-                <div 
-                  key={row.key} 
-                  className="flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 rounded-md px-2.5 py-1.5 border border-gray-200 hover:border-blue-300 transition-colors h-full"
-                >
-                  <span className="text-[11px] font-medium text-gray-600">{row.style}</span>
-                  <span className={`text-[11px] font-bold ${row.time ? 'text-blue-600' : 'text-gray-400'}`}>
-                    {row.time == null ? '—' : formatTime(row.time)}
-                  </span>
-                </div>
-              ))}
-            </div>
+            {loadingBestTimes ? (
+              <div className="flex items-center justify-center flex-1">
+                <div className="animate-spin w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+              </div>
+            ) : distance === "ALL" ? (
+              <div className="flex items-center justify-center flex-1 text-center">
+                <p className="text-[10px] text-gray-500">Selecciona una distancia para ver tiempos</p>
+              </div>
+            ) : (
+              <div className="mt-1 grid grid-rows-6 gap-2 flex-1">
+                {bestTimesByStyleAllSources.map((row) => {
+                  const getSourceIcon = (src: string | null) => {
+                    switch(src) {
+                      case 'COMPETITION': return '🏆';
+                      case 'TRAINING': return '🏊';
+                      case 'INTERNAL_COMPETITION': return '⏱️';
+                      default: return '';
+                    }
+                  };
+                  
+                  return (
+                    <div 
+                      key={row.key} 
+                      className="flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 rounded-md px-2.5 py-1.5 border border-gray-200 hover:border-blue-300 transition-colors h-full"
+                    >
+                      <span className="text-[11px] font-medium text-gray-600">{row.style}</span>
+                      <div className="flex items-center gap-1">
+                        {row.time != null && row.source && (
+                          <span className="text-[10px]" title={row.source}>{getSourceIcon(row.source)}</span>
+                        )}
+                        <span className={`text-[11px] font-bold ${row.time ? 'text-blue-600' : 'text-gray-400'}`}>
+                          {row.time == null ? '—' : formatTime(row.time)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Loading indicator */}

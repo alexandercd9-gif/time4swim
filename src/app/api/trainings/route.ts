@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
     const year = yearParam ? parseInt(yearParam) : now.getUTCFullYear();
     const { start, end } = getMonthRange(year, month);
 
+    // Buscar entrenamientos regulares
     const trainings = await prisma.training.findMany({
       where: {
         childId,
@@ -49,7 +50,48 @@ export async function GET(request: NextRequest) {
       select: { id: true, date: true, time: true, distance: true, style: true },
     });
 
-    return NextResponse.json({ trainings });
+    // Buscar competencias internas en el mismo rango de fecha
+    const internalCompetitions = await prisma.heatLane.findMany({
+      where: {
+        swimmerId: childId,
+        finalTime: { not: null },
+        event: {
+          isInternalCompetition: true,
+          startDate: { gte: start, lt: end },
+        },
+      },
+      include: {
+        event: {
+          select: {
+            id: true,
+            startDate: true,
+            style: true,
+            distance: true,
+          },
+        },
+      },
+    });
+
+    // Convertir competencias internas al formato de training
+    const internalAsTrainings = internalCompetitions
+      .filter((lane) => {
+        const matchesStyle = !style || style === "ALL" || lane.event.style === style;
+        return matchesStyle && lane.event.style && lane.event.distance;
+      })
+      .map((lane) => ({
+        id: `internal-${lane.id}`,
+        date: lane.event.startDate,
+        time: lane.finalTime! / 1000, // Convertir de milisegundos a segundos
+        distance: lane.event.distance!,
+        style: lane.event.style!,
+      }));
+
+    // Combinar ambas fuentes y ordenar por fecha
+    const allTrainings = [...trainings, ...internalAsTrainings].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
+    return NextResponse.json({ trainings: allTrainings });
   } catch (error) {
     console.error("GET /api/trainings error", error);
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
