@@ -10,8 +10,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Instalar dependencias
-RUN npm ci
+# Instalar dependencias (usar npm install en lugar de ci)
+RUN npm install --legacy-peer-deps
 
 # Copiar el resto del código
 COPY . .
