@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#06b6d4" />
+      <stop offset="1" stop-color="#2563eb" />
+    </linearGradient>
+    <style>
+      .title { font-family: Inter, Arial, sans-serif; font-weight: 700; fill: white; font-size:48px }
+      .subtitle { font-family: Inter, Arial, sans-serif; fill: white; font-size:24px }
+    </style>
+  </defs>
+  <rect width="1200" height="630" fill="url(#g)" />
+  <g transform="translate(60,120)">
+    <text x="0" y="0" class="title">Time4Swim</text>
+    <text x="0" y="70" class="subtitle">Cronómetro y Gestión de Tiempos de Natación</text>
+    <rect x="0" y="110" width="420" height="6" fill="rgba(255,255,255,0.15)" rx="3" />
+    <text x="0" y="170" class="subtitle">Para clubes, entrenadores y familias</text>
+  </g>
+</svg>

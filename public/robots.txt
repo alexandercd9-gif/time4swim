@@ -1,0 +1,18 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Disallow admin and API routes
+Disallow: /admin/
+Disallow: /api/
+Disallow: /profesor/
+Disallow: /swimmer/
+Disallow: /parents/
+Disallow: /club/
+
+# Allow public pages
+Allow: /login
+Allow: /register
+
+# Sitemap
+Sitemap: https://time4swim.com/sitemap.xml

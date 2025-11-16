@@ -134,15 +134,16 @@ export default function ForClubs() {
             </div>
 
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6">
-              Entrena con{" "}
+              Software para Clubes de Natación:{" "}
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 to-white">
-                datos reales
+                Gestión Profesional con Datos Reales
               </span>
             </h2>
 
             <p className="text-lg text-cyan-50 mb-8 leading-relaxed">
-              Mide, compara y mejora el rendimiento de tu equipo con herramientas
-              diseñadas específicamente para la gestión profesional de natación.
+              Cronómetro profesional para entrenamientos, reportes automáticos y análisis de rendimiento. 
+              Mide, compara y mejora los tiempos de tu equipo con herramientas diseñadas específicamente 
+              para la gestión profesional de clubes de natación.
             </p>
 
             {/* Benefits Checklist */}
@@ -162,7 +163,7 @@ export default function ForClubs() {
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-4">
               <a
-                href="http://localhost:3000/login"
+                href="/login"
                 className="inline-flex items-center justify-center px-6 py-3 rounded-full bg-white text-blue-900 font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
               >
                 Probar demo

@@ -65,7 +65,7 @@ export default function Header() {
           {/* Desktop CTA */}
           <div className="hidden lg:block">
             <Link
-              href="http://localhost:3000/login"
+              href="/login"
               className={`inline-flex items-center justify-center px-6 py-2.5 rounded-full font-semibold text-sm shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 ${
                 isScrolled
                   ? "bg-gradient-to-r from-cyan-400 via-sky-500 to-blue-600 text-white"
@@ -101,7 +101,7 @@ export default function Header() {
             <div className="px-4 py-6 space-y-4">
               {/* Mobile CTA */}
               <Link
-                href="http://localhost:3000/login"
+                href="/login"
                 className="block w-full text-center px-6 py-3 rounded-full bg-gradient-to-r from-cyan-400 via-sky-500 to-blue-600 text-white font-semibold shadow-lg"
                 onClick={() => setIsMobileMenuOpen(false)}
               >

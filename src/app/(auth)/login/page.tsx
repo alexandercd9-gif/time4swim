@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [registerName, setRegisterName] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
+  const [registerRole, setRegisterRole] = useState<"PARENT" | "CLUB" | "TEACHER">("PARENT"); // Estado para rol
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const router = useRouter();
@@ -46,16 +47,6 @@ export default function LoginPage() {
     }
   }, []);
 
-  const normalizeRole = (role: string) => {
-    const normalized = role.toLowerCase().trim();
-    const roleMap: { [key: string]: string } = {
-      admin: "admin", parent: "parents", parents: "parents",
-      club: "club", teacher: "profesor", coach: "profesor",
-      profesor: "profesor", swimmer: "swimmer"
-    };
-    return roleMap[normalized] || normalized;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -67,19 +58,29 @@ export default function LoginPage() {
       });
       const data = await response.json();
       if (data.success) {
-        const normalizedRole = normalizeRole(data.user.role);
         localStorage.setItem("token", data.token);
-        localStorage.setItem("userRole", normalizedRole);
+        localStorage.setItem("userRole", data.user.role);
         localStorage.setItem("userData", JSON.stringify(data.user));
         await refetchUser();
         await new Promise(resolve => setTimeout(resolve, 100));
-        const redirectPaths = {
-          admin: "/admin/dashboard", parents: "/parents/dashboard",
-          club: "/club/dashboard", profesor: "/profesor/dashboard",
-          swimmer: "/swimmer/dashboard"
+        
+        // Redirección basada en rol
+        const roleRoutes: Record<string, string> = {
+          'ADMIN': '/admin/dashboard',
+          'PARENT': '/parents/dashboard',
+          'CLUB': '/club/dashboard',
+          'TEACHER': '/profesor/dashboard'
         };
-        const redirectPath = redirectPaths[normalizedRole as keyof typeof redirectPaths];
-        router.push(redirectPath || "/dashboard");
+        
+        const redirectPath = roleRoutes[data.user.role] || '/parents/dashboard';
+        
+        toast.success(`¡Bienvenido ${data.user.name}!`, {
+          duration: 2000,
+          position: 'top-center',
+          icon: '👋',
+        });
+        
+        router.push(redirectPath);
       } else {
         toast.error(data.message || "Credenciales incorrectas");
       }
@@ -97,7 +98,7 @@ export default function LoginPage() {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: registerName, email: registerEmail, password: registerPassword })
+        body: JSON.stringify({ name: registerName, email: registerEmail, password: registerPassword, role: registerRole })
       });
       const data = await response.json();
       if (response.ok) {
@@ -111,18 +112,19 @@ export default function LoginPage() {
           });
           const loginData = await loginResp.json();
           if (loginData.success) {
-            const normalizedRole = normalizeRole(loginData.user.role);
             localStorage.setItem('token', loginData.token);
-            localStorage.setItem('userRole', normalizedRole);
+            localStorage.setItem('userRole', loginData.user.role);
             localStorage.setItem('userData', JSON.stringify(loginData.user));
             await refetchUser();
             await new Promise(resolve => setTimeout(resolve, 100));
-            const redirectPaths = {
-              admin: '/admin/dashboard', parents: '/parents/dashboard',
-              club: '/club/dashboard', profesor: '/profesor/dashboard',
-              swimmer: '/swimmer/dashboard'
-            } as const;
-            const redirectPath = (redirectPaths as any)[normalizedRole] || '/dashboard';
+            const roleRoutes: Record<string, string> = {
+              'ADMIN': '/admin/dashboard',
+              'PARENT': '/parents/dashboard',
+              'CLUB': '/club/dashboard',
+              'TEACHER': '/profesor/dashboard'
+            };
+            const redirectPath = roleRoutes[loginData.user.role] || '/parents/dashboard';
+            toast.success(`¡Bienvenido ${loginData.user.name}!`);
             router.push(redirectPath);
           } else {
             // Si por alguna razón el login falla, volver al form de login con email prellenado
@@ -337,59 +339,115 @@ export default function LoginPage() {
           )}
           {/* REGISTER METHOD SELECTION */}
           {showRegisterOptions && !showRegisterEmailForm && !showEmailForm && (
-            <div className="space-y-7 animate-in fade-in-50 slide-in-from-right-2 duration-200">
+            <div className="space-y-3 animate-in fade-in-50 slide-in-from-right-2 duration-200">
               <button
                 type="button"
                 onClick={() => { setShowRegisterOptions(false); }}
-                className="absolute left-6 top-6 inline-flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+                className="absolute left-6 top-6 inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
               >
-                <ArrowLeft className="h-4 w-4" /> Atrás
+                <ArrowLeft className="h-3.5 w-3.5" /> Atrás
               </button>
-              <h2 className="text-3xl font-bold text-gray-900 mb-2 text-center tracking-tight">Crear cuenta</h2>
-              <p className="text-gray-600 text-center mb-2 font-medium">Elige un método para registrarte</p>
-              <div className="relative isolate overflow-hidden rounded-3xl border border-blue-200/70 bg-white/80 p-5 shadow-sm backdrop-blur-sm">
-                <div className="pointer-events-none absolute -top-6 -right-6 h-24 w-24 rounded-full bg-cyan-200/40 blur-2xl" />
-                <div className="pointer-events-none absolute -bottom-8 -left-4 h-20 w-20 rounded-full bg-blue-300/30 blur-xl" />
-                <div className="flex items-start gap-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 shadow-lg ring-2 ring-white/50">
-                    <Sparkles className="h-5 w-5 text-white" />
+              <h2 className="text-2xl font-bold text-gray-900 mb-1 text-center tracking-tight">Crear cuenta</h2>
+              <p className="text-sm text-gray-600 text-center mb-3 font-medium">Elige un método para registrarte</p>
+              
+              {/* Banner 7 días - Versión Compacta */}
+              <div className="relative overflow-hidden rounded-2xl border border-blue-200/70 bg-gradient-to-r from-blue-50 to-cyan-50 p-2.5 shadow-sm mb-3">
+                <div className="flex items-center justify-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-cyan-500 shadow-md flex-shrink-0">
+                    <Sparkles className="h-3.5 w-3.5 text-white" />
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-bold leading-snug text-blue-900">
-                      7 días de acceso total
-                    </p>
-                    <p className="mt-0.5 text-[13px] leading-snug font-medium text-blue-700">
-                      Prueba todas las funciones sin costo y sin compromiso.
-                    </p>
-                  </div>
+                  <p className="text-[11px] font-bold text-blue-900 leading-tight whitespace-nowrap">
+                    🎉 7 días gratis • Prueba completa sin compromiso
+                  </p>
                 </div>                
               </div>
-              <div className="flex flex-col gap-4">
+
+              {/* Selector de Rol - Compacto */}
+              <div className="space-y-2 mb-3">
+                <p className="text-xs font-semibold text-gray-700 text-center">¿Qué tipo de cuenta deseas?</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {/* Opción Padre/Madre */}
+                  <button
+                    type="button"
+                    onClick={() => setRegisterRole("PARENT")}
+                    className={`flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-all ${
+                      registerRole === "PARENT"
+                        ? "border-blue-500 bg-blue-50 shadow-md scale-105"
+                        : "border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50"
+                    }`}
+                  >
+                    <span className="text-xl mb-0.5">👨‍👩‍👧</span>
+                    <span className={`text-[10px] font-semibold leading-tight ${registerRole === "PARENT" ? "text-blue-700" : "text-gray-700"}`}>
+                      Padre/Madre
+                    </span>
+                  </button>
+
+                  {/* Opción Club */}
+                  <button
+                    type="button"
+                    onClick={() => setRegisterRole("CLUB")}
+                    className={`flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-all ${
+                      registerRole === "CLUB"
+                        ? "border-cyan-500 bg-cyan-50 shadow-md scale-105"
+                        : "border-gray-200 bg-white hover:border-cyan-300 hover:bg-cyan-50"
+                    }`}
+                  >
+                    <span className="text-xl mb-0.5">🏊‍♂️</span>
+                    <span className={`text-[10px] font-semibold leading-tight ${registerRole === "CLUB" ? "text-cyan-700" : "text-gray-700"}`}>
+                      Club
+                    </span>
+                  </button>
+
+                  {/* Opción Entrenador */}
+                  <button
+                    type="button"
+                    onClick={() => setRegisterRole("TEACHER")}
+                    className={`flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-all ${
+                      registerRole === "TEACHER"
+                        ? "border-purple-500 bg-purple-50 shadow-md scale-105"
+                        : "border-gray-200 bg-white hover:border-purple-300 hover:bg-purple-50"
+                    }`}
+                  >
+                    <span className="text-xl mb-0.5">👨‍🏫</span>
+                    <span className={`text-[10px] font-semibold leading-tight ${registerRole === "TEACHER" ? "text-purple-700" : "text-gray-700"}`}>
+                      Entrenador
+                    </span>
+                  </button>
+                </div>
+                {/* Texto descriptivo según rol seleccionado */}
+                <p className="text-[10px] text-center text-gray-500 leading-tight">
+                  {registerRole === "PARENT" && "Gestiona a tus hijos nadadores"}
+                  {registerRole === "CLUB" && "Administra tu club completo"}
+                  {registerRole === "TEACHER" && "Gestiona entrenamientos"}
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2.5">
                 {/* Email primero */}
-                <button type="button" onClick={() => { setShowRegisterEmailForm(true); setShowRegisterOptions(false); }} className="group relative w-full rounded-2xl border-2 border-gray-200 bg-white py-4 px-6 text-gray-800 font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-400 hover:shadow-md">
-                  <span className="flex items-center justify-center gap-3">
-                    <UserIcon className="h-5 w-5 text-blue-600" />
+                <button type="button" onClick={() => { setShowRegisterEmailForm(true); setShowRegisterOptions(false); }} className="group relative w-full rounded-xl border-2 border-gray-200 bg-white py-3 px-5 text-gray-800 font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-400 hover:shadow-md">
+                  <span className="flex items-center justify-center gap-2.5">
+                    <UserIcon className="h-4 w-4 text-blue-600" />
                     <span className="text-sm font-bold">Registrarme con Email</span>
                   </span>
                 </button>
                 {/* Google */}
-                <button type="button" onClick={() => { window.location.href = "/api/auth/oauth/google/start"; }} className="group relative w-full rounded-2xl border-2 border-gray-200 bg-white py-4 px-6 text-gray-800 font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-400 hover:shadow-md">
-                  <span className="flex items-center justify-center gap-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="22" height="22"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.6-6 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.8 2.9l5.7-5.7C33.5 7.1 28 5 24 5 13 5 4 14 4 25s9 20 20 20 20-9 20-20c0-1.3-.1-2.7-.4-4.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.3 15.3 18.8 13 24 13c3 0 5.7 1.1 7.8 2.9l5.7-5.7C33.5 7.1 28 5 24 5 16.1 5 9.2 9.5 6.3 14.7z"/><path fill="#4CAF50" d="M24 45c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.1 36.6 26.6 37.5 24 37.5c-5.3 0-9.8-3.4-11.4-8l-6.6 5.1C9.2 40.5 16.1 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.7 2-2.1 3.7-3.9 4.9l6.2 5.2C39.5 40.3 44 35 44 25c0-1.3-.1-2.7-.4-4.5z"/></svg>
+                <button type="button" onClick={() => { window.location.href = `/api/auth/oauth/google/start?role=${registerRole}`; }} className="group relative w-full rounded-xl border-2 border-gray-200 bg-white py-3 px-5 text-gray-800 font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-400 hover:shadow-md">
+                  <span className="flex items-center justify-center gap-2.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="18" height="18"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.6-6 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.8 2.9l5.7-5.7C33.5 7.1 28 5 24 5 13 5 4 14 4 25s9 20 20 20 20-9 20-20c0-1.3-.1-2.7-.4-4.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.3 15.3 18.8 13 24 13c3 0 5.7 1.1 7.8 2.9l5.7-5.7C33.5 7.1 28 5 24 5 16.1 5 9.2 9.5 6.3 14.7z"/><path fill="#4CAF50" d="M24 45c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.1 36.6 26.6 37.5 24 37.5c-5.3 0-9.8-3.4-11.4-8l-6.6 5.1C9.2 40.5 16.1 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.7 2-2.1 3.7-3.9 4.9l6.2 5.2C39.5 40.3 44 35 44 25c0-1.3-.1-2.7-.4-4.5z"/></svg>
                     <span className="text-sm font-bold">Registrarme con Google</span>
                   </span>
                 </button>
                 {/* Apple */}
-                <button type="button" onClick={() => toast.error('Registro con Apple próximamente')} className="group relative w-full rounded-2xl border-2 border-gray-200 bg-white py-4 px-6 text-gray-800 font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-400 hover:shadow-md">
-                  <span className="flex items-center justify-center gap-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16.365 1.43c0 1.14-.455 2.256-1.215 3.09-.71.78-1.89 1.38-2.94 1.29-.09-1.11.33-2.28 1.05-3.12.75-.9 2.07-1.56 3.105-1.62.015.12.03.24.03.36m3.855 16.83c-.57 1.26-.84 1.83-1.57 2.95-1.02 1.56-2.46 3.49-4.29 3.5-1.59.015-2-.99-4.15-1-2.145-.015-2.61 1.02-4.2 1.005-1.83-.015-3.23-1.78-4.25-3.34-2.91-4.38-3.21-9.54-1.41-12.29 1.02-1.56 2.64-2.535 4.47-2.55 1.665-.03 3.24 1.11 4.29 1.11 1.05 0 2.955-1.365 4.98-1.17.846.036 3.225.342 4.755 2.587-.12.075-2.835 1.68-2.805 4.995.03 3.96 3.45 5.31 3.495 5.34"/></svg>
+                <button type="button" onClick={() => toast.error('Registro con Apple próximamente')} className="group relative w-full rounded-xl border-2 border-gray-200 bg-white py-3 px-5 text-gray-800 font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-400 hover:shadow-md">
+                  <span className="flex items-center justify-center gap-2.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M16.365 1.43c0 1.14-.455 2.256-1.215 3.09-.71.78-1.89 1.38-2.94 1.29-.09-1.11.33-2.28 1.05-3.12.75-.9 2.07-1.56 3.105-1.62.015.12.03.24.03.36m3.855 16.83c-.57 1.26-.84 1.83-1.57 2.95-1.02 1.56-2.46 3.49-4.29 3.5-1.59.015-2-.99-4.15-1-2.145-.015-2.61 1.02-4.2 1.005-1.83-.015-3.23-1.78-4.25-3.34-2.91-4.38-3.21-9.54-1.41-12.29 1.02-1.56 2.64-2.535 4.47-2.55 1.665-.03 3.24 1.11 4.29 1.11 1.05 0 2.955-1.365 4.98-1.17.846.036 3.225.342 4.755 2.587-.12.075-2.835 1.68-2.805 4.995.03 3.96 3.45 5.31 3.495 5.34"/></svg>
                     <span className="text-sm font-bold">Registrarme con Apple</span>
                   </span>
                 </button>
                 {/* Microsoft */}
-                <button type="button" onClick={() => toast.error('Registro con Microsoft próximamente')} className="group relative w-full rounded-2xl border-2 border-gray-200 bg-white py-4 px-6 text-gray-800 font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-400 hover:shadow-md">
-                  <span className="flex items-center justify-center gap-3">
-                    <svg width="20" height="20" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" fill="#F25022"/><rect x="13" y="3" width="8" height="8" fill="#7FBA00"/><rect x="3" y="13" width="8" height="8" fill="#00A4EF"/><rect x="13" y="13" width="8" height="8" fill="#FFB900"/></svg>
+                <button type="button" onClick={() => toast.error('Registro con Microsoft próximamente')} className="group relative w-full rounded-xl border-2 border-gray-200 bg-white py-3 px-5 text-gray-800 font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-400 hover:shadow-md">
+                  <span className="flex items-center justify-center gap-2.5">
+                    <svg width="16" height="16" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" fill="#F25022"/><rect x="13" y="3" width="8" height="8" fill="#7FBA00"/><rect x="3" y="13" width="8" height="8" fill="#00A4EF"/><rect x="13" y="13" width="8" height="8" fill="#FFB900"/></svg>
                     <span className="text-sm font-bold">Registrarme con Microsoft</span>
                   </span>
                 </button>

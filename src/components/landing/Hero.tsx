@@ -40,25 +40,33 @@ export default function Hero() {
       {/* Content */}
   <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 text-center">
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-          {/* Main Heading */}
+          {/* Main Heading - H1 optimizado para SEO */}
           <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-white leading-tight">
-            La forma más visual de<br />
+            Cronómetro de Natación: <br className="hidden sm:inline" />
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-200 via-sky-200 to-white">
-              medir, guardar y mejorar
+              Mide, Guarda y Mejora
             </span><br />
-            los tiempos de natación
+            los Tiempos de tus Nadadores
           </h1>
 
           {/* Subtitle */}
           <p className="text-lg sm:text-xl lg:text-2xl text-white/90 max-w-3xl mx-auto leading-relaxed">
-            Registra entrenamientos con cronómetro, analiza la evolución con gráficos
-            y comparte el progreso entre clubes y familias.
+            El historial de natación que viaja contigo. Registra tiempos, analiza evolución 
+            y <span className="font-bold text-white">lleva todos los datos aunque cambies de club</span>.
           </p>
+          
+          {/* Value Proposition Badge */}
+          <div className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-white animate-in fade-in slide-in-from-bottom-4 delay-200">
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <span className="font-semibold">Portabilidad total: Tus datos son tuyos, siempre</span>
+          </div>
 
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             <Link
-              href="http://localhost:3000/login"
+              href="/login"
               className="group inline-flex items-center justify-center px-8 py-4 rounded-full bg-white text-blue-600 font-bold text-lg shadow-2xl hover:shadow-cyan-500/50 hover:scale-105 transition-all duration-200"
             >
               Probar gratis

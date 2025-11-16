@@ -1,6 +1,7 @@
 import Header from "@/components/landing/Header";
 import Hero from "@/components/landing/Hero";
 import Benefits from "@/components/landing/Benefits";
+import HowItWorks from "@/components/landing/HowItWorks";
 import WaveDivider from "@/components/landing/WaveDivider";
 import ForParents from "@/components/landing/ForParents";
 import ForClubs from "@/components/landing/ForClubs";
@@ -16,6 +17,7 @@ export default function Home() {
   {/* Movemos la ola 1px hacia arriba para evitar cualquier línea fantasma entre hero y la ola */}
   <WaveDivider color="#F8FAFC" yOffset={-1} />
       <Benefits />
+      <HowItWorks />
   <ForParents />
   {/* Eliminamos el divisor aquí y formamos la ola dentro de ForClubs para que el fondo sea continuo */}
     {/* Ajustamos offsets y yOffset para intentar alineación más suave con el bloque de clubes */}

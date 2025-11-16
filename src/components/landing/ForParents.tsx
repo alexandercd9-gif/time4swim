@@ -44,16 +44,27 @@ export default function ForParents() {
             </div>
 
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-              El historial de tiempos{" "}
+              Historial de Natación Portátil:{" "}
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-600 to-purple-600">
-                viaja contigo
+                Todos los Tiempos de tus Hijos en un Solo Lugar
               </span>
             </h2>
 
             <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-              Cambia de club y conserva cada marca y evolución. Comparte el progreso
-              de forma segura y mantén el control total sobre los datos de tus nadadores.
+              <strong>Tus datos son tuyos, no del club.</strong> Tú asocias a tu hijo(a) al club, y mientras estén asociados, 
+              el club puede gestionar su perfil. Pero <strong>si cambias de club, el anterior pierde acceso</strong> y 
+              todo el historial (marcas, evolución, estadísticas) <strong>viaja contigo</strong>. Sin pérdidas, siempre bajo tu control.
             </p>
+            
+            {/* Additional Badge */}
+            <div className="inline-flex items-center gap-3 px-6 py-3 rounded-xl bg-gradient-to-r from-pink-50 to-purple-50 border-2 border-pink-200 mb-6">
+              <svg className="w-6 h-6 text-pink-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <span className="text-sm font-semibold text-gray-800">
+                Tú asocias • Club gestiona • Si cambias, pierden acceso
+              </span>
+            </div>
 
             {/* Feature List */}
             <div className="grid sm:grid-cols-2 gap-4 mb-8">
@@ -75,7 +86,7 @@ export default function ForParents() {
 
             {/* CTA */}
             <a
-              href="http://localhost:3000/login"
+              href="/login"
               className="inline-flex items-center justify-center px-6 py-3 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
             >
               Comenzar ahora

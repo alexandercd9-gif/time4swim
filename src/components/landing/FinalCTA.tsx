@@ -65,7 +65,7 @@ export default function FinalCTA() {
         {/* CTAs */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
           <Link
-            href="http://localhost:3000/login"
+            href="/login"
             className="group inline-flex items-center justify-center px-8 py-4 rounded-full bg-white text-blue-600 font-bold text-lg shadow-2xl hover:shadow-white/30 hover:scale-105 transition-all duration-200"
           >
             Probar gratis
@@ -73,7 +73,7 @@ export default function FinalCTA() {
           </Link>
           
           <Link
-            href="http://localhost:3000/login"
+            href="/login"
             className="inline-flex items-center justify-center px-8 py-4 rounded-full bg-white/10 backdrop-blur-md border-2 border-white/40 text-white font-semibold text-lg hover:bg-white/20 hover:scale-105 transition-all duration-200"
           >
             Iniciar sesión

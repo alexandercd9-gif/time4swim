@@ -122,10 +122,11 @@ export async function POST(request: NextRequest) {
     // 7. Preparar respuesta y establecer cookie httpOnly
     const response = NextResponse.json({
       success: true,
+      token: token, // Agregar token en respuesta para localStorage
       user: {
         id: user.id,
         email: user.email,
-        role: user.role || 'user',
+        role: user.role || 'PARENT', // Default a PARENT si no tiene rol
         name: user.name || user.email.split('@')[0]
       },
       message: 'Login exitoso'

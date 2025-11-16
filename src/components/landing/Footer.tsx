@@ -24,17 +24,17 @@ export default function Footer() {
     {
       title: "Soporte",
       links: [
-        { label: "Centro de Ayuda", href: "#soporte" },
-        { label: "Documentación", href: "#" },
-        { label: "Contacto", href: "#" },
+        { label: "Centro de Ayuda", href: "/help" },
+        { label: "Documentación", href: "/docs" },
+        { label: "Contacto", href: "/contact" },
       ],
     },
     {
       title: "Legal",
       links: [
-        { label: "Privacidad", href: "#" },
-        { label: "Términos", href: "#" },
-        { label: "Seguridad", href: "#" },
+        { label: "Privacidad", href: "/privacy" },
+        { label: "Términos", href: "/terms" },
+        { label: "Seguridad", href: "/security" },
       ],
     },
   ];
@@ -56,12 +56,14 @@ export default function Footer() {
             <Link href="/" className="inline-block mb-4">
               <img
                 src="/logo.png"
-                alt="Time4Swim"
+                alt="Time4Swim - Software de Cronómetro y Gestión de Natación"
                 className="h-10 w-auto"
+                width="160"
+                height="40"
               />
             </Link>
             <p className="text-sm text-slate-400 leading-relaxed mb-4">
-              La plataforma profesional para gestión de entrenamientos acuáticos.
+              Plataforma profesional para cronometraje, gestión de entrenamientos y análisis de rendimiento en natación.
             </p>
             
             {/* Social Links */}
@@ -88,15 +90,19 @@ export default function Footer() {
               <h3 className="font-semibold text-white mb-4">{section.title}</h3>
               <ul className="space-y-3">
                 {section.links.map((link) => (
-                  <li key={link.label}>
-                    <a
-                      href={link.href}
-                      className="text-sm text-slate-400 hover:text-cyan-400 transition-colors"
-                    >
-                      {link.label}
-                    </a>
-                  </li>
-                ))}
+                    <li key={link.label}>
+                      <a
+                        href={
+                          link.label === 'Privacidad' ? '/privacy' :
+                          link.label === 'Términos' ? '/terms' :
+                          link.label === 'Contacto' ? '/contact' : link.href
+                        }
+                        className="text-sm text-slate-400 hover:text-cyan-400 transition-colors"
+                      >
+                        {link.label}
+                      </a>
+                    </li>
+                  ))}
               </ul>
             </div>
           ))}

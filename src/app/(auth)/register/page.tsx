@@ -11,6 +11,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [role, setRole] = useState<"PARENT" | "CLUB" | "TEACHER">("PARENT"); // Nuevo estado para rol
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -56,7 +57,7 @@ export default function RegisterPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, role }), // Incluir rol
       });
 
       const data = await response.json();
@@ -169,6 +170,68 @@ export default function RegisterPage() {
           <p className="text-gray-600 text-center mb-6">Regístrate y obtén 7 días gratis</p>
           
           <form className="space-y-4" onSubmit={handleSubmit}>
+            {/* Selección de Rol */}
+            <div className="mb-6">
+              <label className="block text-gray-700 font-medium mb-3 text-center">
+                ¿Cómo usarás Time4Swim?
+              </label>
+              <div className="grid grid-cols-3 gap-3">
+                {/* Opción Padre/Madre */}
+                <button
+                  type="button"
+                  onClick={() => setRole("PARENT")}
+                  className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${
+                    role === "PARENT"
+                      ? "border-blue-500 bg-blue-50 shadow-lg scale-105"
+                      : "border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50"
+                  }`}
+                >
+                  <span className="text-3xl mb-2">👨‍👩‍👧</span>
+                  <span className={`text-sm font-semibold ${role === "PARENT" ? "text-blue-700" : "text-gray-700"}`}>
+                    Padre/Madre
+                  </span>
+                </button>
+
+                {/* Opción Club */}
+                <button
+                  type="button"
+                  onClick={() => setRole("CLUB")}
+                  className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${
+                    role === "CLUB"
+                      ? "border-cyan-500 bg-cyan-50 shadow-lg scale-105"
+                      : "border-gray-200 bg-white hover:border-cyan-300 hover:bg-cyan-50"
+                  }`}
+                >
+                  <span className="text-3xl mb-2">🏊‍♂️</span>
+                  <span className={`text-sm font-semibold ${role === "CLUB" ? "text-cyan-700" : "text-gray-700"}`}>
+                    Club
+                  </span>
+                </button>
+
+                {/* Opción Entrenador */}
+                <button
+                  type="button"
+                  onClick={() => setRole("TEACHER")}
+                  className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${
+                    role === "TEACHER"
+                      ? "border-purple-500 bg-purple-50 shadow-lg scale-105"
+                      : "border-gray-200 bg-white hover:border-purple-300 hover:bg-purple-50"
+                  }`}
+                >
+                  <span className="text-3xl mb-2">👨‍🏫</span>
+                  <span className={`text-sm font-semibold ${role === "TEACHER" ? "text-purple-700" : "text-gray-700"}`}>
+                    Entrenador
+                  </span>
+                </button>
+              </div>
+              {/* Texto descriptivo según rol seleccionado */}
+              <p className="text-xs text-center text-gray-500 mt-3">
+                {role === "PARENT" && "Gestiona a tus hijos nadadores y lleva su historial completo"}
+                {role === "CLUB" && "Administra tu club, entrenadores y todos los nadadores"}
+                {role === "TEACHER" && "Registra tiempos y gestiona entrenamientos de tus nadadores"}
+              </p>
+            </div>
+
             {/* Nombre completo */}
             <div>
               <label className="block text-gray-700 font-medium mb-1" htmlFor="name">

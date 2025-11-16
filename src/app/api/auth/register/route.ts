@@ -4,12 +4,21 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, password } = await request.json();
+    const { name, email, password, role } = await request.json();
 
     // Validar datos
     if (!name || !email || !password) {
       return NextResponse.json(
         { message: 'Todos los campos son obligatorios' },
+        { status: 400 }
+      );
+    }
+
+    // Validar rol (debe ser uno de los roles válidos)
+    const validRoles = ['PARENT', 'CLUB', 'TEACHER', 'ADMIN'];
+    if (role && !validRoles.includes(role)) {
+      return NextResponse.json(
+        { message: 'Rol inválido' },
         { status: 400 }
       );
     }
@@ -46,6 +55,7 @@ export async function POST(request: NextRequest) {
         name,
         email,
         password: hashedPassword,
+        role: role || 'PARENT', // Usar el rol seleccionado o PARENT por defecto
         accountStatus: 'TRIAL',
         isTrialAccount: true,
         trialExpiresAt
@@ -59,6 +69,7 @@ export async function POST(request: NextRequest) {
         id: user.id,
         name: user.name,
         email: user.email,
+        role: user.role, // Incluir rol en la respuesta
         accountStatus: user.accountStatus,
         isTrialAccount: user.isTrialAccount,
         trialExpiresAt: user.trialExpiresAt

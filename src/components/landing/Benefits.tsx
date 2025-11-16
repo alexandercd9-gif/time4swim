@@ -52,14 +52,14 @@ export default function Benefits() {
             Funcionalidades completas
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-            Todo lo que necesitas en una{" "}
+            Software Completo de Gestión de Natación:{" "}
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-600 to-blue-600">
-              plataforma
+              Todas las Funciones
             </span>
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Herramientas profesionales diseñadas para mejorar el rendimiento
-            de nadadores, clubes y familias.
+            Cronómetro profesional, análisis de tiempos, gestión de entrenamientos y competencias. 
+            Herramientas completas para mejorar el rendimiento de nadadores, clubes y familias.
           </p>
         </div>
 
