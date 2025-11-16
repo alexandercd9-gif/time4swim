@@ -37,6 +37,7 @@ yarn-error.log*
 # deployment
 deploy.tar.gz
 deploy.zip
+build-production.zip
 
 # vercel
 .vercel
