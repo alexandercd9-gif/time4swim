@@ -59,6 +59,7 @@ export async function GET(req: NextRequest) {
         time: true,
         date: true,
         laps: true,
+        poolType: true,
       },
       orderBy: {
         date: "desc",

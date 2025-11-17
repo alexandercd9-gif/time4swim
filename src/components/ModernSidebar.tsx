@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
   Home, Users, Medal, BarChart, User, Power, School, 
-  Calendar, CreditCard, FileText, Settings, Timer, Menu, X 
+  Calendar, CreditCard, FileText, Settings, Timer, Menu, X, TrendingUp 
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,7 @@ const navByRole = {
     { href: "/parents/dashboard", label: "Dashboard", icon: Home, description: "Vista general" },
     { href: "/parents/children", label: "Mis Hijos", icon: Users, description: "Nadadores registrados" },
     { href: "/parents/cronometro", label: "Cronómetro", icon: Timer, description: "Registrar tiempos" },
-    { href: "/parents/entrenamientos", label: "Entrenamientos", icon: Timer, description: "Sesiones de práctica" },
+    { href: "/parents/entrenamientos", label: "Análisis de Tiempos", icon: TrendingUp, description: "Análisis avanzado" },
     { href: "/parents/competencias", label: "Competencias", icon: Medal, description: "Participaciones" },
     { href: "/parents/events", label: "Eventos", icon: Calendar, description: "Próximas competencias" },
     { href: "/parents/records", label: "Records", icon: BarChart, description: "Mejores marcas" },
@@ -140,21 +140,26 @@ export default function ModernSidebar() {
           {/* LOGO */}
           <div className="p-6 border-b border-gray-100 flex items-center justify-center">
             {!collapsed && (
-              <img src="/logo.png" alt="Logo" className="h-16 w-auto max-w-[220px] mx-auto object-contain transition-all duration-300" />
+              <Link
+                href={userRoleKey === 'admin' ? '/admin/dashboard' : userRoleKey === 'club' ? '/club/dashboard' : userRoleKey === 'profesor' ? '/profesor/dashboard' : userRoleKey === 'swimmer' ? '/swimmer/dashboard' : '/parents/dashboard'}
+                aria-label="Ir al dashboard"
+              >
+                <img src="/logo.png" alt="Logo" className="h-16 w-auto max-w-[200px] object-contain transition-all duration-300" />
+              </Link>
             )}
             {collapsed && (
               <Link
                 href={userRoleKey === 'admin' ? '/admin/dashboard' : userRoleKey === 'club' ? '/club/dashboard' : userRoleKey === 'profesor' ? '/profesor/dashboard' : userRoleKey === 'swimmer' ? '/swimmer/dashboard' : '/parents/dashboard'}
                 aria-label="Ir al dashboard"
-                className="inline-flex items-center justify-center w-9 h-9"
+                className="inline-flex items-center justify-center"
               >
-                <img src="/logito.png" alt="Logo pequeño" className="w-9 h-9 rounded-xl object-cover" />
+                <img src="/logito.png" alt="Logo pequeño" className="h-10 w-10 object-contain" />
               </Link>
             )}
           </div>
 
           {/* MENÚ */}
-          <div className="flex-1 px-3 py-4 space-y-1">
+          <div className="flex-1 px-4 py-6 space-y-2">
             {menuItems.map((item) => {
               const isActive = pathname === item.href;
               const Icon = item.icon;
@@ -163,7 +168,7 @@ export default function ModernSidebar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-200 ${
+                  className={`flex items-center ${collapsed ? 'justify-center' : 'gap-4'} px-4 py-3 rounded-xl transition-all duration-200 ${
                     isActive
                       ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md"
                       : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
@@ -196,14 +201,14 @@ export default function ModernSidebar() {
 
       {/* MOBILE NAV */}
       <div className="lg:hidden">
-        <div className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 shadow-sm z-50 flex items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center">
-              <Timer className="h-5 w-5 text-white" />
-            </div>
-            <h1 className="text-lg font-bold text-gray-900">Time4Swim</h1>
-          </div>
-          <div className="flex items-center gap-1">
+        <div className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 shadow-sm z-50 flex items-center justify-center px-4">
+          <Link
+            href={userRoleKey === 'admin' ? '/admin/dashboard' : userRoleKey === 'club' ? '/club/dashboard' : userRoleKey === 'profesor' ? '/profesor/dashboard' : userRoleKey === 'swimmer' ? '/swimmer/dashboard' : '/parents/dashboard'}
+            className="absolute left-1/2 transform -translate-x-1/2"
+          >
+            <img src="/logo_horizontal.png" alt="Time4Swim" className="h-8 w-auto object-contain" />
+          </Link>
+          <div className="flex items-center gap-1 ml-auto">
             <Button variant="ghost" size="sm" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
               {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>

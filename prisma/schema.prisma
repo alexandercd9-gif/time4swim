@@ -229,6 +229,7 @@ model Training {
   id        String    @id @default(cuid())
   style     SwimStyle
   distance  Int       // distance in meters
+  poolType  PoolSize  @default(SHORT_25M) // Tipo de piscina
   time      Float     // time in seconds
   laps      Json?     // array of lap times in milliseconds
   date      DateTime  @default(now())

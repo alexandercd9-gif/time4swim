@@ -61,7 +61,7 @@ export default function RootLayout({
       <head>
         <StructuredData />
       </head>
-      <body className={`${inter.variable} font-sans antialiased min-h-screen bg-gray-50`}>
+      <body className={`${inter.variable} font-sans antialiased min-h-screen bg-gray-50 overflow-x-hidden`}>
         <SidebarProvider>
           <UserProvider>
             {children}

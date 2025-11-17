@@ -136,8 +136,8 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       path: '/',
       maxAge: 60 * 60 * 24, // 1 día
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production'
+      sameSite: 'none',
+      secure: true
     });
 
     console.log('Login exitoso para:', user.email, 'Rol:', user.role);

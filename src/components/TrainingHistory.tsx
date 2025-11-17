@@ -1,22 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 
-const STYLES: Record<string, string> = {
-  FREESTYLE: "Libre",
-  BACKSTROKE: "Espalda",
-  BREASTSTROKE: "Pecho",
-  BUTTERFLY: "Mariposa",
-  INDIVIDUAL_MEDLEY: "Combinado",
-  MEDLEY_RELAY: "Combinado 4",
+const STYLES: Record<string, { label: string; icon: string }> = {
+  FREESTYLE: { label: "Libre", icon: "/estilos/libre.png" },
+  BACKSTROKE: { label: "Espalda", icon: "/estilos/espalda.png" },
+  BREASTSTROKE: { label: "Pecho", icon: "/estilos/pecho.png" },
+  BUTTERFLY: { label: "Mariposa", icon: "/estilos/mariposa.png" },
+  INDIVIDUAL_MEDLEY: { label: "Combinado", icon: "/estilos/4estilos.png" },
+  MEDLEY_RELAY: { label: "Combinado 4", icon: "/estilos/4estilos.png" },
 };
 
 function fmt(secs: number) {
   const m = Math.floor(secs / 60);
   const s = Math.floor(secs % 60);
-  const c = Math.round((secs - Math.floor(secs)) * 100);
+  const c = Math.floor((secs - Math.floor(secs)) * 100);
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}.${String(c).padStart(2, "0")}`;
 }
 
@@ -31,6 +32,7 @@ interface Training {
   time: number;
   date: string;
   laps?: number[];
+  poolType?: string;
 }
 
 export default function TrainingHistory() {
@@ -161,34 +163,60 @@ export default function TrainingHistory() {
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-gray-900">Historial de Entrenamientos</h3>
       
-      {/* Filtros */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Select value={childId} onValueChange={setChildId}>
-          <SelectTrigger><SelectValue placeholder="Selecciona un nadador" /></SelectTrigger>
-          <SelectContent>
-            {children.map((c) => (
-              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {/* Filtros modernos con diseño consistente */}
+      <div className="bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 rounded-2xl p-3 sm:p-5 shadow-sm border border-purple-100">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+          {/* Nadador */}
+          <div className="group relative">
+            <div className="absolute -top-2 left-3 px-2 bg-white rounded-full text-xs font-medium text-blue-600 shadow-sm z-10">
+              👤 Nadador
+            </div>
+            <Select value={childId} onValueChange={setChildId}>
+              <SelectTrigger className="h-12 sm:h-14 bg-white/90 backdrop-blur-sm border-2 border-blue-100 hover:border-blue-300 transition-all duration-200 hover:shadow-md pt-2 group-hover:bg-white text-sm sm:text-base">
+                <SelectValue placeholder="Selecciona" />
+              </SelectTrigger>
+              <SelectContent>
+                {children.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        <Select value={year} onValueChange={setYear}>
-          <SelectTrigger><SelectValue placeholder="Año" /></SelectTrigger>
-          <SelectContent>
-            {years.map((y) => (
-              <SelectItem key={y.value} value={y.value}>{y.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          {/* Año */}
+          <div className="group relative">
+            <div className="absolute -top-2 left-3 px-2 bg-white rounded-full text-xs font-medium text-purple-600 shadow-sm z-10">
+              📅 Año
+            </div>
+            <Select value={year} onValueChange={setYear}>
+              <SelectTrigger className="h-12 sm:h-14 bg-white/90 backdrop-blur-sm border-2 border-purple-100 hover:border-purple-300 transition-all duration-200 hover:shadow-md pt-2 group-hover:bg-white text-sm sm:text-base">
+                <SelectValue placeholder="Año" />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((y) => (
+                  <SelectItem key={y.value} value={y.value}>{y.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        <Select value={month} onValueChange={setMonth}>
-          <SelectTrigger><SelectValue placeholder="Mes" /></SelectTrigger>
-          <SelectContent>
-            {months.map((m) => (
-              <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          {/* Mes */}
+          <div className="group relative col-span-2 md:col-span-1">
+            <div className="absolute -top-2 left-3 px-2 bg-white rounded-full text-xs font-medium text-pink-600 shadow-sm z-10">
+              🗓️ Mes
+            </div>
+            <Select value={month} onValueChange={setMonth}>
+              <SelectTrigger className="h-12 sm:h-14 bg-white/90 backdrop-blur-sm border-2 border-pink-100 hover:border-pink-300 transition-all duration-200 hover:shadow-md pt-2 group-hover:bg-white text-sm sm:text-base">
+                <SelectValue placeholder="Mes" />
+              </SelectTrigger>
+              <SelectContent>
+                {months.map((m) => (
+                  <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
 
       {loading && <p className="text-sm text-gray-500">Cargando entrenamientos...</p>}
@@ -272,22 +300,56 @@ export default function TrainingHistory() {
                       avgLapTime = (training.time * 1000) / individualLaps.length;
                     }
 
+                    const styleData = STYLES[training.style];
+                    
                     return (
-                      <div key={training.id} className="bg-gray-50 rounded-lg p-4 space-y-2">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h5 className="font-semibold text-gray-900">
-                              {STYLES[training.style] || training.style}
-                            </h5>
-                            <p className="text-sm text-gray-600">
-                              {training.distance}m
-                            </p>
+                      <div key={training.id} className="group relative bg-gradient-to-br from-blue-50 via-white to-cyan-50 border-2 border-blue-200 hover:border-blue-400 rounded-xl p-4 space-y-2 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] overflow-hidden">
+                        {/* Línea decorativa superior */}
+                        <div className="absolute -top-0.5 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 rounded-t-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            {/* Icono del estilo */}
+                            <div className="w-10 h-10 rounded-lg flex items-center justify-center p-1.5 bg-white shadow-md border-2 border-blue-200 flex-shrink-0">
+                              {styleData?.icon ? (
+                                <Image 
+                                  src={styleData.icon} 
+                                  alt={styleData.label}
+                                  width={32}
+                                  height={32}
+                                  className="object-contain"
+                                />
+                              ) : (
+                                <span className="text-sm font-bold text-blue-600">
+                                  {styleData?.label.charAt(0) || '?'}
+                                </span>
+                              )}
+                            </div>
+                            
+                            <div className="flex-1 min-w-0">
+                              <h5 className="font-semibold text-gray-900 text-sm sm:text-base">
+                                {styleData?.label || training.style}
+                              </h5>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-xs font-semibold bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 px-2 py-1 rounded-full border border-blue-200">
+                                  {training.distance}m
+                                </span>
+                                {training.poolType && (
+                                  <span className="text-xs px-2 py-1 rounded-full bg-cyan-100 text-cyan-700 font-medium border border-cyan-200">
+                                    {training.poolType === 'SHORT_25M' && '🏊 25m'}
+                                    {training.poolType === 'LONG_50M' && '🏊 50m'}
+                                    {training.poolType === 'OPEN_WATER' && '🌊 Aguas Abiertas'}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-xl font-bold text-blue-600">
+                          
+                          <div className="text-right flex-shrink-0">
+                            <div className="text-xl sm:text-2xl font-bold text-blue-600">
                               {fmt(training.time)}
                             </div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs font-medium bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full inline-block">
                               Intento #{idx + 1}
                             </div>
                           </div>

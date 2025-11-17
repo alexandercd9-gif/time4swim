@@ -4,7 +4,7 @@ import { Timer } from "lucide-react";
 
 export default function ParentChronoPage() {
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-gray-50 p-4 overflow-x-hidden">
   <div className="max-w-7xl mx-auto">
         {/* Header consistente con otras páginas */}
         <div className="mb-6">

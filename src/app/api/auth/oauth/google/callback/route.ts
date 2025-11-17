@@ -126,7 +126,7 @@ export async function GET(req: NextRequest) {
     const successParam = isNewUser ? 'new_user' : 'login_success';
     const res = NextResponse.redirect(`${url.origin}${redirectPath}?oauth=${successParam}`);
     
-    res.cookies.set('token', token, { httpOnly: true, path: '/', maxAge: 60 * 60 * 24, sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
+    res.cookies.set('token', token, { httpOnly: true, path: '/', maxAge: 60 * 60 * 24, sameSite: 'none', secure: true });
     // Clear state cookie
     res.cookies.set('oauth_state', '', { httpOnly: true, path: '/', maxAge: 0 });
 

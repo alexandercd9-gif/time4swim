@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { toast } from "react-hot-toast";
-import { Plus, Pencil, Trash2, Users, RefreshCcw } from "lucide-react";
+import { Plus, Pencil, Trash2, Users, RefreshCcw, LayoutGrid, Table as TableIcon } from "lucide-react";
 import SwimmerForm from "@/components/SwimmerForm";
 import { calculateCategory } from "@/lib/categories";
 
@@ -27,6 +27,7 @@ export default function ParentChildrenPage() {
   const [editing, setEditing] = useState<ChildItem | null>(null);
   const [query, setQuery] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
 
   const loadChildren = async () => {
     try {
@@ -110,86 +111,184 @@ export default function ParentChildrenPage() {
           </div>
         </div>
 
-        {/* Filtros */}
-        <div className="mb-4">
+        {/* Filtros y Vista */}
+        <div className="mb-4 flex flex-col sm:flex-row gap-3">
           <Input
             placeholder="Buscar por nombre, entrenador o club"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            className="flex-1"
           />
+          <div className="flex gap-2">
+            <Button
+              variant={viewMode === 'table' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('table')}
+              className="flex-1 sm:flex-none"
+            >
+              <TableIcon className="h-4 w-4 mr-2" />
+              Tabla
+            </Button>
+            <Button
+              variant={viewMode === 'cards' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('cards')}
+              className="flex-1 sm:flex-none"
+            >
+              <LayoutGrid className="h-4 w-4 mr-2" />
+              Tarjetas
+            </Button>
+          </div>
         </div>
 
-        {/* Tabla */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Fecha de nacimiento</TableHead>
-                <TableHead>Género</TableHead>
-                <TableHead>Categoría</TableHead>
-                <TableHead>Club</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={5}>
-                    <div className="py-10 text-center text-gray-500">Cargando…</div>
-                  </TableCell>
-                </TableRow>
-              ) : filtered.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6}>
-                    <div className="py-10 text-center text-gray-500">
-                      No hay nadadores. Crea el primero con el botón "Agregar nadador".
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filtered.map((c) => {
-                  const category = calculateCategory(c.birthDate);
-                  return (
-                  <TableRow key={c.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-3">
-                        {c.photo ? (
-                          <img src={c.photo} alt={c.name} className="h-8 w-8 rounded-full object-cover" />
-                        ) : (
-                          <div className="h-8 w-8 rounded-full bg-gray-200" />
-                        )}
-                        <div>
-                          <div>{c.name}</div>
-                          <div className="text-xs text-gray-500">{c._count?.records || 0} records · {c._count?.trainings || 0} entrenamientos</div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{new Date(c.birthDate).toLocaleDateString()}</TableCell>
-                    <TableCell>{c.gender === 'MALE' ? 'Masculino' : 'Femenino'}</TableCell>
-                    <TableCell>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {category.name}
-                      </span>
-                    </TableCell>
-                    <TableCell>{c.club?.name || '—'}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button size="sm" variant="outline" onClick={() => openEdit(c)}>
-                          <Pencil className="h-4 w-4 mr-1" /> Editar
-                        </Button>
-                        <Button size="sm" variant="destructive" onClick={() => removeChild(c.id)} disabled={busyId === c.id}>
-                          <Trash2 className="h-4 w-4 mr-1" /> {busyId === c.id ? 'Eliminando…' : 'Eliminar'}
-                        </Button>
-                      </div>
-                    </TableCell>
+        {/* Lista */}
+        {loading ? (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-10">
+            <div className="text-center text-gray-500">Cargando…</div>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-10">
+            <div className="text-center text-gray-500">
+              No hay nadadores. Crea el primero con el botón "Agregar nadador".
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Vista Tabla */}
+            {viewMode === 'table' && (
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Fecha de nacimiento</TableHead>
+                    <TableHead>Género</TableHead>
+                    <TableHead>Categoría</TableHead>
+                    <TableHead>Club</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((c) => {
+                    const category = calculateCategory(c.birthDate);
+                    return (
+                    <TableRow key={c.id}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-3">
+                          {c.photo ? (
+                            <img src={c.photo} alt={c.name} className="h-8 w-8 rounded-full object-cover" />
+                          ) : (
+                            <div className="h-8 w-8 rounded-full bg-gray-200" />
+                          )}
+                          <div>
+                            <div>{c.name}</div>
+                            <div className="text-xs text-gray-500">{c._count?.records || 0} records · {c._count?.trainings || 0} entrenamientos</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{new Date(c.birthDate).toLocaleDateString()}</TableCell>
+                      <TableCell>{c.gender === 'MALE' ? 'Masculino' : 'Femenino'}</TableCell>
+                      <TableCell>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {category.name}
+                        </span>
+                      </TableCell>
+                      <TableCell>{c.club?.name || '—'}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button size="sm" variant="outline" onClick={() => openEdit(c)}>
+                            <Pencil className="h-4 w-4 mr-1" /> Editar
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => removeChild(c.id)} disabled={busyId === c.id}>
+                            <Trash2 className="h-4 w-4 mr-1" /> {busyId === c.id ? 'Eliminando…' : 'Eliminar'}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+            )}
+
+            {/* Vista Tarjetas */}
+            {viewMode === 'cards' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filtered.map((c) => {
+                const category = calculateCategory(c.birthDate);
+                return (
+                  <div key={c.id} className="bg-white rounded-lg border shadow-sm p-4 space-y-4">
+                    {/* Header con foto y nombre */}
+                    <div className="flex items-center gap-3">
+                      {c.photo ? (
+                        <img src={c.photo} alt={c.name} className="h-12 w-12 rounded-full object-cover" />
+                      ) : (
+                        <div className="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center">
+                          <Users className="h-6 w-6 text-gray-400" />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900">{c.name}</h3>
+                        <p className="text-sm text-gray-500">
+                          {c._count?.records || 0} records · {c._count?.trainings || 0} entrenamientos
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Información */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-500">Fecha de nacimiento:</span>
+                        <span className="text-sm font-medium text-gray-900">
+                          {new Date(c.birthDate).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-500">Género:</span>
+                        <span className="text-sm font-medium text-gray-900">
+                          {c.gender === 'MALE' ? 'Masculino' : 'Femenino'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-500">Categoría:</span>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {category.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-500">Club:</span>
+                        <span className="text-sm font-medium text-gray-900">{c.club?.name || '—'}</span>
+                      </div>
+                    </div>
+
+                    {/* Botones de acción */}
+                    <div className="flex gap-2 pt-2 border-t border-gray-100">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => openEdit(c)}
+                        className="flex-1"
+                      >
+                        <Pencil className="h-4 w-4 mr-1" /> Editar
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="destructive" 
+                        onClick={() => removeChild(c.id)} 
+                        disabled={busyId === c.id}
+                        className="flex-1"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" /> {busyId === c.id ? 'Eliminando…' : 'Eliminar'}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Modal Crear/Editar */}

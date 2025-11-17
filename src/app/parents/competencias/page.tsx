@@ -291,34 +291,34 @@ export default function CompetitionsPage() {
   </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <div className="rounded-lg border bg-white p-4 shadow-sm">
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+        <div className="rounded-lg border bg-white p-3 md:p-4 shadow-sm">
           <div className="flex items-center space-x-2">
-            <Trophy className="h-5 w-5 text-blue-500" />
-            <h3 className="font-semibold text-gray-700">Total Competencias</h3>
+            <Trophy className="h-4 w-4 md:h-5 md:w-5 text-blue-500 flex-shrink-0" />
+            <h3 className="text-xs md:text-sm font-semibold text-gray-700 leading-tight">Total Competencias</h3>
           </div>
-          <p className="text-2xl font-bold mt-2 text-gray-900">{stats.total}</p>
+          <p className="text-xl md:text-2xl font-bold mt-2 text-gray-900">{stats.total}</p>
         </div>
-        <div className="rounded-lg border bg-white p-4 shadow-sm">
+        <div className="rounded-lg border bg-white p-3 md:p-4 shadow-sm">
           <div className="flex items-center space-x-2">
-            <Target className="h-5 w-5 text-green-500" />
-            <h3 className="font-semibold text-gray-700">Mejores Tiempos</h3>
+            <Target className="h-4 w-4 md:h-5 md:w-5 text-green-500 flex-shrink-0" />
+            <h3 className="text-xs md:text-sm font-semibold text-gray-700 leading-tight">Mejores Tiempos</h3>
           </div>
-          <p className="text-2xl font-bold mt-2 text-gray-900">{stats.personalBests}</p>
+          <p className="text-xl md:text-2xl font-bold mt-2 text-gray-900">{stats.personalBests}</p>
         </div>
-        <div className="rounded-lg border bg-white p-4 shadow-sm">
+        <div className="rounded-lg border bg-white p-3 md:p-4 shadow-sm">
           <div className="flex items-center space-x-2">
-            <Medal className="h-5 w-5 text-yellow-500" />
-            <h3 className="font-semibold text-gray-700">Medallas</h3>
+            <Medal className="h-4 w-4 md:h-5 md:w-5 text-yellow-500 flex-shrink-0" />
+            <h3 className="text-xs md:text-sm font-semibold text-gray-700 leading-tight">Medallas</h3>
           </div>
-          <p className="text-2xl font-bold mt-2 text-gray-900">{stats.medals}</p>
+          <p className="text-xl md:text-2xl font-bold mt-2 text-gray-900">{stats.medals}</p>
         </div>
-        <div className="rounded-lg border bg-white p-4 shadow-sm">
+        <div className="rounded-lg border bg-white p-3 md:p-4 shadow-sm">
           <div className="flex items-center space-x-2">
-            <Clock className="h-5 w-5 text-purple-500" />
-            <h3 className="font-semibold text-gray-700">Tiempo Promedio</h3>
+            <Clock className="h-4 w-4 md:h-5 md:w-5 text-purple-500 flex-shrink-0" />
+            <h3 className="text-xs md:text-sm font-semibold text-gray-700 leading-tight">Tiempo Promedio</h3>
           </div>
-          <p className="text-2xl font-bold mt-2 text-gray-900">
+          <p className="text-xl md:text-2xl font-bold mt-2 text-gray-900">
             {stats.avgTime > 0 ? formatTime(stats.avgTime) : '—'}
           </p>
         </div>
@@ -369,114 +369,203 @@ export default function CompetitionsPage() {
         </Select>
       </div>
 
-      {/* Competitions Table */}
-      <div className="rounded-lg border bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr className="border-b">
-                <th className="text-left p-4 font-medium text-gray-700">Nadador</th>
-                <th className="text-left p-4 font-medium text-gray-700">Competencia</th>
-                <th className="text-left p-4 font-medium text-gray-700">Estilo & Distancia</th>
-                <th className="text-left p-4 font-medium text-gray-700">Tiempo</th>
-                <th className="text-left p-4 font-medium text-gray-700">Posición</th>
-                <th className="text-left p-4 font-medium text-gray-700">Medalla</th>
-                <th className="text-left p-4 font-medium text-gray-700">Fecha</th>
-                <th className="text-right p-4 font-medium text-gray-700">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredCompetitions.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="text-center py-12">
-                    <div className="flex flex-col items-center space-y-4">
-                      <Trophy className="h-12 w-12 text-gray-300" />
-                      <div>
-                        <h3 className="text-lg font-medium text-gray-900">No hay competencias registradas</h3>
-                        <p className="text-gray-500 mt-1">
-                          Comienza agregando la primera competencia
-                        </p>
-                      </div>
-                      <Button onClick={() => setFormOpen(true)} className="mt-4 bg-blue-600 hover:bg-blue-700">
-                        <Trophy className="mr-2 h-4 w-4" />
-                        Agregar Primera Competencia
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredCompetitions.map((competition) => (
-                  <tr key={competition.id} className="border-b hover:bg-gray-50">
-                    <td className="p-4">
-                      <p className="font-medium text-gray-900">{competition.child.name}</p>
-                    </td>
-                    <td className="p-4">
-                      <div>
-                        <p className="font-medium text-gray-900">{competition.competition}</p>
-                        {competition.notes && (
-                          <p className="text-sm text-gray-500">{competition.notes}</p>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <div>
-                        <p className="font-medium text-gray-900">{getStyleName(competition.style)}</p>
-                        <p className="text-sm text-gray-500">
-                          {competition.distance >= 1000 
-                            ? `${(competition.distance / 1000).toFixed(1)}km` 
-                            : `${competition.distance}m`} - {getPoolSize(competition.poolSize)}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-mono font-semibold text-gray-900">{formatTime(competition.time)}</span>
-                        {competition.isPersonalBest && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-300">
-                            <Target className="h-3 w-3 mr-1" />
-                            MT
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      {getPositionBadge(competition.position)}
-                    </td>
-                    <td className="p-4">
-                      {getMedalBadge(competition.medal)}
-                    </td>
-                    <td className="p-4">
-                      <span className="text-sm text-gray-700">{formatDate(competition.date)}</span>
-                    </td>
-                    <td className="p-4 text-right">
-                      <div className="flex justify-end space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setEditingCompetition(competition);
-                            setFormOpen(true);
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(competition)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      {/* Competitions - Desktop Table & Mobile Cards */}
+      {filteredCompetitions.length === 0 ? (
+        <div className="rounded-lg border bg-white shadow-sm p-12">
+          <div className="flex flex-col items-center space-y-4">
+            <Trophy className="h-12 w-12 text-gray-300" />
+            <div className="text-center">
+              <h3 className="text-lg font-medium text-gray-900">No hay competencias registradas</h3>
+              <p className="text-gray-500 mt-1">
+                Comienza agregando la primera competencia
+              </p>
+            </div>
+            <Button onClick={() => setFormOpen(true)} className="mt-4 bg-blue-600 hover:bg-blue-700">
+              <Trophy className="mr-2 h-4 w-4" />
+              Agregar Primera Competencia
+            </Button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <>
+          {/* Desktop Table */}
+          <div className="hidden md:block rounded-lg border bg-white shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr className="border-b">
+                    <th className="text-left p-4 font-medium text-gray-700">Nadador</th>
+                    <th className="text-left p-4 font-medium text-gray-700">Competencia</th>
+                    <th className="text-left p-4 font-medium text-gray-700">Estilo & Distancia</th>
+                    <th className="text-left p-4 font-medium text-gray-700">Tiempo</th>
+                    <th className="text-left p-4 font-medium text-gray-700">Posición</th>
+                    <th className="text-left p-4 font-medium text-gray-700">Medalla</th>
+                    <th className="text-left p-4 font-medium text-gray-700">Fecha</th>
+                    <th className="text-right p-4 font-medium text-gray-700">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredCompetitions.map((competition) => (
+                    <tr key={competition.id} className="border-b hover:bg-gray-50">
+                      <td className="p-4">
+                        <p className="font-medium text-gray-900">{competition.child.name}</p>
+                      </td>
+                      <td className="p-4">
+                        <div>
+                          <p className="font-medium text-gray-900">{competition.competition}</p>
+                          {competition.notes && (
+                            <p className="text-sm text-gray-500">{competition.notes}</p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <div>
+                          <p className="font-medium text-gray-900">{getStyleName(competition.style)}</p>
+                          <p className="text-sm text-gray-500">
+                            {competition.distance >= 1000 
+                              ? `${(competition.distance / 1000).toFixed(1)}km` 
+                              : `${competition.distance}m`} - {getPoolSize(competition.poolSize)}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-mono font-semibold text-gray-900">{formatTime(competition.time)}</span>
+                          {competition.isPersonalBest && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-300">
+                              <Target className="h-3 w-3 mr-1" />
+                              MT
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        {getPositionBadge(competition.position)}
+                      </td>
+                      <td className="p-4">
+                        {getMedalBadge(competition.medal)}
+                      </td>
+                      <td className="p-4">
+                        <span className="text-sm text-gray-700">{formatDate(competition.date)}</span>
+                      </td>
+                      <td className="p-4 text-right">
+                        <div className="flex justify-end space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setEditingCompetition(competition);
+                              setFormOpen(true);
+                            }}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDelete(competition)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="md:hidden space-y-4">
+            {filteredCompetitions.map((competition) => (
+              <div key={competition.id} className="bg-white rounded-lg border shadow-sm p-4 space-y-3">
+                {/* Header */}
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-900 text-lg">{competition.child.name}</p>
+                    <p className="font-medium text-blue-600 mt-1">{competition.competition}</p>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEditingCompetition(competition);
+                        setFormOpen(true);
+                      }}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDelete(competition)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Details */}
+                <div className="space-y-2">
+                  {/* Estilo y Distancia */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-500">Estilo:</span>
+                    <div className="text-right">
+                      <p className="font-medium text-gray-900">{getStyleName(competition.style)}</p>
+                      <p className="text-xs text-gray-500">
+                        {competition.distance >= 1000 
+                          ? `${(competition.distance / 1000).toFixed(1)}km` 
+                          : `${competition.distance}m`} - {getPoolSize(competition.poolSize)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Tiempo */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-500">Tiempo:</span>
+                    <div className="flex items-center space-x-2">
+                      <span className="font-mono font-bold text-lg text-gray-900">{formatTime(competition.time)}</span>
+                      {competition.isPersonalBest && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-300">
+                          <Target className="h-3 w-3 mr-1" />
+                          MT
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Posición y Medalla */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-500">Resultado:</span>
+                    <div className="flex items-center space-x-2">
+                      {getPositionBadge(competition.position)}
+                      {getMedalBadge(competition.medal)}
+                    </div>
+                  </div>
+
+                  {/* Fecha */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-500">Fecha:</span>
+                    <span className="text-sm font-medium text-gray-700">{formatDate(competition.date)}</span>
+                  </div>
+
+                  {/* Notas */}
+                  {competition.notes && (
+                    <div className="pt-2 border-t border-gray-100">
+                      <p className="text-xs text-gray-500 mb-1">Notas:</p>
+                      <p className="text-sm text-gray-700">{competition.notes}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* Competition Form Modal */}
       <CompetitionForm

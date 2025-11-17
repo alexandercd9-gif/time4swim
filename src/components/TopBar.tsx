@@ -92,7 +92,7 @@ export default function TopBar() {
         </button>
 
         {/* Mobile: Logo */}
-        <div className="lg:hidden flex-shrink-0">
+        <div className="lg:hidden flex-1 flex justify-center">
           <img src="/logito.png" alt="Logo" className="h-10 w-10 rounded-xl object-cover" />
         </div>
       </div>

@@ -75,12 +75,14 @@ export default function LoginPage() {
         const redirectPath = roleRoutes[data.user.role] || '/parents/dashboard';
         
         toast.success(`¡Bienvenido ${data.user.name}!`, {
-          duration: 2000,
+          duration: 1500,
           position: 'top-center',
           icon: '👋',
         });
         
-        router.push(redirectPath);
+        // Delay para asegurar que la cookie se propague
+        await new Promise(resolve => setTimeout(resolve, 500));
+        window.location.href = redirectPath;
       } else {
         toast.error(data.message || "Credenciales incorrectas");
       }
@@ -125,7 +127,7 @@ export default function LoginPage() {
             };
             const redirectPath = roleRoutes[loginData.user.role] || '/parents/dashboard';
             toast.success(`¡Bienvenido ${loginData.user.name}!`);
-            router.push(redirectPath);
+            window.location.href = redirectPath;
           } else {
             // Si por alguna razón el login falla, volver al form de login con email prellenado
             toast.success('Cuenta creada. Inicia sesión con tu email.');

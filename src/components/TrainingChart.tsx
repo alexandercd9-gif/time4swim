@@ -37,11 +37,10 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
   const [viewMode, setViewMode] = useState<ViewMode>("day");
   const [year, setYear] = useState<number>(now.getFullYear());
   const [month, setMonth] = useState<number>(now.getMonth() + 1); // 1-12
-  const [style, setStyle] = useState<string>("ALL");
+  const [style, setStyle] = useState<string>("FREESTYLE");
   const [distance, setDistance] = useState<string>("25");
   const [allData, setAllData] = useState<Training[]>([]);
   const [loading, setLoading] = useState(false);
-  const [hoveredPoint, setHoveredPoint] = useState<{ x: number; y: number; label: string } | null>(null);
 
   const DISTANCE_OPTIONS = [
     { value: "25", label: "25m" },
@@ -174,23 +173,46 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
         .sort((a, b) => a.x - b.x);
         
     } else {
-      // Vista diaria: todos los entrenamientos día por día
-      const sorted = [...filtered].sort((a, b) => +new Date(a.date) - +new Date(b.date));
-      return sorted.map((t) => {
+      // Vista diaria: mejor tiempo por día (agrupado por día del mes)
+      const dailyBest = new Map<number, { time: number; count: number; style: string; distance: number }>();
+      
+      filtered.forEach((t) => {
         const d = new Date(t.date);
-        return {
-          x: d.getDate(),
-          y: t.time,
-          label: `${d.getDate()}`,
-          detail: `${formatTime(t.time)} - ${STYLE_OPTIONS.find(s => s.value === t.style)?.label || t.style} ${t.distance}m`
-        };
+        if (d.getMonth() + 1 !== month) return;
+        
+        const day = d.getDate();
+        const existing = dailyBest.get(day);
+        
+        if (!existing || t.time < existing.time) {
+          dailyBest.set(day, { 
+            time: t.time, 
+            count: (existing?.count || 0) + 1,
+            style: t.style,
+            distance: t.distance
+          });
+        }
       });
+
+      return Array.from(dailyBest.entries())
+        .map(([day, data]) => ({
+          x: day,
+          y: data.time,
+          label: `${day}`,
+          detail: `${formatTime(data.time)} - ${STYLE_OPTIONS.find(s => s.value === data.style)?.label || data.style} ${data.distance}m (${data.count} entreno${data.count > 1 ? 's' : ''})`
+        }))
+        .sort((a, b) => a.x - b.x);
     }
   }, [allData, style, distance, viewMode, month, year]);
 
-  const best = useMemo(() => {
-    if (!points.length) return null;
-    return points.reduce((min, p) => (p.y < min.y ? p : min), points[0]);
+  // Puntos clave: primero, mejor y último
+  const keyPoints = useMemo(() => {
+    if (!points.length) return { first: null, best: null, last: null };
+    
+    const first = points[0];
+    const last = points[points.length - 1];
+    const best = points.reduce((min, p) => (p.y < min.y ? p : min), points[0]);
+    
+    return { first, best, last };
   }, [points]);
 
   // Renderizado moderno del gráfico SVG
@@ -299,41 +321,62 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
 
           {/* Points */}
           {points.map((p, i) => {
-            const isBest = best && p.x === best.x && p.y === best.y;
+            const isFirst = keyPoints.first && p.x === keyPoints.first.x && p.y === keyPoints.first.y;
+            const isBest = keyPoints.best && p.x === keyPoints.best.x && p.y === keyPoints.best.y;
+            const isLast = keyPoints.last && p.x === keyPoints.last.x && p.y === keyPoints.last.y;
+            const isKeyPoint = isFirst || isBest || isLast;
+            
             const cx = xScale(p.x);
             const cy = yScale(p.y);
             
+            // Determinar color y label
+            let color = "#3b82f6";
+            let labelText = "";
+            let labelColor = "fill-blue-600";
+            
+            if (isBest) {
+              color = "#10b981";
+              labelText = `⭐ ${formatTime(p.y)}`;
+              labelColor = "fill-green-600";
+            } else if (isFirst) {
+              color = "#f59e0b";
+              labelText = `🏁 ${formatTime(p.y)}`;
+              labelColor = "fill-amber-600";
+            } else if (isLast) {
+              color = "#8b5cf6";
+              labelText = `🏁 ${formatTime(p.y)}`;
+              labelColor = "fill-purple-600";
+            }
+            
             return (
               <g key={i}>
-                {isBest && (
+                {isKeyPoint && (
                   <>
                     <circle
                       cx={cx}
                       cy={cy}
                       r="8"
-                      fill="#10b981"
+                      fill={color}
                       opacity="0.2"
                     />
                     <text
                       x={cx}
                       y={cy - 18}
                       textAnchor="middle"
-                      className="text-sm font-bold fill-green-600"
+                      className={`text-sm font-bold ${labelColor}`}
                     >
-                      ⭐ {formatTime(p.y)}
+                      {labelText}
                     </text>
                   </>
                 )}
                 <circle
                   cx={cx}
                   cy={cy}
-                  r={isBest ? 6 : 4}
-                  fill={isBest ? "#10b981" : "#3b82f6"}
+                  r={isKeyPoint ? 6 : 4}
+                  fill={color}
                   stroke="white"
                   strokeWidth="2"
                   className="cursor-pointer transition-all hover:r-6"
-                  onMouseEnter={() => setHoveredPoint({ x: cx, y: cy, label: p.detail })}
-                  onMouseLeave={() => setHoveredPoint(null)}
                 />
               </g>
             );
@@ -366,51 +409,15 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
           </text>
         </svg>
 
-        {/* Tooltip */}
-        {hoveredPoint && (
-          <div
-            className="absolute bg-gray-900 text-white text-xs px-3 py-2 rounded-lg shadow-lg pointer-events-none z-10"
-            style={{
-              left: `${(hoveredPoint.x / width) * 100}%`,
-              top: `${(hoveredPoint.y / height) * 100 - 10}%`,
-              transform: 'translate(-50%, -100%)'
-            }}
-          >
-            {hoveredPoint.label}
-          </div>
-        )}
       </div>
     );
   };
 
-  // Mejores tiempos de TODAS las fuentes (Competencias, Prácticas, Competencias Internas)
-  const [bestTimesAllSources, setBestTimesAllSources] = useState<Record<string, any>>({});
-  const [loadingBestTimes, setLoadingBestTimes] = useState(false);
 
-  useEffect(() => {
-    const fetchBestTimes = async () => {
-      if (!selectedChildId || distance === "ALL") return;
-      setLoadingBestTimes(true);
-      try {
-        const params = new URLSearchParams({
-          childId: selectedChildId,
-          distance: distance
-        });
-        const res = await fetch(`/api/parent/best-times?${params.toString()}`);
-        const data = await res.json();
-        setBestTimesAllSources(data?.bestTimes || {});
-      } catch (err) {
-        console.error('Error fetching best times:', err);
-      } finally {
-        setLoadingBestTimes(false);
-      }
-    };
-    fetchBestTimes();
-  }, [selectedChildId, distance]);
 
-  // Resumen por estilo: mejor tiempo del período actual (del gráfico)
-  const bestByStyle = useMemo(() => {
-    const map = new Map<string, number>();
+  // Mejores tiempos del período seleccionado (año/mes/día) por estilo
+  const bestByStyleForPeriod = useMemo(() => {
+    const map = new Map<string, { time: number; source: string }>();
     let dataToAnalyze = allData;
     
     // Aplicar filtro de distancia si está seleccionado
@@ -418,26 +425,43 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
       dataToAnalyze = allData.filter((t) => t.distance === parseInt(distance));
     }
     
+    // Filtrar por período según el modo de vista
+    dataToAnalyze = dataToAnalyze.filter((t) => {
+      const d = new Date(t.date);
+      const tYear = d.getFullYear();
+      const tMonth = d.getMonth() + 1;
+      
+      if (viewMode === "year") {
+        return tYear === year;
+      } else if (viewMode === "month") {
+        return tYear === year && tMonth === month;
+      } else {
+        // día: solo del mes actual
+        return tYear === year && tMonth === month;
+      }
+    });
+    
+    // Obtener mejor tiempo por estilo
     for (const t of dataToAnalyze) {
       const current = map.get(t.style);
-      if (current == null || t.time < current) map.set(t.style, t.time);
+      if (current == null || t.time < current.time) {
+        map.set(t.style, { 
+          time: t.time,
+          source: 'TRAINING' // Los datos de allData vienen de entrenamientos
+        });
+      }
     }
-    return STYLE_OPTIONS.map((opt) => ({
-      style: opt.label,
-      key: opt.value,
-      time: map.get(opt.value) ?? null,
-    }));
-  }, [allData, distance]);
-
-  // Mejores tiempos de todas las fuentes
-  const bestTimesByStyleAllSources = useMemo(() => {
-    return STYLE_OPTIONS.map((opt) => ({
-      style: opt.label,
-      key: opt.value,
-      time: bestTimesAllSources[opt.value] ?? null,
-      source: bestTimesAllSources[`${opt.value}_source`] ?? null,
-    }));
-  }, [bestTimesAllSources]);
+    
+    return STYLE_OPTIONS.map((opt) => {
+      const data = map.get(opt.value);
+      return {
+        style: opt.label,
+        key: opt.value,
+        time: data?.time ?? null,
+        source: data?.source ?? null,
+      };
+    });
+  }, [allData, distance, viewMode, year, month]);
 
   return (
     <div className="space-y-4">
@@ -464,14 +488,14 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
         )}
       </button>
 
-      {/* Layout responsive: columna en móvil, 3 columnas en desktop */}
+      {/* Layout responsive: columna en móvil, adaptado para tablets y desktop */}
       <div className={`grid gap-4 transition-all duration-300
         grid-cols-1
         ${filtersCollapsed 
           ? 'lg:grid-cols-5' 
           : isSidebarCollapsed 
-            ? 'lg:grid-cols-[20%_65%_15%]'  // Sidebar cerrado
-            : 'lg:grid-cols-[25%_58%_17%]'  // Sidebar abierto (25% | 58% | 17%)
+            ? 'md:grid-cols-[28%_57%_15%] lg:grid-cols-[24%_61%_15%] xl:grid-cols-[21.5%_63.5%_15%]'  // Sidebar cerrado - más espacio en tablets
+            : 'md:grid-cols-[32%_51%_17%] lg:grid-cols-[28%_55%_17%] xl:grid-cols-[26.5%_56.5%_17%]'  // Sidebar abierto - adaptativo
       }`} style={{ gridAutoRows: '1fr' }}>
         
         {/* Columna 1: Filtros - En móvil primero, en desktop a la izquierda */}
@@ -634,7 +658,7 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
                 </div>
               </div>
             ) : (
-              <div className="w-full h-full p-2 lg:p-0">
+              <div className="w-full h-full p-2 lg:p-4 pt-12">
                 {renderChart()}
               </div>
             )}
@@ -648,13 +672,13 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
           <Card className="p-3 h-full flex flex-col overflow-hidden">
             <div className="flex-1 overflow-y-auto space-y-2.5">
             {/* Mejor tiempo del período - Compacto pero visible */}
-            {best && (
+            {keyPoints.best && (
             <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex-1">
                   <p className="text-[10px] text-gray-600 font-medium uppercase tracking-wide mb-1">Mejor Tiempo</p>
-                  <p className="text-2xl font-bold text-green-700">{formatTime(best.y)}</p>
-                  <p className="text-[10px] text-gray-500 mt-0.5">{best.detail}</p>
+                  <p className="text-2xl font-bold text-green-700">{formatTime(keyPoints.best.y)}</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">{keyPoints.best.detail}</p>
                 </div>
                 {/* Contenedor para la copa sin fondo, ligeramente desplazada a la izquierda */}
                 <div className="flex-shrink-0 flex items-center justify-center -ml-3">
@@ -664,13 +688,16 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
             </div>
           )}
 
-          {/* Tiempos por Estilo */}
+          {/* Tiempos por Estilo del período seleccionado */}
           <div className="flex-1 flex flex-col">
             <h4 className="text-[11px] font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
               <span>📊</span>
               Tiempos por Estilo
+              <span className="text-[9px] font-normal text-gray-500">
+                ({viewMode === "year" ? "del año" : viewMode === "month" ? "del mes" : "del mes"})
+              </span>
             </h4>
-            {loadingBestTimes ? (
+            {loading ? (
               <div className="flex items-center justify-center flex-1">
                 <div className="animate-spin w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full"></div>
               </div>
@@ -680,7 +707,7 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
               </div>
             ) : (
               <div className="mt-1 grid grid-rows-6 gap-2 flex-1">
-                {bestTimesByStyleAllSources.map((row) => {
+                {bestByStyleForPeriod.map((row) => {
                   const getSourceIcon = (src: string | null) => {
                     switch(src) {
                       case 'COMPETITION': return '🏆';

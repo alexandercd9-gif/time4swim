@@ -69,7 +69,7 @@ export default function FinalCTA() {
             className="group inline-flex items-center justify-center px-8 py-4 rounded-full bg-white text-blue-600 font-bold text-lg shadow-2xl hover:shadow-white/30 hover:scale-105 transition-all duration-200"
           >
             Probar gratis
-            <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="ml-2 h-5 w-5 group-hover:.\deploy-new.ps1 translate-x-1 transition-transform" />
           </Link>
           
           <Link
