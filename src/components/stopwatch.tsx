@@ -262,34 +262,31 @@ export function Stopwatch({ swimmers = [] }: { swimmers?: Array<{ id: string, na
   const [isPoolTypeExpanded, setIsPoolTypeExpanded] = useState(true);
 
   return (
-    <div className="space-y-6 w-full overflow-x-hidden">
+    <div className="space-y-4 w-full overflow-x-hidden">
       {/* Tabs para Tipo de Piscina - Colapsable */}
       {poolTypes.length > 0 && (
-        <Card className="border-cyan-200 bg-gradient-to-br from-cyan-50 to-white w-full">
-          <CardHeader className="cursor-pointer" onClick={() => setIsPoolTypeExpanded(!isPoolTypeExpanded)}>
-            <CardTitle className="flex items-center justify-between text-base sm:text-lg">
-              <div className="flex items-center gap-2 flex-1">
-                <Waves className="h-5 w-5 text-cyan-600" />
-                <span>Tipo de Piscina</span>
-                {!isPoolTypeExpanded && poolType && (
-                  <span className="ml-2 px-2 py-0.5 bg-cyan-100 text-cyan-700 rounded-full text-xs font-medium">
-                    {poolTypes.find(p => p.poolSize === poolType)?.nameEs || poolType}
-                  </span>
-                )}
-              </div>
-              <button 
-                className="rounded-full bg-cyan-100 hover:bg-cyan-200 w-8 h-8 flex items-center justify-center transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsPoolTypeExpanded(!isPoolTypeExpanded);
-                }}
-              >
-                {isPoolTypeExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </button>
-            </CardTitle>
-          </CardHeader>
+        <div className="rounded-xl shadow-md border-2 border-cyan-100 bg-gradient-to-br from-cyan-50 to-blue-50">
+          <div className="flex items-center gap-3 text-left px-4 py-3 cursor-pointer hover:bg-cyan-100/40 rounded-xl transition-all" onClick={() => setIsPoolTypeExpanded(!isPoolTypeExpanded)}>
+            <Waves className="w-5 h-5 text-cyan-500" />
+            <span className="font-semibold text-cyan-700">Tipo de Piscina</span>
+            {!isPoolTypeExpanded && poolType && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-white border border-cyan-300 rounded-full text-sm">
+                <svg className="w-3 h-3 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+                <span className="font-medium text-gray-700">
+                  {poolTypes.find(p => p.poolSize === poolType)?.nameEs || poolType}
+                </span>
+              </span>
+            )}
+            <span className="ml-auto">
+              <span className="bg-cyan-100 text-cyan-700 text-xs px-2 py-1 rounded-full">
+                {isPoolTypeExpanded ? 'Activo' : 'Cerrado'}
+              </span>
+            </span>
+          </div>
           {isPoolTypeExpanded && (
-            <CardContent className="pt-0 pb-4">
+            <div className="rounded-lg border bg-white p-6 shadow-sm mx-4 mb-4">
               <Tabs value={poolType} onValueChange={setPoolType} className="w-full">
                 <TabsList className="grid w-full h-10 bg-slate-100" style={{ gridTemplateColumns: `repeat(${poolTypes.length}, 1fr)` }}>
                   {poolTypes.map((pool) => (
@@ -303,51 +300,60 @@ export function Stopwatch({ swimmers = [] }: { swimmers?: Array<{ id: string, na
                   ))}
                 </TabsList>
               </Tabs>
-            </CardContent>
+            </div>
           )}
-        </Card>
+        </div>
       )}
 
       {/* Configuración del Entrenamiento - Colapsable */}
-      <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-white w-full">
-        <CardHeader className="cursor-pointer" onClick={() => setIsConfigExpanded(!isConfigExpanded)}>
-          <CardTitle className="flex items-center justify-between text-base sm:text-lg">
-            <div className="flex items-center gap-2 flex-1 flex-wrap">
-              <Settings2 className="h-5 w-5 text-blue-600" />
-              <span>Configuración del Entrenamiento</span>
-              {!isConfigExpanded && (swimmer || style || distance) && (
-                <div className="flex items-center gap-1 ml-2 flex-wrap">
-                  {swimmer && (
-                    <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                      {swimmers.find(s => s.id === swimmer)?.name || 'Nadador'}
-                    </span>
-                  )}
-                  {style && (
-                    <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                      {swimStyles.find(s => s.value === style)?.label || 'Estilo'}
-                    </span>
-                  )}
-                  {distance && (
-                    <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                      {distance}m
-                    </span>
-                  )}
-                </div>
+      <div className="rounded-xl shadow-md border-2 border-blue-100 bg-gradient-to-br from-blue-50 to-cyan-50">
+        <div className="flex items-center gap-3 text-left px-4 py-3 cursor-pointer hover:bg-blue-100/40 rounded-xl transition-all" onClick={() => setIsConfigExpanded(!isConfigExpanded)}>
+          <Settings2 className="w-5 h-5 text-blue-500" />
+          <span className="font-semibold text-blue-700">Configuración del Entrenamiento</span>
+          {!isConfigExpanded && (swimmer || style || distance) && (
+            <div className="flex items-center gap-2 ml-2 flex-wrap">
+              {swimmer && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-white border border-blue-300 rounded-full text-sm">
+                  <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span className="font-medium text-gray-700">
+                    {swimmers.find(s => s.id === swimmer)?.name || 'Nadador'}
+                  </span>
+                </span>
+              )}
+              {style && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-white border border-blue-300 rounded-full text-sm">
+                  <Image 
+                    src={swimStyles.find(s => s.value === style)?.icon || '/estilos/libre.png'} 
+                    alt="estilo" 
+                    width={14} 
+                    height={14}
+                    className="object-contain"
+                  />
+                  <span className="font-medium text-gray-700">
+                    {swimStyles.find(s => s.value === style)?.label || 'Estilo'}
+                  </span>
+                </span>
+              )}
+              {distance && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-white border border-blue-300 rounded-full text-sm">
+                  <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                  <span className="font-medium text-gray-700">{distance}m</span>
+                </span>
               )}
             </div>
-            <button 
-              className="rounded-full bg-blue-100 hover:bg-blue-200 w-8 h-8 flex items-center justify-center transition-colors"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsConfigExpanded(!isConfigExpanded);
-              }}
-            >
-              {isConfigExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            </button>
-          </CardTitle>
-        </CardHeader>
+          )}
+          <span className="ml-auto">
+            <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full">
+              {isConfigExpanded ? 'Activo' : 'Cerrado'}
+            </span>
+          </span>
+        </div>
         {isConfigExpanded && (
-          <CardContent className="pt-0 px-4 pb-4">
+          <div className="rounded-lg border bg-white p-6 shadow-sm mx-4 mb-4">
             <div className="space-y-2">
               {/* Labels */}
               <div className="grid gap-3 sm:gap-8 md:gap-12" style={{gridTemplateColumns: "2fr 1.5fr 1.3fr"}}>
@@ -439,11 +445,11 @@ export function Stopwatch({ swimmers = [] }: { swimmers?: Array<{ id: string, na
                 />
               </div>
             )}
-          </CardContent>
+          </div>
         )}
-      </Card>
+      </div>
 
-      {/* Cronómetro Principal */
+      {/* Cronómetro Principal */}
       <Card className="text-center border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50 w-full">
         <CardHeader>
           <CardTitle className="flex items-center justify-between gap-2 text-base sm:text-lg">
@@ -586,7 +592,7 @@ export function Stopwatch({ swimmers = [] }: { swimmers?: Array<{ id: string, na
           </div>
         </CardContent>
       </Card>
-}
+
       {/* Comparación en tiempo real */}
       {bestTime != null && time > 0 && (
         <Card className="border-green-200 bg-gradient-to-br from-green-50 to-white">

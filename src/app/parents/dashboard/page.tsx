@@ -191,7 +191,7 @@ export default function ParentsDashboard() {
               Mejores tiempos por estilo
             </h2>
             <div className="space-y-3">
-              <BestTimesByStyle />
+              <BestTimesByStyle compactFilters={true} />
             </div>
           </div>
 

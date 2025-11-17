@@ -79,7 +79,7 @@ export default function BestHistorySwitcher() {
             isAnimating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
           }`}
         >
-          {view === 'best' ? <BestTimesByStyle /> : <TrainingHistory />}
+          {view === 'best' ? <BestTimesByStyle showExpandedView={true} /> : <TrainingHistory />}
         </div>
       </div>
     </div>
