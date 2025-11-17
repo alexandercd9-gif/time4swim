@@ -35,7 +35,6 @@ export default function BestTimesByStyle() {
   const [data, setData] = useState<Record<string, number | null>>({});
   const [loading, setLoading] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [expandedView, setExpandedView] = useState(false);
 
   const distances = [
     { value: "all", label: "Todas las distancias" },
@@ -220,17 +219,6 @@ export default function BestTimesByStyle() {
               </SelectContent>
             </Select>
           </div>
-
-          {/* Vista Toggle */}
-          <div className="group relative">
-            <button
-              onClick={() => setExpandedView(!expandedView)}
-              className="w-full h-12 sm:h-14 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
-            >
-              <span className="text-base sm:text-lg">{expandedView ? '📊' : '👁️'}</span>
-              <span className="text-sm sm:text-base">{expandedView ? 'Vista Compacta' : 'Vista Detallada'}</span>
-            </button>
-          </div>
         </div>
       </div>
 
@@ -329,26 +317,6 @@ export default function BestTimesByStyle() {
                       </span>
                     )}
                   </div>
-                  
-                  {expandedView && (totalLaps > 0 || bestDate) && (
-                    <div className="flex items-center gap-2 text-xs text-gray-600">
-                      {totalLaps > 0 && (
-                        <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
-                          {totalLaps} {totalLaps === 1 ? 'vuelta' : 'vueltas'}
-                          <span className="hidden sm:inline">{avgLapTime && ` • ${fmtMs(avgLapTime)}`}</span>
-                        </span>
-                      )}
-                      {bestDate && (
-                        <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full font-medium">
-                          📅 {new Date(String(bestDate)).toLocaleDateString('es-ES', { 
-                            day: '2-digit', 
-                            month: 'short',
-                            year: 'numeric'
-                          })}
-                        </span>
-                      )}
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
