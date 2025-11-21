@@ -5,16 +5,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card } from "@/components/ui/card";
 import { useSidebar } from "@/hooks/use-sidebar";
 
-type Training = { id: string; date: string; time: number; distance: number; style: string };
+type Training = { id: string; date: string; time: number; distance: number; style: string; source?: 'TRAINING' | 'COMPETITION' | 'INTERNAL_COMPETITION' };
 
-const STYLE_OPTIONS: { value: string; label: string }[] = [
-  { value: "FREESTYLE", label: "Libre" },
-  { value: "BACKSTROKE", label: "Espalda" },
-  { value: "BREASTSTROKE", label: "Pecho" },
-  { value: "BUTTERFLY", label: "Mariposa" },
-  { value: "INDIVIDUAL_MEDLEY", label: "Combinado" },
-  { value: "MEDLEY_RELAY", label: "Combinado 4" },
-];
+interface StyleOption {
+  value: string;
+  label: string;
+}
 
 type ViewMode = "year" | "month" | "day";
 
@@ -27,12 +23,29 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
   const { isSidebarCollapsed } = useSidebar();
   const [children, setChildren] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedChildId, setSelectedChildId] = useState(propChildId || "");
+  const [styleOptions, setStyleOptions] = useState<StyleOption[]>([]);
   // Filtros: en móvil ocultos por defecto, en desktop visibles (evitar window en SSR)
   const [filtersCollapsed, setFiltersCollapsed] = useState(true);
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setFiltersCollapsed(window.innerWidth < 1024);
     }
+    
+    // Cargar estilos desde API
+    fetch('/api/config/styles')
+      .then(res => res.json())
+      .then(data => {
+        const styles = data.map((s: any) => ({
+          value: s.style,
+          label: s.nameEs
+        }));
+        setStyleOptions(styles);
+        // Auto-seleccionar el primer estilo si no hay uno seleccionado
+        if (!style && styles.length > 0) {
+          setStyle(styles[0].value);
+        }
+      })
+      .catch(err => console.error('Error cargando estilos:', err));
   }, []);
   const [viewMode, setViewMode] = useState<ViewMode>("day");
   const [year, setYear] = useState<number>(now.getFullYear());
@@ -92,7 +105,7 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
     }
   }, [selectedChildId]);
 
-  // Cargar datos según vista
+  // Cargar datos según vista - COMBINANDO entrenamientos, competencias y competencias internas
   useEffect(() => {
     const fetchData = async () => {
       if (!selectedChildId) return;
@@ -100,15 +113,54 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
       try {
         let params;
         if (viewMode === "year") {
-          // Para vista anual, obtener todos los datos del año
           params = new URLSearchParams({ childId: selectedChildId, year: String(year) });
         } else {
-          // Para vista mensual o diaria, obtener datos del mes
           params = new URLSearchParams({ childId: selectedChildId, month: String(month), year: String(year) });
         }
-        const res = await fetch(`/api/trainings?${params.toString()}`, { credentials: 'include' });
-        const json = await res.json();
-        setAllData(json.trainings || []);
+        
+        // Cargar entrenamientos
+        const trainingsRes = await fetch(`/api/trainings?${params.toString()}`, { credentials: 'include' });
+        const trainingsJson = await trainingsRes.json();
+        const trainings = (trainingsJson.trainings || []).map((t: any) => ({
+          ...t,
+          source: 'TRAINING'
+        }));
+        
+        // Cargar competencias (Record) - la API devuelve un array directamente
+        const competitionsRes = await fetch(`/api/competitions`, { credentials: 'include' });
+        const competitionsJson = await competitionsRes.json();
+        const allCompetitions = Array.isArray(competitionsJson) ? competitionsJson : [];
+        
+        const competitions = allCompetitions
+          .filter((r: any) => {
+            // Filtrar por hijo
+            if (r.childId !== selectedChildId) return false;
+            
+            const d = new Date(r.date);
+            const rYear = d.getFullYear();
+            const rMonth = d.getMonth() + 1;
+            
+            if (viewMode === "year") {
+              return rYear === year;
+            } else {
+              return rYear === year && rMonth === month;
+            }
+          })
+          .map((r: any) => ({
+            id: r.id,
+            date: r.date,
+            time: r.time,
+            distance: r.distance,
+            style: r.style,
+            source: 'COMPETITION'
+          }));
+        
+        // Combinar todos los datos
+        const combinedData = [...trainings, ...competitions];
+        setAllData(combinedData);
+      } catch (error) {
+        console.error('Error loading data:', error);
+        setAllData([]);
       } finally {
         setLoading(false);
       }
@@ -198,11 +250,11 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
           x: day,
           y: data.time,
           label: `${day}`,
-          detail: `${formatTime(data.time)} - ${STYLE_OPTIONS.find(s => s.value === data.style)?.label || data.style} ${data.distance}m (${data.count} entreno${data.count > 1 ? 's' : ''})`
+          detail: `${formatTime(data.time)} - ${styleOptions.find(s => s.value === data.style)?.label || data.style} ${data.distance}m (${data.count} entreno${data.count > 1 ? 's' : ''})`
         }))
         .sort((a, b) => a.x - b.x);
     }
-  }, [allData, style, distance, viewMode, month, year]);
+  }, [allData, style, distance, viewMode, month, year, styleOptions]);
 
   // Puntos clave: primero, mejor y último
   const keyPoints = useMemo(() => {
@@ -298,8 +350,8 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
         <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full" preserveAspectRatio="xMidYMid meet">
           <defs>
             <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.05" />
+              <stop offset="0%" stopColor="#6b7280" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="#6b7280" stopOpacity="0.05" />
             </linearGradient>
           </defs>
 
@@ -313,7 +365,7 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
           <path
             d={pathD}
             fill="none"
-            stroke="#3b82f6"
+            stroke="#6b7280"
             strokeWidth="3"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -330,9 +382,9 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
             const cy = yScale(p.y);
             
             // Determinar color y label
-            let color = "#3b82f6";
+            let color = "#6b7280";
             let labelText = "";
-            let labelColor = "fill-blue-600";
+            let labelColor = "fill-gray-600";
             
             if (isBest) {
               color = "#10b981";
@@ -452,7 +504,7 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
       }
     }
     
-    return STYLE_OPTIONS.map((opt) => {
+    return styleOptions.map((opt) => {
       const data = map.get(opt.value);
       return {
         style: opt.label,
@@ -461,7 +513,7 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
         source: data?.source ?? null,
       };
     });
-  }, [allData, distance, viewMode, year, month]);
+  }, [allData, distance, viewMode, year, month, styleOptions]);
 
   return (
     <div className="space-y-4">
@@ -469,7 +521,7 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
       {/* Botón para mostrar/ocultar filtros SOLO en móvil */}
       <button
         onClick={() => setFiltersCollapsed(!filtersCollapsed)}
-        className="flex lg:hidden items-center gap-2 px-4 py-2 mb-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors w-full justify-center"
+        className="flex lg:hidden items-center gap-2 px-4 py-2 mb-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors w-full justify-center"
       >
         {filtersCollapsed ? (
           <>
@@ -546,7 +598,7 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
                     onClick={() => setViewMode("year")}
                     className={`px-2 py-2 lg:py-1.5 text-sm lg:text-xs rounded-md font-medium transition-all ${
                       viewMode === "year"
-                        ? "bg-blue-600 text-white shadow-sm"
+                        ? "bg-gray-700 text-white shadow-sm"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     }`}
                   >
@@ -556,7 +608,7 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
                     onClick={() => setViewMode("month")}
                     className={`px-2 py-2 lg:py-1.5 text-sm lg:text-xs rounded-md font-medium transition-all ${
                       viewMode === "month"
-                        ? "bg-blue-600 text-white shadow-sm"
+                        ? "bg-gray-700 text-white shadow-sm"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     }`}
                   >
@@ -566,7 +618,7 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
                     onClick={() => setViewMode("day")}
                     className={`px-2 py-2 lg:py-1.5 text-sm lg:text-xs rounded-md font-medium transition-all ${
                       viewMode === "day"
-                        ? "bg-blue-600 text-white shadow-sm"
+                        ? "bg-gray-700 text-white shadow-sm"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     }`}
                   >
@@ -606,7 +658,7 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="ALL">Todos</SelectItem>
-                      {STYLE_OPTIONS.map((opt) => (
+                      {styleOptions.map((opt) => (
                         <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                       ))}
                     </SelectContent>
@@ -720,7 +772,7 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
                   return (
                     <div 
                       key={row.key} 
-                      className="flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 rounded-md px-2.5 py-1.5 border border-gray-200 hover:border-blue-300 transition-colors h-full"
+                      className="flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 rounded-md px-2.5 py-1.5 border border-gray-200 hover:border-gray-400 transition-colors h-full"
                     >
                       <span className="text-[11px] font-medium text-gray-600">{row.style}</span>
                       <div className="flex items-center gap-1">

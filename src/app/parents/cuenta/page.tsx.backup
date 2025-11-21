@@ -1,0 +1,435 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { CreditCard, Calendar, Users, Download, AlertCircle, Check, X, Crown } from "lucide-react";
+import Link from "next/link";
+
+export default function CuentaPage() {
+  const [accountData, setAccountData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+
+  useEffect(() => {
+    const fetchAccountData = async () => {
+      try {
+        const response = await fetch('/api/parents/account');
+        if (!response.ok) throw new Error('Error al cargar datos');
+        const data = await response.json();
+        setAccountData(data);
+      } catch (error) {
+        console.error('Error fetching account data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAccountData();
+  }, []);
+
+  const handleCancelSubscription = async () => {
+    // TODO: Call API to cancel
+    // await fetch('/api/parents/cancel-subscription', { method: 'POST' })
+    alert('Funcionalidad de cancelación próximamente');
+    setShowCancelModal(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!accountData) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Error al cargar datos</h2>
+            <p className="text-gray-600">Por favor, intenta recargar la página</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const { subscription, payments } = accountData;
+  const daysUntilRenewal = subscription?.currentPeriodEnd 
+    ? Math.ceil((new Date(subscription.currentPeriodEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : 0;
+
+  const planColors = {
+    PARENT_BASIC: "bg-gray-100 text-gray-800",
+    PARENT_FAMILY: "bg-purple-100 text-purple-800",
+    PARENT_PREMIUM: "bg-blue-100 text-blue-800",
+    TRIAL: "bg-green-100 text-green-800"
+  };
+
+  const planBadgeColor = planColors[subscription?.plan as keyof typeof planColors] || "bg-gray-100 text-gray-800";
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Mi Cuenta</h1>
+          <p className="text-gray-600 mt-2">Gestiona tu suscripción y facturación</p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Plan Actual */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">Mi Plan Actual</h2>
+                <span className={`px-4 py-1.5 rounded-full text-sm font-semibold ${planBadgeColor}`}>
+                  {subscription.planName}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Precio */}
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-blue-50 rounded-lg">
+                    <Crown className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Precio Mensual</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {subscription?.price ? `S/. ${subscription.price}` : 'S/. 0 (Trial)'}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {subscription?.price ? 'Renovación automática' : 'Periodo de prueba gratuito'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Próximo Cobro */}
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-green-50 rounded-lg">
+                    <Calendar className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">
+                      {subscription?.currentPeriodEnd ? 'Próximo Cobro' : 'Fin de Trial'}
+                    </p>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {subscription?.currentPeriodEnd 
+                        ? new Date(subscription.currentPeriodEnd).toLocaleDateString('es-PE', { 
+                            day: 'numeric', 
+                            month: 'long', 
+                            year: 'numeric' 
+                          })
+                        : 'No disponible'
+                      }
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {daysUntilRenewal > 0 ? `En ${daysUntilRenewal} días` : 'Selecciona un plan'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Método de Pago */}
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-purple-50 rounded-lg">
+                    <CreditCard className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Método de Pago</p>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {subscription?.cardLastFour 
+                        ? `${subscription.cardBrand || 'Tarjeta'} •••• ${subscription.cardLastFour}`
+                        : 'Sin método de pago'
+                      }
+                    </p>
+                    {subscription?.cardLastFour ? (
+                      <button className="text-xs text-blue-600 hover:text-blue-700 mt-1">
+                        Actualizar tarjeta
+                      </button>
+                    ) : (
+                      <Link href="/subscription" className="text-xs text-blue-600 hover:text-blue-700 mt-1">
+                        Agregar método de pago
+                      </Link>
+                    )}
+                  </div>
+                </div>
+
+                {/* Nadadores */}
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-orange-50 rounded-lg">
+                    <Users className="h-6 w-6 text-orange-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-600">Nadadores</p>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {subscription?.childrenCount || 0} de {subscription?.maxChildren || 3}
+                    </p>
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                      <div 
+                        className="bg-orange-600 h-2 rounded-full transition-all"
+                        style={{ width: `${((subscription?.childrenCount || 0) / (subscription?.maxChildren || 3)) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="mt-6 pt-6 border-t border-gray-200 flex flex-wrap gap-3">
+                <Link
+                  href="/subscription"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                >
+                  {subscription?.price ? 'Cambiar Plan' : 'Seleccionar Plan'}
+                </Link>
+                {subscription?.cardLastFour && (
+                  <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+                    Actualizar Tarjeta
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Historial de Pagos */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Historial de Pagos</h2>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Fecha
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Plan
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Monto
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Estado
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Factura
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {payments && payments.length > 0 ? (
+                      payments.map((payment: any) => (
+                        <tr key={payment.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {new Date(payment.date).toLocaleDateString('es-PE', { 
+                              day: '2-digit', 
+                              month: 'short', 
+                              year: 'numeric' 
+                            })}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {payment.plan}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                            S/. {payment.amount.toFixed(2)}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              <Check className="h-3 w-3" />
+                              Pagado
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm">
+                            <button className="text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                              <Download className="h-4 w-4" />
+                              Descargar
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-12 text-center">
+                          <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                          <p className="text-gray-500">No hay pagos registrados</p>
+                          <p className="text-sm text-gray-400 mt-1">Est\u00e1s en periodo de prueba gratuito</p>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {false && (
+                <div className="text-center py-12">
+                  <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">No hay pagos registrados</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Límites del Plan */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Límites del Plan</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-gray-600">Nadadores</span>
+                    <span className="font-medium text-gray-900">
+                      {subscription.childrenCount}/{subscription.maxChildren}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full transition-all"
+                      style={{ width: `${(subscription.childrenCount / subscription.maxChildren) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                {subscription.childrenCount >= subscription.maxChildren && (
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                    <div className="flex gap-3">
+                      <AlertCircle className="h-5 w-5 text-orange-600 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-orange-900 mb-1">
+                          Límite alcanzado
+                        </p>
+                        <p className="text-xs text-orange-700 mb-2">
+                          Has usado todos los nadadores de tu plan.
+                        </p>
+                        <Link
+                          href="/subscription"
+                          className="text-xs text-orange-600 hover:text-orange-700 font-medium underline"
+                        >
+                          Upgrade a Premium
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <Link
+                  href="/parents/children"
+                  className={`block w-full py-2 px-4 rounded-lg font-medium text-center transition-colors ${
+                    (subscription?.childrenCount || 0) >= (subscription?.maxChildren || 3)
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                  onClick={(e) => {
+                    if ((subscription?.childrenCount || 0) >= (subscription?.maxChildren || 3)) {
+                      e.preventDefault();
+                    }
+                  }}
+                >
+                  + Agregar Nadador
+                </Link>
+              </div>
+            </div>
+
+            {/* Datos de Facturación */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Datos de Facturación</h3>
+              
+              <div className="space-y-3 text-sm">
+                <div>
+                  <p className="text-gray-600 mb-1">RUC/DNI</p>
+                  <p className="font-medium text-gray-900">12345678</p>
+                </div>
+                <div>
+                  <p className="text-gray-600 mb-1">Razón Social</p>
+                  <p className="font-medium text-gray-900">Juan Pérez López</p>
+                </div>
+                <div>
+                  <p className="text-gray-600 mb-1">Dirección</p>
+                  <p className="font-medium text-gray-900">Av. Principal 123, Lima</p>
+                </div>
+                
+                <button className="text-blue-600 hover:text-blue-700 text-sm font-medium mt-2">
+                  Actualizar datos
+                </button>
+              </div>
+            </div>
+
+            {/* Zona de Peligro - Solo si tiene suscripción activa */}
+            {subscription?.price && subscription?.status === 'ACTIVE' && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-red-900 mb-2">Zona de Peligro</h3>
+                <p className="text-sm text-red-700 mb-4">
+                  Al cancelar perderás acceso inmediato a todas las funcionalidades.
+                </p>
+                <button
+                  onClick={() => setShowCancelModal(true)}
+                  className="w-full py-2 px-4 border-2 border-red-600 text-red-600 rounded-lg font-medium hover:bg-red-600 hover:text-white transition-colors"
+                >
+                  Cancelar Suscripción
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Modal de Cancelación */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-red-100 rounded-full">
+                <AlertCircle className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">¿Cancelar Suscripción?</h3>
+            </div>
+
+            <p className="text-gray-600 mb-6">
+              {subscription?.currentPeriodEnd 
+                ? `Tu suscripción se cancelará al final del periodo actual (${new Date(subscription.currentPeriodEnd).toLocaleDateString('es-PE')}). Después de esa fecha perderás acceso a:`
+                : 'Perderás acceso a:'
+              }
+            </p>
+
+            <ul className="space-y-2 mb-6">
+              <li className="flex items-center gap-2 text-sm text-gray-700">
+                <X className="h-4 w-4 text-red-500" />
+                Registro de tiempos
+              </li>
+              <li className="flex items-center gap-2 text-sm text-gray-700">
+                <X className="h-4 w-4 text-red-500" />
+                Historial completo
+              </li>
+              <li className="flex items-center gap-2 text-sm text-gray-700">
+                <X className="h-4 w-4 text-red-500" />
+                Estadísticas avanzadas
+              </li>
+            </ul>
+
+            <p className="text-sm text-gray-500 mb-6">
+              Tus datos se guardarán por 30 días por si decides regresar.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowCancelModal(false)}
+                className="flex-1 py-2 px-4 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50"
+              >
+                Mantener Plan
+              </button>
+              <button
+                onClick={handleCancelSubscription}
+                className="flex-1 py-2 px-4 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700"
+              >
+                Confirmar Cancelación
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

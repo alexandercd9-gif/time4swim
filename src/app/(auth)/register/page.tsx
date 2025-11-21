@@ -167,7 +167,7 @@ export default function RegisterPage() {
             />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">Crear Cuenta</h2>
-          <p className="text-gray-600 text-center mb-6">Regístrate y obtén 7 días gratis</p>
+          <p className="text-gray-600 text-center mb-6">Regístrate y obtén 30 días gratis</p>
           
           <form className="space-y-4" onSubmit={handleSubmit}>
             {/* Selección de Rol */}

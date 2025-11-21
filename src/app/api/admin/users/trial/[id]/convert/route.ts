@@ -34,6 +34,32 @@ export async function POST(
       }
     });
 
+    // Verificar si ya tiene suscripción
+    const existingSubscription = await prisma.subscription.findUnique({
+      where: { userId: resolvedParams.id }
+    });
+
+    // Si no tiene suscripción, crear una básica
+    if (!existingSubscription) {
+      await prisma.subscription.create({
+        data: {
+          userId: resolvedParams.id,
+          plan: 'PARENT_BASIC',
+          status: 'ACTIVE',
+          currentPrice: 0,
+          currency: 'PEN',
+          startDate: new Date(),
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // +1 año
+          maxChildren: 5,
+          maxTeachers: 0,
+          mediaGalleryAddon: false,
+          mediaGalleryIsFree: false,
+          addonsAmount: 0
+        }
+      });
+    }
+
     return NextResponse.json({
       message: 'Usuario convertido a cuenta permanente exitosamente',
       user: {

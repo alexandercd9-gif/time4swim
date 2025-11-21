@@ -1,6 +1,3 @@
-// Time4Swim - Swimming Times Tracking Application
-// Prisma schema for managing swimming records and training sessions
-
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-3.0.x"]
@@ -11,8 +8,376 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Swimming styles enum
-enum SwimStyle {
+model child {
+  id                 String               @id
+  name               String
+  birthDate          DateTime
+  gender             child_gender
+  coach              String?
+  photo              String?              @db.LongText
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime
+  clubId             String?
+  fdpnAffiliateCode  String?
+  fdpnData           String?              @db.LongText
+  fdpnLastSync       DateTime?
+  firstName          String?
+  lastName           String?
+  club               club?                @relation(fields: [clubId], references: [id], map: "Child_clubId_fkey")
+  eventparticipation eventparticipation[]
+  heatlane           heatlane[]
+  mediaswimmer       mediaswimmer[]
+  record             record[]
+  training           training[]
+  userchild          userchild[]
+
+  @@index([clubId], map: "Child_clubId_fkey")
+  @@index([fdpnAffiliateCode], map: "Child_fdpnAffiliateCode_idx")
+}
+
+model club {
+  id           String        @id
+  name         String        @unique(map: "Club_name_key")
+  address      String?
+  phone        String?
+  email        String?
+  website      String?
+  description  String?       @db.Text
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime
+  child        child[]
+  event        event[]
+  media        media[]
+  subscription subscription?
+  userclub     userclub[]
+}
+
+model event {
+  id                    String               @id
+  title                 String
+  location              String?
+  description           String?              @db.Text
+  eligibleCategories    String?              @db.Text
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime
+  clubId                String
+  endDate               DateTime
+  startDate             DateTime
+  distance              Int?
+  isInternalCompetition Boolean              @default(false)
+  lanes                 Int?
+  style                 event_style?
+  categoryDistances     String?              @db.Text
+  isCompleted           Boolean              @default(false)
+  club                  club                 @relation(fields: [clubId], references: [id], onDelete: Cascade, map: "Event_clubId_fkey")
+  eventparticipation    eventparticipation[]
+  heatlane              heatlane[]
+  media                 media[]
+
+  @@index([clubId], map: "Event_clubId_idx")
+  @@index([isInternalCompetition], map: "Event_isInternalCompetition_idx")
+  @@index([startDate], map: "Event_startDate_idx")
+}
+
+model eventparticipation {
+  id          String    @id
+  status      String    @default("INVITED")
+  respondedAt DateTime?
+  notes       String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+  eventId     String
+  childId     String
+  child       child     @relation(fields: [childId], references: [id], onDelete: Cascade, map: "EventParticipation_childId_fkey")
+  event       event     @relation(fields: [eventId], references: [id], onDelete: Cascade, map: "EventParticipation_eventId_fkey")
+
+  @@unique([eventId, childId], map: "EventParticipation_eventId_childId_key")
+  @@index([childId], map: "EventParticipation_childId_idx")
+  @@index([eventId], map: "EventParticipation_eventId_idx")
+  @@index([status], map: "EventParticipation_status_idx")
+}
+
+model heatlane {
+  id          String    @id
+  eventId     String
+  lane        Int
+  heatNumber  Int       @default(1)
+  swimmerId   String?
+  coachId     String
+  startTime   DateTime?
+  endTime     DateTime?
+  finalTime   Float?
+  isValidated Boolean   @default(false)
+  notes       String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+  user        user      @relation(fields: [coachId], references: [id], onDelete: Cascade, map: "HeatLane_coachId_fkey")
+  event       event     @relation(fields: [eventId], references: [id], onDelete: Cascade, map: "HeatLane_eventId_fkey")
+  child       child?    @relation(fields: [swimmerId], references: [id], onDelete: Cascade, map: "HeatLane_swimmerId_fkey")
+
+  @@index([coachId], map: "HeatLane_coachId_idx")
+  @@index([eventId], map: "HeatLane_eventId_idx")
+  @@index([swimmerId], map: "HeatLane_swimmerId_idx")
+}
+
+model media {
+  id                 String         @id
+  type               media_type
+  cloudinaryPublicId String
+  cloudinaryUrl      String
+  thumbnailUrl       String?
+  title              String?
+  description        String?        @db.Text
+  duration           Int?
+  width              Int?
+  height             Int?
+  fileSize           Int?
+  clubId             String
+  eventId            String?
+  uploadedBy         String
+  capturedAt         DateTime       @default(now())
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime
+  club               club           @relation(fields: [clubId], references: [id], onDelete: Cascade, map: "Media_clubId_fkey")
+  event              event?         @relation(fields: [eventId], references: [id], map: "Media_eventId_fkey")
+  user               user           @relation(fields: [uploadedBy], references: [id], map: "Media_uploadedBy_fkey")
+  mediamoment        mediamoment[]
+  mediaswimmer       mediaswimmer[]
+
+  @@index([capturedAt], map: "Media_capturedAt_idx")
+  @@index([clubId], map: "Media_clubId_idx")
+  @@index([eventId], map: "Media_eventId_idx")
+  @@index([uploadedBy], map: "Media_uploadedBy_idx")
+}
+
+model mediamoment {
+  id      String @id
+  mediaId String
+  time    Int
+  label   String
+  media   media  @relation(fields: [mediaId], references: [id], onDelete: Cascade, map: "MediaMoment_mediaId_fkey")
+
+  @@index([mediaId], map: "MediaMoment_mediaId_idx")
+}
+
+model mediaswimmer {
+  id      String @id
+  mediaId String
+  childId String
+  lane    Int?
+  child   child  @relation(fields: [childId], references: [id], onDelete: Cascade, map: "MediaSwimmer_childId_fkey")
+  media   media  @relation(fields: [mediaId], references: [id], onDelete: Cascade, map: "MediaSwimmer_mediaId_fkey")
+
+  @@unique([mediaId, childId], map: "MediaSwimmer_mediaId_childId_key")
+  @@index([childId], map: "MediaSwimmer_childId_idx")
+}
+
+model payment {
+  id             String                @id
+  subscriptionId String
+  culqiChargeId  String                @unique(map: "Payment_culqiChargeId_key")
+  culqiOrderId   String?
+  amount         Decimal               @db.Decimal(10, 2)
+  currency       String                @default("PEN")
+  paymentMethod  payment_paymentMethod
+  cardBrand      String?
+  cardLastFour   String?
+  status         payment_status        @default(PENDING)
+  paidAt         DateTime?
+  failedReason   String?
+  description    String
+  receiptUrl     String?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime
+  subscription   subscription          @relation(fields: [subscriptionId], references: [id], onDelete: Cascade, map: "Payment_subscriptionId_fkey")
+
+  @@index([paidAt], map: "Payment_paidAt_idx")
+  @@index([status], map: "Payment_status_idx")
+  @@index([subscriptionId], map: "Payment_subscriptionId_idx")
+}
+
+model pooltypeconfig {
+  id          String                  @id
+  poolSize    pooltypeconfig_poolSize @unique(map: "PoolTypeConfig_poolSize_key")
+  nameEs      String
+  nameEn      String
+  description String?
+  isActive    Boolean                 @default(true)
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime
+}
+
+model promotion {
+  id             String                 @id
+  code           String                 @unique(map: "Promotion_code_key")
+  name           String
+  description    String?                @db.Text
+  discountType   promotion_discountType
+  discountValue  Decimal                @db.Decimal(10, 2)
+  durationMonths Int                    @default(3)
+  startDate      DateTime
+  endDate        DateTime
+  isActive       Boolean                @default(true)
+  maxUses        Int?
+  currentUses    Int                    @default(0)
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime
+  subscription   subscription[]
+}
+
+model record {
+  id             String          @id
+  style          record_style
+  poolSize       record_poolSize
+  competition    String
+  date           DateTime
+  distance       Int
+  time           Float
+  position       Int?
+  notes          String?
+  isPersonalBest Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime
+  childId        String
+  medal          record_medal?
+  child          child           @relation(fields: [childId], references: [id], onDelete: Cascade, map: "Record_childId_fkey")
+
+  @@index([childId], map: "Record_childId_fkey")
+}
+
+model subscription {
+  id                  String              @id
+  userId              String?             @unique(map: "Subscription_userId_key")
+  clubId              String?             @unique(map: "Subscription_clubId_key")
+  plan                subscription_plan
+  status              subscription_status @default(ACTIVE)
+  currentPrice        Decimal             @db.Decimal(10, 2)
+  currency            String              @default("PEN")
+  startDate           DateTime            @default(now())
+  currentPeriodStart  DateTime            @default(now())
+  currentPeriodEnd    DateTime
+  canceledAt          DateTime?
+  culqiCustomerId     String?
+  culqiSubscriptionId String?             @unique(map: "Subscription_culqiSubscriptionId_key")
+  culqiCardId         String?
+  maxChildren         Int                 @default(1)
+  maxTeachers         Int?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime
+  mediaGalleryAddon   Boolean             @default(false)
+  mediaGalleryIsFree  Boolean             @default(false)
+  addonsAmount        Decimal             @default(0.00) @db.Decimal(10, 2)
+  promotionId         String?
+  promotionEndsAt     DateTime?
+  payment             payment[]
+  club                club?               @relation(fields: [clubId], references: [id], onDelete: Cascade, map: "Subscription_clubId_fkey")
+  promotion           promotion?          @relation(fields: [promotionId], references: [id], map: "Subscription_promotionId_fkey")
+  user                user?               @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Subscription_userId_fkey")
+
+  @@index([culqiCustomerId], map: "Subscription_culqiCustomerId_idx")
+  @@index([promotionId], map: "Subscription_promotionId_idx")
+  @@index([status], map: "Subscription_status_idx")
+}
+
+model swimstyleconfig {
+  id          String                @id
+  style       swimstyleconfig_style @unique(map: "SwimStyleConfig_style_key")
+  nameEs      String
+  nameEn      String
+  description String?
+  isActive    Boolean               @default(true)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime
+}
+
+model systemconfig {
+  id        String   @id
+  key       String   @unique(map: "SystemConfig_key_key")
+  value     String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+}
+
+model training {
+  id        String            @id
+  style     training_style
+  distance  Int
+  time      Float
+  date      DateTime          @default(now())
+  notes     String?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime
+  childId   String
+  laps      Json?
+  poolType  training_poolType @default(SHORT_25M)
+  child     child             @relation(fields: [childId], references: [id], onDelete: Cascade, map: "Training_childId_fkey")
+
+  @@index([childId], map: "Training_childId_fkey")
+}
+
+model user {
+  id              String             @id
+  name            String
+  email           String             @unique(map: "User_email_key")
+  password        String
+  role            user_role          @default(PARENT)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime
+  accountStatus   user_accountStatus @default(TRIAL)
+  isTrialAccount  Boolean            @default(true)
+  parentType      user_parentType?
+  trialExpiresAt  DateTime?
+  trialExtendedAt DateTime?
+  trialExtendedBy String?
+  profilePhoto    String?            @db.LongText
+  heatlane        heatlane[]
+  media           media[]
+  subscription    subscription?
+  userchild       userchild[]
+  userclub        userclub[]
+}
+
+model userchild {
+  id        String   @id
+  userId    String
+  childId   String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  child     child    @relation(fields: [childId], references: [id], onDelete: Cascade, map: "UserChild_childId_fkey")
+  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "UserChild_userId_fkey")
+
+  @@unique([userId, childId], map: "UserChild_userId_childId_key")
+  @@index([childId], map: "UserChild_childId_fkey")
+}
+
+model userclub {
+  id        String   @id
+  userId    String
+  clubId    String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  club      club     @relation(fields: [clubId], references: [id], onDelete: Cascade, map: "UserClub_clubId_fkey")
+  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "UserClub_userId_fkey")
+
+  @@unique([userId, clubId], map: "UserClub_userId_clubId_key")
+  @@index([clubId], map: "UserClub_clubId_fkey")
+}
+
+enum media_type {
+  PHOTO
+  VIDEO
+}
+
+enum pooltypeconfig_poolSize {
+  SHORT_25M
+  LONG_50M
+  OPEN_WATER
+}
+
+enum record_style {
   FREESTYLE
   BACKSTROKE
   BREASTSTROKE
@@ -22,42 +387,89 @@ enum SwimStyle {
   OPEN_WATER
 }
 
-// Swimming styles configuration table
-model SwimStyleConfig {
-  id              String   @id @default(cuid())
-  style           SwimStyle @unique
-  nameEs          String   // Nombre en español
-  nameEn          String   // Nombre en inglés
-  description     String?  // Descripción opcional
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+enum swimstyleconfig_style {
+  FREESTYLE
+  BACKSTROKE
+  BREASTSTROKE
+  BUTTERFLY
+  INDIVIDUAL_MEDLEY
+  MEDLEY_RELAY
+  OPEN_WATER
 }
 
-// Gender enum
-enum Gender {
+enum training_style {
+  FREESTYLE
+  BACKSTROKE
+  BREASTSTROKE
+  BUTTERFLY
+  INDIVIDUAL_MEDLEY
+  MEDLEY_RELAY
+  OPEN_WATER
+}
+
+enum record_poolSize {
+  SHORT_25M
+  LONG_50M
+  OPEN_WATER
+}
+
+enum child_gender {
   MALE
   FEMALE
 }
 
-// User roles enum
-enum UserRole {
+enum subscription_plan {
+  TRIAL
+  PARENT_BASIC
+  PARENT_FAMILY
+  PARENT_PREMIUM
+  CLUB_FREE
+  CLUB_PRO_TRIAL
+  CLUB_PRO
+}
+
+enum promotion_discountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum subscription_status {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+  TRIALING
+}
+
+enum user_role {
   ADMIN
   PARENT
   TEACHER
   CLUB
 }
 
-// Account status enum
-enum AccountStatus {
+enum payment_paymentMethod {
+  CARD
+  YAPE
+  PLIN
+}
+
+enum user_accountStatus {
   TRIAL
   ACTIVE
   EXPIRED
   SUSPENDED
 }
 
-// Parentesco enum
-enum ParentType {
+enum payment_status {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  CANCELED
+}
+
+enum user_parentType {
   PADRE
   MADRE
   TUTOR
@@ -66,272 +478,24 @@ enum ParentType {
   OTRO
 }
 
-// Pool size enum
-enum PoolSize {
+enum training_poolType {
   SHORT_25M
   LONG_50M
   OPEN_WATER
 }
 
-// Medal types enum
-enum MedalType {
+enum event_style {
+  FREESTYLE
+  BACKSTROKE
+  BREASTSTROKE
+  BUTTERFLY
+  INDIVIDUAL_MEDLEY
+  MEDLEY_RELAY
+  OPEN_WATER
+}
+
+enum record_medal {
   GOLD
   SILVER
   BRONZE
 }
-
-// Pool types configuration table
-model PoolTypeConfig {
-  id              String   @id @default(cuid())
-  poolSize        PoolSize @unique
-  nameEs          String   // Nombre en español
-  nameEn          String   // Nombre en inglés
-  description     String?  // Descripción opcional
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-}
-
-// Swimming Clubs
-model Club {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  address     String?
-  phone       String?
-  email       String?
-  website     String?
-  description String?  @db.Text
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Relations
-  children    Child[]
-  teachers    UserClub[]
-  events      Event[]
-}
-
-// User-Club relationship (for teachers)
-model UserClub {
-  id        String   @id @default(cuid())
-  userId    String
-  clubId    String
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Relations
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
-  
-  @@unique([userId, clubId])
-}
-
-// User-Child relationship (for parents)
-model UserChild {
-  id        String   @id @default(cuid())
-  userId    String
-  childId   String
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Relations
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
-  
-  @@unique([userId, childId])
-}
-
-// Users (Parents/Coaches)
-model User {
-  id               String        @id @default(cuid())
-  name             String
-  email            String        @unique
-  password         String
-  role             UserRole      @default(PARENT)
-  parentType       ParentType?   // Solo para usuarios con rol PARENT
-  profilePhoto     String?       @db.LongText // Foto de perfil en base64 (para entrenadores)
-  
-  // Trial system fields
-  accountStatus    AccountStatus @default(TRIAL)
-  isTrialAccount   Boolean       @default(true)
-  trialExpiresAt   DateTime?     // Fecha de expiración del trial
-  trialExtendedBy  String?       // ID del admin que extendió el trial
-  trialExtendedAt  DateTime?     // Fecha cuando se extendió
-  
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  
-  // Relations
-  clubs            UserClub[]
-  children         UserChild[]
-  coachingLanes    HeatLane[] // Carriles que el profesor cronometra
-}
-
-// Children/Swimmers
-model Child {
-  id        String   @id @default(cuid())
-  name      String
-  birthDate DateTime
-  gender    Gender
-  coach     String?
-  photo     String?  @db.LongText
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // FDPN Integration fields
-  firstName         String?  // Primer nombre para búsqueda en FDPN
-  lastName          String?  // Apellidos para búsqueda en FDPN
-  fdpnAffiliateCode String?  // Código de afiliado FDPN (ej: "79272554")
-  fdpnData          String?  @db.LongText // JSON con datos de FDPN
-  fdpnLastSync      DateTime? // Última sincronización con FDPN
-  
-  // Category system
-  // La categoría se calcula automáticamente según año de nacimiento
-  // No se almacena, se deriva en tiempo de ejecución
-  
-  // Relations
-  clubId    String?
-  club      Club?     @relation(fields: [clubId], references: [id], onDelete: SetNull)
-  parents   UserChild[]
-  records   Record[]
-  trainings Training[]
-  eventParticipations EventParticipation[]
-  heatLanes HeatLane[] // Participaciones en carriles de competencias internas
-
-  @@index([fdpnAffiliateCode])
-}
-
-// Competition Records
-model Record {
-  id             String    @id @default(cuid())
-  style          SwimStyle
-  poolSize       PoolSize
-  competition    String
-  date           DateTime
-  distance       Int       // distance in meters
-  time           Float     // time in seconds
-  position       Int?      // finishing position
-  medal          MedalType? // medal obtained (if any)
-  notes          String?
-  isPersonalBest Boolean   @default(false)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  
-  // Relations
-  childId        String
-  child          Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
-}
-
-// Training Sessions
-model Training {
-  id        String    @id @default(cuid())
-  style     SwimStyle
-  distance  Int       // distance in meters
-  poolType  PoolSize  @default(SHORT_25M) // Tipo de piscina
-  time      Float     // time in seconds
-  laps      Json?     // array of lap times in milliseconds
-  date      DateTime  @default(now())
-  notes     String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  
-  // Relations
-  childId   String
-  child     Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
-}
-
-// Events (Competencias/Actividades del Club)
-model Event {
-  id          String   @id @default(cuid())
-  title       String
-  startDate   DateTime // Fecha y hora de inicio del evento
-  endDate     DateTime // Fecha y hora de fin del evento
-  location    String?
-  description String?  @db.Text
-  
-  // Categorías elegibles (JSON array de códigos de categoría)
-  // Ej: ["minima_1", "minima_2", "infantil_a1"]
-  // Si es null o vacío, el evento es para todas las categorías
-  eligibleCategories String? @db.Text
-  
-  // Competencias Internas
-  isInternalCompetition Boolean @default(false) // true si es competencia interna del club
-  lanes                 Int?    // Número de carriles (1-5) para competencias internas
-  style                 SwimStyle? // Estilo de nado para competencias internas
-  distance              Int?       // Distancia general en metros (50, 100, 200, etc)
-  categoryDistances     String? @db.Text // JSON object con distancias específicas por categoría {"pre_minima": "50", "minima_1": "100"}
-  isCompleted           Boolean @default(false) // true cuando el evento ha sido finalizado
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Relations
-  clubId      String
-  club        Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
-  participations EventParticipation[]
-  heatLanes   HeatLane[] // Carriles para cronometraje
-  
-  @@index([clubId])
-  @@index([startDate])
-  @@index([isInternalCompetition])
-}
-
-// Participación de nadadores en eventos
-model EventParticipation {
-  id          String   @id @default(cuid())
-  status      String   @default("INVITED") // INVITED, CONFIRMED, DECLINED, MAYBE
-  respondedAt DateTime?
-  notes       String?  @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Relations
-  eventId     String
-  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  childId     String
-  child       Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
-  
-  @@unique([eventId, childId])
-  @@index([eventId])
-  @@index([childId])
-  @@index([status])
-}
-
-// Carriles para cronometraje en competencias internas
-model HeatLane {
-  id          String    @id @default(cuid())
-  eventId     String
-  lane        Int       // Número de carril (1-5)
-  heatNumber  Int       @default(1) // Número de serie (para múltiples tandas)
-  
-  // Nadador asignado (opcional hasta que se asigne en el control)
-  swimmerId   String?
-  swimmer     Child?    @relation(fields: [swimmerId], references: [id], onDelete: Cascade)
-  
-  // Profesor responsable del carril
-  coachId     String
-  coach       User      @relation(fields: [coachId], references: [id], onDelete: Cascade)
-  
-  // Cronometraje
-  startTime   DateTime? // Hora exacta de inicio (cuando admin presiona START)
-  endTime     DateTime? // Hora exacta de llegada (cuando profesor presiona STOP)
-  finalTime   Float?    // Tiempo final en segundos (calculado: endTime - startTime)
-  
-  // Validación
-  isValidated Boolean   @default(false) // true si el tiempo fue revisado/aprobado
-  notes       String?   @db.Text // Notas adicionales (ej: descalificado, falsa salida)
-  
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
-  // Relations
-  event       Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  
-  @@unique([eventId, lane, heatNumber]) // Un carril por serie
-  @@index([eventId])
-  @@index([swimmerId])
-  @@index([coachId])
-}
-

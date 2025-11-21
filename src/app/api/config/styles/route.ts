@@ -5,7 +5,12 @@ import { prisma } from "@/lib/prisma";
 export async function GET(request: NextRequest) {
   try {
     const styles = await prisma.swimStyleConfig.findMany({
-      where: { isActive: true },
+      where: { 
+        isActive: true,
+        style: {
+          not: 'MEDLEY_RELAY' // Excluir el estilo de relevos (no individual)
+        }
+      },
       select: {
         style: true,
         nameEs: true,

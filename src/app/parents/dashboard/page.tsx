@@ -254,20 +254,23 @@ export default function ParentsDashboard() {
                 Resumen del Mes
               </h2>
           
-              <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
-                <div className="flex flex-col justify-center items-center p-3 bg-blue-50 rounded-lg border border-blue-100 h-full">
-                  <span className="text-xs font-semibold text-blue-700 mb-1 text-center">Entrenamientos este mes</span>
+              {/* Primera fila: Stats compactos */}
+              <div className="grid grid-cols-2 gap-3 shrink-0">
+                <div className="flex flex-col justify-center items-center p-2 bg-blue-50 rounded-lg border border-blue-100">
+                  <span className="text-xs font-semibold text-blue-700 mb-0.5 text-center">Entrenamientos este mes</span>
                   <span className="text-2xl font-bold text-blue-600">{stats?.trainings.thisMonth || 0}</span>
                 </div>
                 
-                <div className="flex flex-col justify-center items-center p-3 bg-green-50 rounded-lg border border-green-100 h-full">
-                  <span className="text-xs font-semibold text-green-700 mb-1 text-center">Competencias este año</span>
+                <div className="flex flex-col justify-center items-center p-2 bg-green-50 rounded-lg border border-green-100">
+                  <span className="text-xs font-semibold text-green-700 mb-0.5 text-center">Competencias este año</span>
                   <span className="text-2xl font-bold text-green-600">{stats?.competitions.thisYear || 0}</span>
                 </div>
               </div>
 
-              {/* Próximo evento (en lugar del banner del gráfico) */}
-              <NextEventCompact />
+              {/* Segunda fila: Eventos - ocupa más espacio */}
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <NextEventCompact />
+              </div>
             </div>
           </div>
         </div>

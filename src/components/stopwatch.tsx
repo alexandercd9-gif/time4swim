@@ -18,14 +18,11 @@ import { toast } from "react-hot-toast";
 // Tipos para el cronómetro
 type TimerState = "stopped" | "running" | "paused";
 
-// Estilos de natación
-const swimStyles = [
-  { value: "FREESTYLE", label: "Libre", icon: "/estilos/libre.png" },
-  { value: "BACKSTROKE", label: "Espalda", icon: "/estilos/espalda.png" },
-  { value: "BREASTSTROKE", label: "Pecho", icon: "/estilos/pecho.png" },
-  { value: "BUTTERFLY", label: "Mariposa", icon: "/estilos/mariposa.png" },
-  { value: "MEDLEY_RELAY", label: "4 Estilos", icon: "/estilos/4estilos.png" }
-];
+interface SwimStyle {
+  value: string;
+  label: string;
+  icon: string;
+}
 
 // Distancias comunes
 const distances = [25, 50, 100, 200, 400, 800, 1500];
@@ -47,6 +44,7 @@ export function Stopwatch({ swimmers = [] }: { swimmers?: Array<{ id: string, na
   const [hintsOpen, setHintsOpen] = useState(false);
   const [poolType, setPoolType] = useState("SHORT_25M");
   const [poolTypes, setPoolTypes] = useState<Array<{ poolSize: string; nameEs: string; nameEn: string }>>([]);
+  const [swimStyles, setSwimStyles] = useState<SwimStyle[]>([]);
   
   // Mejor tiempo del nadador en el estilo/distancia seleccionados
   const [bestTime, setBestTime] = useState<number | null>(null);
@@ -84,7 +82,7 @@ export function Stopwatch({ swimmers = [] }: { swimmers?: Array<{ id: string, na
     return () => window.removeEventListener('keydown', onKey);
   }, [state, time, startTime]);
 
-  // Cargar tipos de piscina desde la API
+  // Cargar tipos de piscina y estilos desde la API
   useEffect(() => {
     const fetchPoolTypes = async () => {
       try {
@@ -97,7 +95,31 @@ export function Stopwatch({ swimmers = [] }: { swimmers?: Array<{ id: string, na
         console.error('Error fetching pool types:', err);
       }
     };
+    
+    const fetchSwimStyles = async () => {
+      try {
+        const res = await fetch('/api/config/styles');
+        const data = await res.json();
+        const stylesWithIcons = data.map((s: any) => ({
+          value: s.style,
+          label: s.nameEs,
+          icon: `/estilos/${
+            s.style === 'FREESTYLE' ? 'libre.png' :
+            s.style === 'BACKSTROKE' ? 'espalda.png' :
+            s.style === 'BREASTSTROKE' ? 'pecho.png' :
+            s.style === 'BUTTERFLY' ? 'mariposa.png' :
+            s.style === 'INDIVIDUAL_MEDLEY' ? 'combinado.png' :
+            'libre.png'
+          }`
+        }));
+        setSwimStyles(stylesWithIcons);
+      } catch (err) {
+        console.error('Error fetching swim styles:', err);
+      }
+    };
+    
     fetchPoolTypes();
+    fetchSwimStyles();
   }, []);
 
   // Auto-seleccionar nadador desde selección global almacenada

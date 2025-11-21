@@ -5,7 +5,11 @@ import BestTimesByStyle from "@/components/BestTimesByStyle";
 import TrainingHistory from "@/components/TrainingHistory";
 import { TrendingUp, Calendar } from "lucide-react";
 
-export default function BestHistorySwitcher() {
+interface BestHistorySwitcherProps {
+  defaultSource?: string;
+}
+
+export default function BestHistorySwitcher({ defaultSource = "all" }: BestHistorySwitcherProps) {
   const [view, setView] = useState<'best' | 'history'>('best');
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -79,7 +83,7 @@ export default function BestHistorySwitcher() {
             isAnimating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
           }`}
         >
-          {view === 'best' ? <BestTimesByStyle showExpandedView={true} /> : <TrainingHistory />}
+          {view === 'best' ? <BestTimesByStyle showExpandedView={true} defaultSource={defaultSource} hideSourceFilter={defaultSource !== "all"} /> : <TrainingHistory />}
         </div>
       </div>
     </div>

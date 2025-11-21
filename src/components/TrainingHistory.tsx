@@ -10,8 +10,7 @@ const STYLES: Record<string, { label: string; icon: string }> = {
   BACKSTROKE: { label: "Espalda", icon: "/estilos/espalda.png" },
   BREASTSTROKE: { label: "Pecho", icon: "/estilos/pecho.png" },
   BUTTERFLY: { label: "Mariposa", icon: "/estilos/mariposa.png" },
-  INDIVIDUAL_MEDLEY: { label: "Combinado", icon: "/estilos/4estilos.png" },
-  MEDLEY_RELAY: { label: "Combinado 4", icon: "/estilos/4estilos.png" },
+  INDIVIDUAL_MEDLEY: { label: "Combinado", icon: "/estilos/combinado.png" },
 };
 
 function fmt(secs: number) {

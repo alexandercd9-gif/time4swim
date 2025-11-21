@@ -45,9 +45,9 @@ export async function POST(request: NextRequest) {
     // Hash de la contraseña
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Calcular fecha de expiración del trial (7 días desde ahora)
+    // Calcular fecha de expiración del trial (30 días desde ahora)
     const trialExpiresAt = new Date();
-    trialExpiresAt.setDate(trialExpiresAt.getDate() + 7);
+    trialExpiresAt.setDate(trialExpiresAt.getDate() + 30);
 
     // Crear usuario con cuenta trial
     const user = await prisma.user.create({

@@ -8,6 +8,7 @@ export interface User {
   name: string;
   email: string;
   role: UserRole | string; // allow API to send roles like 'PARENT'
+  profilePhoto?: string | null;
   // Trial fields (opcional)
   isTrialAccount?: boolean;
   accountStatus?: string;

@@ -337,7 +337,7 @@ export default function SwimmerForm({ isOpen, onClose, onSuccess, swimmer }: Swi
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[700px] max-h-[95vh] overflow-hidden flex flex-col p-0">
+      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-hidden flex flex-col p-0">
         {/* Header con gradiente */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-5">
           <DialogHeader className="space-y-2">
@@ -361,212 +361,219 @@ export default function SwimmerForm({ isOpen, onClose, onSuccess, swimmer }: Swi
         </div>
 
         {/* Contenido scrolleable */}
-        <div className="flex-1 overflow-y-auto px-6 py-6">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5">
         
-        <form id="swimmer-form" onSubmit={handleSubmit} className="space-y-6">
-          {/* Información Personal */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 pb-2">
-              <div className="h-8 w-1 bg-blue-600 rounded-full"></div>
-              <h3 className="text-lg font-bold text-gray-800">
-                Información Personal
-              </h3>
-            </div>
+        <form id="swimmer-form" onSubmit={handleSubmit}>
+          {/* Grid principal de 2 columnas en desktop, 1 en móvil */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6">
             
-            {/* Nombre */}
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-sm font-medium">
-                Nombre completo <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="name"
-                type="text"
-                placeholder="Ej: Juan Pérez García"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-                className="h-11"
-              />
-            </div>
+            {/* COLUMNA IZQUIERDA */}
+            <div className="space-y-5">
+              {/* Información Personal */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 pb-1">
+                  <div className="h-6 w-1 bg-blue-600 rounded-full"></div>
+                  <h3 className="text-base sm:text-lg font-bold text-gray-800">
+                    Información Personal
+                  </h3>
+                </div>
+                
+                {/* Nombre */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="name" className="text-sm font-medium">
+                    Nombre completo <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="Ej: Juan Pérez García"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                    className="h-10 sm:h-11"
+                  />
+                </div>
 
-            {/* Fecha y Género en grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Fecha de Nacimiento */}
-              <div className="space-y-2">
-                <Label htmlFor="birthDate" className="text-sm font-medium">
-                  Fecha de Nacimiento <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="birthDate"
-                  type="date"
-                  value={formData.birthDate}
-                  onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
-                  required
-                  className="h-11 w-full"
-                />
-              </div>
+                {/* Fecha y Género en grid */}
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Fecha de Nacimiento */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="birthDate" className="text-sm font-medium">
+                      Fecha de Nacimiento <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="birthDate"
+                      type="date"
+                      value={formData.birthDate}
+                      onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
+                      required
+                      className="h-10 sm:h-11 w-full"
+                    />
+                  </div>
 
-              {/* Género */}
-              <div className="space-y-2">
-                <Label htmlFor="gender" className="text-sm font-medium">
-                  Género <span className="text-red-500">*</span>
-                </Label>
-                <Select
-                  value={formData.gender}
-                  onValueChange={(value) => setFormData({ ...formData, gender: value })}
-                >
-                  <SelectTrigger className="h-11">
-                    <SelectValue placeholder="Seleccionar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="MALE">
-                      <span className="flex items-center gap-2">
-                        <span className="text-lg">👦</span>
-                        <span>Masculino</span>
-                      </span>
-                    </SelectItem>
-                    <SelectItem value="FEMALE">
-                      <span className="flex items-center gap-2">
-                        <span className="text-lg">👧</span>
-                        <span>Femenino</span>
-                      </span>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Mostrar categoría calculada automáticamente */}
-            {formData.birthDate && (
-              <div className="mt-2 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg shadow-sm">
-                <div className="flex items-start gap-2">
-                  <Info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <div className="text-sm">
-                    <p className="font-medium text-blue-900">
-                      Categoría Automática
-                    </p>
-                    <p className="text-blue-700">
-                      {formatCategory(calculateCategory(formData.birthDate))}. Se calcula según el año de nacimiento
-                    </p>
+                  {/* Género */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="gender" className="text-sm font-medium">
+                      Género <span className="text-red-500">*</span>
+                    </Label>
+                    <Select
+                      value={formData.gender}
+                      onValueChange={(value) => setFormData({ ...formData, gender: value })}
+                    >
+                      <SelectTrigger className="h-10 sm:h-11 w-full">
+                        <SelectValue placeholder="Seleccionar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="MALE">
+                          <span className="flex items-center gap-2">
+                            <span className="text-lg">👦</span>
+                            <span>Masculino</span>
+                          </span>
+                        </SelectItem>
+                        <SelectItem value="FEMALE">
+                          <span className="flex items-center gap-2">
+                            <span className="text-lg">👧</span>
+                            <span>Femenino</span>
+                          </span>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
 
-          {/* Información del Club */}
-          <div className="space-y-4 pt-6 border-t border-gray-200">
-            <div className="flex items-center gap-2 pb-2">
-              <div className="h-8 w-1 bg-green-600 rounded-full"></div>
-              <h3 className="text-lg font-bold text-gray-800">
-                Información del Club
-              </h3>
-            </div>
-
-            {/* Club y Entrenador en grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Club */}
-              <div className="space-y-2">
-                <Label htmlFor="clubId" className="text-sm font-medium">Club</Label>
-                <Select
-                  value={formData.clubId || "none"}
-                  onValueChange={(value) => {
-                    const newClubId = value === "none" ? "" : value;
-                    console.log('🏊 Club seleccionado:', value, '→ clubId:', newClubId);
-                    setFormData({ ...formData, clubId: newClubId });
-                  }}
-                >
-                  <SelectTrigger className="h-11">
-                    <SelectValue placeholder="Seleccionar club" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Sin club asignado</SelectItem>
-                    {clubs.map((club) => (
-                      <SelectItem key={club.id} value={club.id}>
-                        {club.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {/* Mostrar categoría calculada automáticamente */}
+                {formData.birthDate && (
+                  <div className="p-2.5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <Info className="h-3.5 w-3.5 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <div className="text-xs sm:text-sm">
+                        <p className="font-medium text-blue-900">
+                          Categoría: {formatCategory(calculateCategory(formData.birthDate))}
+                        </p>
+                        <p className="text-blue-600 hidden sm:block">
+                          Se calcula según el año de nacimiento
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Entrenador */}
-              <div className="space-y-2">
-                <Label htmlFor="coach" className="text-sm font-medium">Entrenador</Label>
-                <Select
-                  value={formData.coach || "none"}
-                  onValueChange={(value) => setFormData({ ...formData, coach: value === "none" ? "" : value })}
-                  disabled={!formData.clubId || coaches.length === 0}
-                >
-                  <SelectTrigger className="h-11">
-                    <SelectValue placeholder={
-                      !formData.clubId 
-                        ? "Primero selecciona un club" 
-                        : coaches.length === 0 
-                          ? "Sin entrenadores disponibles"
-                          : "Seleccionar entrenador"
-                    } />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Sin entrenador asignado</SelectItem>
-                    {coaches.map((coach) => (
-                      <SelectItem key={coach.id} value={coach.name}>
-                        {coach.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* Información del Club */}
+              <div className="space-y-3 pt-4 border-t border-gray-200">
+                <div className="flex items-center gap-2 pb-1">
+                  <div className="h-6 w-1 bg-green-600 rounded-full"></div>
+                  <h3 className="text-base sm:text-lg font-bold text-gray-800">
+                    Información del Club
+                  </h3>
+                </div>
+
+                {/* Club */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="clubId" className="text-sm font-medium">Club</Label>
+                  <Select
+                    value={formData.clubId || "none"}
+                    onValueChange={(value) => {
+                      const newClubId = value === "none" ? "" : value;
+                      console.log('🏊 Club seleccionado:', value, '→ clubId:', newClubId);
+                      setFormData({ ...formData, clubId: newClubId });
+                    }}
+                  >
+                    <SelectTrigger className="h-10 sm:h-11">
+                      <SelectValue placeholder="Seleccionar club" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Sin club asignado</SelectItem>
+                      {clubs.map((club) => (
+                        <SelectItem key={club.id} value={club.id}>
+                          {club.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Entrenador */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="coach" className="text-sm font-medium">Entrenador</Label>
+                  <Select
+                    value={formData.coach || "none"}
+                    onValueChange={(value) => setFormData({ ...formData, coach: value === "none" ? "" : value })}
+                    disabled={!formData.clubId || coaches.length === 0}
+                  >
+                    <SelectTrigger className="h-10 sm:h-11">
+                      <SelectValue placeholder={
+                        !formData.clubId 
+                          ? "Primero selecciona un club" 
+                          : coaches.length === 0 
+                            ? "Sin entrenadores"
+                            : "Seleccionar entrenador"
+                      } />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Sin entrenador asignado</SelectItem>
+                      {coaches.map((coach) => (
+                        <SelectItem key={coach.id} value={coach.name}>
+                          {coach.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 {formData.clubId && coaches.length === 0 && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                    <p className="text-xs text-amber-700 flex items-start gap-2">
-                      <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-2">
+                    <p className="text-xs text-amber-700 flex items-start gap-1.5">
+                      <Info className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
                       <span>Este club no tiene entrenadores registrados</span>
                     </p>
                   </div>
                 )}
               </div>
             </div>
-          </div>
 
-          {/* Código FDPN */}
-          <div className="space-y-4 pt-6 border-t border-gray-200">
-            <div className="flex items-center gap-2 pb-2">
-              <div className="h-8 w-1 bg-purple-600 rounded-full"></div>
-              <h3 className="text-lg font-bold text-gray-800">
-                Información Adicional
-              </h3>
-            </div>
+            {/* COLUMNA DERECHA */}
+            <div className="space-y-5">
 
-            <div className="space-y-2">
-              <Label htmlFor="fdpnAffiliateCode" className="text-sm font-medium">
-                Código de Afiliado FDPN
-              </Label>
-              <Input
-                id="fdpnAffiliateCode"
-                type="text"
-                placeholder="Ej: 79272554"
-                value={formData.fdpnAffiliateCode}
-                onChange={(e) => setFormData({ ...formData, fdpnAffiliateCode: e.target.value })}
-                className="font-mono h-11"
-              />
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-xs text-blue-700 flex items-start gap-2">
-                  <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                  <span>Si tu hijo compite oficialmente, este código permitirá búsquedas más precisas en FDPN</span>
-                </p>
+              {/* Código FDPN */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 pb-1">
+                  <div className="h-6 w-1 bg-purple-600 rounded-full"></div>
+                  <h3 className="text-base sm:text-lg font-bold text-gray-800">
+                    Información Adicional
+                  </h3>
+                </div>
+
+                <div className="space-y-1.5">
+                <Label htmlFor="fdpnAffiliateCode" className="text-sm font-medium">
+                  Código de Afiliado FDPN
+                </Label>
+                <Input
+                  id="fdpnAffiliateCode"
+                  type="text"
+                  placeholder="Ej: 79272554"
+                  value={formData.fdpnAffiliateCode}
+                  onChange={(e) => setFormData({ ...formData, fdpnAffiliateCode: e.target.value })}
+                  className="font-mono h-10 sm:h-11"
+                />
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
+                  <p className="text-xs text-blue-700 flex items-start gap-1.5">
+                    <Info className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+                    <span>Si compite oficialmente, este código permite búsquedas más precisas en FDPN</span>
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Foto del Nadador */}
-          <div className="space-y-4 pt-6 border-t border-gray-200">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-1 bg-orange-600 rounded-full"></div>
-                <h3 className="text-lg font-bold text-gray-800">
-                  Foto del Nadador
-                </h3>
-              </div>
+              {/* Foto del Nadador */}
+              <div className="space-y-3 pt-4 border-t border-gray-200">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="h-6 w-1 bg-orange-600 rounded-full"></div>
+                    <h3 className="text-base sm:text-lg font-bold text-gray-800">
+                      Foto del Nadador
+                    </h3>
+                  </div>
               
               {/* Opciones de foto */}
               <div className="flex gap-2">
@@ -575,28 +582,28 @@ export default function SwimmerForm({ isOpen, onClose, onSuccess, swimmer }: Swi
                   variant={photoMode === 'url' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setPhotoMode('url')}
-                  className="h-9 text-sm flex-1 sm:flex-none"
+                  className="h-8 sm:h-9 text-xs sm:text-sm flex-1 sm:flex-none px-3"
                 >
-                  <Link className="h-4 w-4 mr-2" />
-                  URL
+                  <Link className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">URL</span>
                 </Button>
                 <Button
                   type="button"
                   variant={photoMode === 'upload' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setPhotoMode('upload')}
-                  className="h-9 text-sm flex-1 sm:flex-none"
+                  className="h-8 sm:h-9 text-xs sm:text-sm flex-1 sm:flex-none px-3"
                 >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Subir
+                  <Upload className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Subir</span>
                 </Button>
               </div>
             </div>
 
             {/* Input de URL */}
             {photoMode === 'url' && (
-              <>
-                <div className="space-y-2">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+                <div className="space-y-1.5 md:col-span-2">
                   <Input
                     id="photo"
                     type="url"
@@ -607,15 +614,14 @@ export default function SwimmerForm({ isOpen, onClose, onSuccess, swimmer }: Swi
                       setPhotoPreview(e.target.value);
                       setPhotoFile(null);
                     }}
-                    className="h-11"
+                    className="h-10 sm:h-11"
                   />
                 </div>
                 {/* Preview de la foto para URL */}
                 {photoPreview && (
-                  <div className="mt-4">
-                    <p className="text-sm font-medium text-gray-700 mb-2">Vista Previa:</p>
+                  <div className="md:col-span-1 flex items-center justify-center md:justify-start">
                     <div className="relative inline-block">
-                      <div className="w-32 h-32 border-4 border-white rounded-2xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 shadow-lg ring-2 ring-blue-100">
+                      <div className="w-20 h-20 sm:w-24 sm:h-24 border-2 border-white rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 shadow-md ring-2 ring-blue-100">
                         <img
                           src={photoPreview}
                           alt="Preview"
@@ -631,26 +637,26 @@ export default function SwimmerForm({ isOpen, onClose, onSuccess, swimmer }: Swi
                         variant="destructive"
                         size="sm"
                         onClick={clearPhoto}
-                        className="absolute -top-2 -right-2 h-8 w-8 rounded-full p-0 shadow-lg hover:scale-110 transition-transform"
+                        className="absolute -top-1.5 -right-1.5 h-6 w-6 rounded-full p-0 shadow-md hover:scale-110 transition-transform"
                       >
-                        <X className="h-4 w-4" />
+                        <X className="h-3 w-3" />
                       </Button>
                     </div>
                   </div>
                 )}
-              </>
+              </div>
             )}
 
             {/* Input de archivo */}
             {photoMode === 'upload' && (
-              <>
-                <div className="space-y-2">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+                <div className="space-y-1.5 md:col-span-2">
                   <Input
                     id="photoFile"
                     type="file"
                     accept="image/*"
                     onChange={handleFileChange}
-                    className="h-11 cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    className="h-10 sm:h-11 cursor-pointer file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs sm:file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   />
                   <p className="text-xs text-gray-500">
                     JPG, PNG o GIF. Se comprimirá automáticamente.
@@ -658,10 +664,9 @@ export default function SwimmerForm({ isOpen, onClose, onSuccess, swimmer }: Swi
                 </div>
                 {/* Preview de la foto para archivo subido */}
                 {photoPreview && (
-                  <div className="mt-4">
-                    <p className="text-sm font-medium text-gray-700 mb-2">Vista Previa:</p>
+                  <div className="md:col-span-1 flex items-center justify-center md:justify-start">
                     <div className="relative inline-block">
-                      <div className="w-32 h-32 border-4 border-white rounded-2xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 shadow-lg ring-2 ring-blue-100">
+                      <div className="w-20 h-20 sm:w-24 sm:h-24 border-2 border-white rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 shadow-md ring-2 ring-blue-100">
                         <img
                           src={photoPreview}
                           alt="Preview"
@@ -677,28 +682,29 @@ export default function SwimmerForm({ isOpen, onClose, onSuccess, swimmer }: Swi
                         variant="destructive"
                         size="sm"
                         onClick={clearPhoto}
-                        className="absolute -top-2 -right-2 h-8 w-8 rounded-full p-0 shadow-lg hover:scale-110 transition-transform"
+                        className="absolute -top-1.5 -right-1.5 h-6 w-6 rounded-full p-0 shadow-md hover:scale-110 transition-transform"
                       >
-                        <X className="h-4 w-4" />
+                        <X className="h-3 w-3" />
                       </Button>
                     </div>
                   </div>
                 )}
-              </>
+              </div>
             )}
-          </div>
-
+              </div> {/* Cierre de Foto del Nadador */}
+            </div> {/* Cierre de COLUMNA DERECHA */}
+          </div> {/* Cierre del grid principal de 2 columnas */}
         </form>
         </div>
 
         {/* Footer fijo con botones */}
-        <div className="border-t bg-gray-50 px-6 py-4 flex flex-col-reverse sm:flex-row justify-end gap-3">
+        <div className="border-t bg-gray-50 px-4 sm:px-6 py-3 sm:py-4 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
           <Button 
             type="button" 
             variant="outline" 
             onClick={handleClose}
             disabled={loading}
-            className="h-11 w-full sm:w-auto px-6"
+            className="h-10 sm:h-11 w-full sm:w-auto px-4 sm:px-6 text-sm"
           >
             Cancelar
           </Button>
@@ -706,7 +712,7 @@ export default function SwimmerForm({ isOpen, onClose, onSuccess, swimmer }: Swi
             type="submit"
             form="swimmer-form"
             disabled={loading || !formData.name || !formData.birthDate || !formData.gender}
-            className="h-11 w-full sm:w-auto min-w-[150px] bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+            className="h-10 sm:h-11 w-full sm:w-auto min-w-[140px] sm:min-w-[150px] bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-sm"
             onClick={(e) => {
               e.preventDefault();
               const form = document.getElementById('swimmer-form') as HTMLFormElement;

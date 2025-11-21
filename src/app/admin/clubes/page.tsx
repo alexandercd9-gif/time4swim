@@ -23,6 +23,9 @@ interface Club {
   createdAt: string;
   updatedAt: string;
   hasCredentials?: boolean;
+  isProTrial?: boolean;
+  isProActive?: boolean;
+  proTrialExpiresAt?: string;
 }
 
 export default function ClubsPage() {
@@ -372,30 +375,49 @@ export default function ClubsPage() {
           {(onlyWithLicense ? clubs.filter(c => c.hasCredentials) : clubs).map((club) => (
             <Card key={club.id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Building2 className="h-5 w-5 text-blue-600" />
-                    {club.name}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant={club.hasCredentials ? "default" : "ghost"}
-                      size="sm"
-                      onClick={() => handleCredentials(club)}
-                      className={`h-8 w-8 p-0 ${club.hasCredentials ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
-                      title={club.hasCredentials ? 'Con acceso (credenciales creadas)' : 'Sin acceso: crear credenciales'}
-                    >
-                      <Key className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(club)}
-                      className="h-8 w-8 p-0"
-                      title="Editar Club"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
+                <CardTitle className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Building2 className="h-5 w-5 text-blue-600" />
+                      {club.name}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant={club.hasCredentials ? "default" : "ghost"}
+                        size="sm"
+                        onClick={() => handleCredentials(club)}
+                        className={`h-8 w-8 p-0 ${club.hasCredentials ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
+                        title={club.hasCredentials ? 'Con acceso (credenciales creadas)' : 'Sin acceso: crear credenciales'}
+                      >
+                        <Key className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEdit(club)}
+                        className="h-8 w-8 p-0"
+                        title="Editar Club"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* Badge de estado PRO */}
+                  <div className="flex items-center gap-2">
+                    {club.isProActive ? (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-sm">
+                        👑 PRO ACTIVO
+                      </span>
+                    ) : club.isProTrial ? (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-sm">
+                        ✨ PRO TRIAL {club.proTrialExpiresAt && `(${Math.ceil((new Date(club.proTrialExpiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))}d)`}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                        Plan FREE
+                      </span>
+                    )}
                   </div>
                 </CardTitle>
               </CardHeader>

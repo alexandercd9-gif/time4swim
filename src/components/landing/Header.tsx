@@ -21,6 +21,7 @@ export default function Header() {
     { label: "Funciones", href: "#funciones" },
     { label: "Para Padres", href: "#padres" },
     { label: "Para Clubes", href: "#clubes" },
+    { label: "Precios", href: "#pricing" },
     { label: "Soporte", href: "#soporte" },
   ];
 

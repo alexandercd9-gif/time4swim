@@ -54,7 +54,14 @@ export async function GET(request: NextRequest) {
         trialExtendedBy: true,
         trialExtendedAt: true,
         createdAt: true,
-        updatedAt: true
+        updatedAt: true,
+        subscription: {
+          select: {
+            mediaGalleryAddon: true,
+            mediaGalleryIsFree: true,
+            addonsAmount: true
+          }
+        }
       },
       orderBy: {
         createdAt: 'desc'

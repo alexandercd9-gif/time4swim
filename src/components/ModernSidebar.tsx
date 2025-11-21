@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
   Home, Users, Medal, BarChart, User, Power, School, 
-  Calendar, CreditCard, FileText, Settings, Timer, Menu, X, TrendingUp 
+  Calendar, CreditCard, FileText, Settings, Timer, Menu, X, TrendingUp, Camera 
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -24,12 +24,14 @@ const navByRole = {
     { href: "/admin/usuarios", label: "Usuarios", icon: Users, description: "Gestionar usuarios" },
     { href: "/admin/clubes", label: "Clubes", icon: School, description: "Gestionar clubes" },
     { href: "/admin/estadisticas", label: "Estadísticas", icon: BarChart, description: "Reportes y análisis" },
+    { href: "/admin/configuracion", label: "Configuración", icon: Settings, description: "Credenciales Culqi" },
   ],
   parents: [
     { href: "/parents/dashboard", label: "Dashboard", icon: Home, description: "Vista general" },
     { href: "/parents/children", label: "Mis Hijos", icon: Users, description: "Nadadores registrados" },
     { href: "/parents/cronometro", label: "Cronómetro", icon: Timer, description: "Registrar tiempos" },
     { href: "/parents/entrenamientos", label: "Análisis de Tiempos", icon: TrendingUp, description: "Análisis avanzado" },
+    { href: "/parents/galeria", label: "Galería", icon: Camera, description: "Fotos y videos" },
     { href: "/parents/competencias", label: "Competencias", icon: Medal, description: "Participaciones" },
     { href: "/parents/events", label: "Eventos", icon: Calendar, description: "Próximas competencias" },
     { href: "/parents/records", label: "Records", icon: BarChart, description: "Mejores marcas" },

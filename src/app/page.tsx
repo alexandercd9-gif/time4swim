@@ -5,6 +5,7 @@ import HowItWorks from "@/components/landing/HowItWorks";
 import WaveDivider from "@/components/landing/WaveDivider";
 import ForParents from "@/components/landing/ForParents";
 import ForClubs from "@/components/landing/ForClubs";
+import PricingPreview from "@/components/landing/PricingPreview";
 import Testimonials from "@/components/landing/Testimonials";
 import FinalCTA from "@/components/landing/FinalCTA";
 import Footer from "@/components/landing/Footer";
@@ -45,6 +46,7 @@ export default function Home() {
           />
         </svg>
       </div>
+      <PricingPreview />
       <Testimonials />
       <FinalCTA />
       <Footer />

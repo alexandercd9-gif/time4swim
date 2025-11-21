@@ -20,12 +20,11 @@ interface Training {
 }
 
 const styleLabels: Record<string, string> = {
-  FREESTYLE: "🏊‍♂️ Libre",
-  BACKSTROKE: "🏊‍♀️ Espalda", 
+  FREESTYLE: "🏊 Libre",
+  BACKSTROKE: "🏊 Espalda",
   BREASTSTROKE: "🏊 Pecho",
   BUTTERFLY: "🦋 Mariposa",
-  INDIVIDUAL_MEDLEY: "🏆 Combinado Individual",
-  MEDLEY_RELAY: "👥 Combinado 4 Estilos"
+  INDIVIDUAL_MEDLEY: "🎯 Combinado Individual"
 };
 
 export default function TrainingsPage() {

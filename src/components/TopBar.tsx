@@ -1,15 +1,23 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useUser } from "@/context/UserContext";
 import { useSidebar } from "@/hooks/use-sidebar";
-import { LogOut, Bell } from "lucide-react";
+import { LogOut, Bell, Settings, ChevronDown, User as UserIcon } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
+import NovedadesButton from "@/components/club/NovedadesButton";
+import NovedadesPanel from "@/components/club/NovedadesPanel";
 
 export default function TopBar() {
   const { user } = useUser();
   const { isSidebarCollapsed, setIsSidebarCollapsed } = useSidebar();
   const [eventsCount, setEventsCount] = useState(0);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [hasUnreadNews, setHasUnreadNews] = useState(false);
+  const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -51,6 +59,73 @@ export default function TopBar() {
     }
   }, [user.role, pathname]);
 
+  // Cargar estado de novedades para clubes
+  useEffect(() => {
+    if (user.role === 'CLUB' || user.role === 'club') {
+      const fetchClubNews = async () => {
+        try {
+          const res = await fetch('/api/club/me', { credentials: 'include' });
+          if (res.ok) {
+            const data = await res.json();
+            setHasUnreadNews(data.hasUnreadNews || false);
+          }
+        } catch (error) {
+          console.error('Error fetching club news status:', error);
+        }
+      };
+      fetchClubNews();
+    }
+  }, [user.role]);
+
+  // Calcular días restantes de trial
+  useEffect(() => {
+    const isTrialAccount = (user as any).isTrialAccount;
+    const trialExpiresAt = (user as any).trialExpiresAt;
+    
+    if (!isTrialAccount || !trialExpiresAt) {
+      setTrialDaysLeft(null);
+      return;
+    }
+
+    const calculateDaysLeft = () => {
+      const now = new Date();
+      const expiry = new Date(trialExpiresAt);
+      const diffTime = expiry.getTime() - now.getTime();
+      const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      setTrialDaysLeft(days);
+    };
+
+    calculateDaysLeft();
+    const interval = setInterval(calculateDaysLeft, 1000 * 60 * 60); // Update every hour
+
+    return () => clearInterval(interval);
+  }, [(user as any).isTrialAccount, (user as any).trialExpiresAt]);
+
+  // Cargar foto de perfil
+  useEffect(() => {
+    const photo = (user as any).profilePhoto;
+    if (photo) {
+      setProfilePhoto(photo);
+    }
+  }, [user]);
+
+  // Cerrar dropdown al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
@@ -75,6 +150,44 @@ export default function TopBar() {
     router.push('/parents/events');
   };
 
+  const handleNovedadesClick = async () => {
+    setIsPanelOpen(true);
+    
+    // Marcar novedades como leídas
+    if (hasUnreadNews) {
+      try {
+        await fetch('/api/club/mark-news-read', { 
+          method: 'POST', 
+          credentials: 'include' 
+        });
+        setHasUnreadNews(false);
+      } catch (error) {
+        console.error('Error marking news as read:', error);
+      }
+    }
+  };
+
+  const handleActivateTrial = async () => {
+    try {
+      const res = await fetch('/api/club/activate-pro-trial', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      if (res.ok) {
+        setIsPanelOpen(false);
+        // Recargar la página para actualizar el estado del club
+        window.location.reload();
+      } else {
+        const error = await res.json();
+        alert(error.message || 'Error al activar el trial');
+      }
+    } catch (error) {
+      console.error('Error activating trial:', error);
+      alert('Error al activar el trial PRO');
+    }
+  };
+
   return (
     <div className="bg-white border-b border-gray-200 -mx-6 lg:-mx-8 px-6 lg:px-8 h-16 flex items-center justify-between">
       {/* Left side: Toggle sidebar button (desktop only) */}
@@ -97,8 +210,38 @@ export default function TopBar() {
         </div>
       </div>
 
-      {/* Right side: Notifications + User info + Logout */}
+      {/* Right side: Trial badge + Notifications + User info + Logout */}
       <div className="flex items-center gap-3">
+        {/* Trial indicator (compact) */}
+        {trialDaysLeft !== null && (
+          <div
+            className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm ${
+              trialDaysLeft <= 0
+                ? 'bg-red-100 text-red-700'
+                : trialDaysLeft <= 3
+                ? 'bg-orange-100 text-orange-700'
+                : 'bg-blue-100 text-blue-700'
+            }`}
+            title={
+              (user as any).trialExpiresAt
+                ? `${trialDaysLeft <= 0 ? 'Expirado el' : 'Expira el'}: ${new Date((user as any).trialExpiresAt).toLocaleDateString('es-ES', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}`
+                : `Tu periodo de prueba ${trialDaysLeft <= 0 ? 'ha expirado' : `expira en ${trialDaysLeft} ${trialDaysLeft === 1 ? 'día' : 'días'}`}`
+            }
+          >
+            <span>🎉</span>
+            <span>
+              {trialDaysLeft <= 0
+                ? 'Trial expirado'
+                : `${trialDaysLeft} ${trialDaysLeft === 1 ? 'día' : 'días'} restantes`}
+            </span>
+          </div>
+        )}
+
         {/* Notification bell (only for parents with events) */}
         {(user.role === 'PARENT' || user.role === 'parents') && (
           <button
@@ -115,41 +258,100 @@ export default function TopBar() {
           </button>
         )}
 
-        {/* User info */}
-        <div className="hidden sm:flex items-center gap-3">
-          {/* User details */}
-          <div className="flex flex-col min-w-0">
-            {user?.name && (
-              <div className="text-sm font-semibold text-gray-900 truncate max-w-[200px] md:max-w-xs">
-                {user.name}
-              </div>
-            )}
-            {user?.email && (
-              <div className="text-xs text-gray-500 truncate max-w-[200px] md:max-w-xs">
-                {user.email}
-              </div>
-            )}
-          </div>
-        </div>
+        {/* Novedades button (only for clubs) */}
+        {(user.role === 'CLUB' || user.role === 'club') && (
+          <NovedadesButton 
+            hasUnreadNews={hasUnreadNews} 
+            onClick={handleNovedadesClick}
+          />
+        )}
 
-        {/* Mobile: Only show user name */}
-        <div className="sm:hidden flex flex-col min-w-0">
-          {user?.name && (
-            <div className="text-sm font-semibold text-gray-900 truncate max-w-[120px]">
-              {user.name}
+        {/* User dropdown menu */}
+        <div className="relative mr-8" ref={dropdownRef}>
+          <button
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            {/* Profile photo or default icon */}
+            {profilePhoto ? (
+              <img
+                src={profilePhoto}
+                alt={user?.name || 'Usuario'}
+                className="w-8 h-8 rounded-full object-cover border-2 border-gray-200"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
+                {user?.name?.[0]?.toUpperCase() || 'U'}
+              </div>
+            )}
+            
+            {/* User name (hidden on mobile) */}
+            <div className="hidden sm:flex flex-col items-start min-w-0">
+              {user?.name && (
+                <div className="text-sm font-semibold text-gray-900 truncate max-w-[150px]">
+                  {user.name}
+                </div>
+              )}
+            </div>
+            
+            <ChevronDown className={`h-4 w-4 text-gray-600 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {/* Dropdown menu */}
+          {isDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+              {/* User info in dropdown */}
+              <div className="px-4 py-3 border-b border-gray-100">
+                <div className="text-sm font-semibold text-gray-900 truncate">
+                  {user?.name}
+                </div>
+                <div className="text-xs text-gray-500 truncate">
+                  {user?.email}
+                </div>
+              </div>
+
+              {/* Mi Cuenta */}
+              <button
+                onClick={() => {
+                  setIsDropdownOpen(false);
+                  const roleRoutes: Record<string, string> = {
+                    'ADMIN': '/admin/cuenta',
+                    'PARENT': '/parents/cuenta',
+                    'CLUB': '/club/cuenta',
+                    'TEACHER': '/profesor/cuenta'
+                  };
+                  router.push(roleRoutes[user.role] || '/parents/cuenta');
+                }}
+                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <Settings className="h-4 w-4" />
+                <span>Mi Cuenta</span>
+              </button>
+
+              {/* Logout */}
+              <button
+                onClick={() => {
+                  setIsDropdownOpen(false);
+                  handleLogout();
+                }}
+                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+              >
+                <LogOut className="h-4 w-4" />
+                <span>Cerrar Sesión</span>
+              </button>
             </div>
           )}
         </div>
-
-        {/* Logout button - minimalist, no circle */}
-        <button
-          onClick={handleLogout}
-          title="Cerrar sesión"
-          className="flex items-center justify-center w-10 h-10 rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 transition-all duration-200"
-        >
-          <LogOut className="h-5 w-5" />
-        </button>
       </div>
+
+      {/* Novedades Panel */}
+      {(user.role === 'CLUB' || user.role === 'club') && (
+        <NovedadesPanel
+          isOpen={isPanelOpen}
+          onClose={() => setIsPanelOpen(false)}
+          onActivateTrial={handleActivateTrial}
+        />
+      )}
     </div>
   );
 }

@@ -30,6 +30,14 @@ export default function LoginPage() {
     // Check for OAuth errors in URL params
     const params = new URLSearchParams(window.location.search);
     const error = params.get('error');
+    const tab = params.get('tab');
+    
+    // Si viene con tab=register, abrir el modal de registro
+    if (tab === 'register') {
+      setShowRegisterOptions(true);
+      setShowEmailForm(false);
+      setShowRegisterEmailForm(false);
+    }
     
     if (error) {
       const errorMessages: { [key: string]: string } = {
@@ -359,7 +367,7 @@ export default function LoginPage() {
                     <Sparkles className="h-3.5 w-3.5 text-white" />
                   </div>
                   <p className="text-[11px] font-bold text-blue-900 leading-tight whitespace-nowrap">
-                    🎉 7 días gratis • Prueba completa sin compromiso
+                    🎉 30 días gratis • Prueba completa sin compromiso
                   </p>
                 </div>                
               </div>

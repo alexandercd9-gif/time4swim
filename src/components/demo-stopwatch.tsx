@@ -12,15 +12,10 @@ import Link from "next/link";
 // Tipos para el cronómetro
 type TimerState = "stopped" | "running" | "paused";
 
-// Estilos de natación
-const swimStyles = [
-  { value: "FREESTYLE", label: "🏊‍♂️ Libre" },
-  { value: "BACKSTROKE", label: "🏊‍♀️ Espalda" },
-  { value: "BREASTSTROKE", label: "🏊 Pecho" },
-  { value: "BUTTERFLY", label: "🦋 Mariposa" },
-  { value: "INDIVIDUAL_MEDLEY", label: "🏆 Combinado Individual" },
-  { value: "MEDLEY_RELAY", label: "👥 Combinado 4 Estilos" }
-];
+interface SwimStyle {
+  value: string;
+  label: string;
+}
 
 // Distancias comunes
 const distances = [25, 50, 100, 200, 400, 800, 1500];
@@ -36,6 +31,21 @@ export function DemoStopwatch() {
   const [style, setStyle] = useState("");
   const [distance, setDistance] = useState("");
   const [notes, setNotes] = useState("");
+  const [swimStyles, setSwimStyles] = useState<SwimStyle[]>([]);
+
+  // Cargar estilos desde API
+  useEffect(() => {
+    fetch('/api/config/styles')
+      .then(res => res.json())
+      .then(data => {
+        const styles = data.map((s: any) => ({
+          value: s.style,
+          label: s.nameEs
+        }));
+        setSwimStyles(styles);
+      })
+      .catch(err => console.error('Error cargando estilos:', err));
+  }, []);
 
   // Actualizar el cronómetro cada 10ms para mayor precisión
   useEffect(() => {

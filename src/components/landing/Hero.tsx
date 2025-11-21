@@ -66,20 +66,19 @@ export default function Hero() {
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             <Link
-              href="/login"
+              href="/register"
               className="group inline-flex items-center justify-center px-8 py-4 rounded-full bg-white text-blue-600 font-bold text-lg shadow-2xl hover:shadow-cyan-500/50 hover:scale-105 transition-all duration-200"
             >
-              Probar gratis
+              Comenzar Gratis 30 días
               <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
             </Link>
             
-            <button
+            <Link
+              href="#pricing"
               className="inline-flex items-center justify-center px-8 py-4 rounded-full bg-white/10 backdrop-blur-md border-2 border-white/40 text-white font-semibold text-lg hover:bg-white/20 hover:scale-105 transition-all duration-200"
-              aria-label="Ver demo del producto"
             >
-              <Play className="h-5 w-5 mr-2" />
-              Ver demo
-            </button>
+              Ver Precios
+            </Link>
           </div>
 
           {/* Trust indicators */}

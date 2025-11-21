@@ -44,7 +44,6 @@ export async function GET(request: NextRequest) {
       "BREASTSTROKE",
       "BUTTERFLY",
       "INDIVIDUAL_MEDLEY",
-      "MEDLEY_RELAY",
     ];
 
     const result: Record<string, any> = {};
@@ -57,10 +56,11 @@ export async function GET(request: NextRequest) {
       result[`${s}_lastTime`] = null;
       result[`${s}_lastDate`] = null;
       result[`${s}_allTimes`] = [];
+      result[`${s}_competitionName`] = null;
     });
 
     // Función auxiliar para actualizar el mejor tiempo
-    const updateBestTime = (style: string, time: number, distance: number | null, source: string, date: Date, laps?: any, lapsData?: any) => {
+    const updateBestTime = (style: string, time: number, distance: number | null, source: string, date: Date, laps?: any, lapsData?: any, competitionName?: string) => {
       const current = result[style];
       if (current == null || time < current) {
         result[style] = time;
@@ -69,6 +69,7 @@ export async function GET(request: NextRequest) {
         result[`${style}_laps`] = laps || null;
         result[`${style}_lapsData`] = lapsData || null;
         result[`${style}_bestDate`] = date;
+        result[`${style}_competitionName`] = competitionName || null;
       }
     };
     
@@ -81,24 +82,22 @@ export async function GET(request: NextRequest) {
     if (!source) {
       console.log('🔍 Buscando en TODAS las fuentes...');
       
-      // 1. Buscar en COMPETITION (Record) - Solo si NO hay filtro de poolType
-      // porque los registros de competencia no tienen poolType
-      if (!poolType) {
-        const whereClause: any = { childId: { in: allowedChildIds } };
-        if (distanceNum != null) whereClause.distance = distanceNum;
-        
-        const records = await prisma.record.findMany({
-          where: whereClause,
-          select: { style: true, time: true, distance: true, date: true },
-          orderBy: { date: 'desc' },
-        });
-        
-        for (const r of records) {
-          // Solo agregar si no hay filtro de distancia o si coincide
-          if (!distanceNum || r.distance === distanceNum) {
-            updateBestTime(r.style as string, r.time, r.distance, 'COMPETITION', r.date);
-            addAllTime(r.style as string, r.time, r.date);
-          }
+      // 1. Buscar en COMPETITION (Record)
+      const recordWhereClause: any = { childId: { in: allowedChildIds } };
+      if (distanceNum != null) recordWhereClause.distance = distanceNum;
+      if (poolType) recordWhereClause.poolSize = poolType;
+      
+      const records = await prisma.record.findMany({
+        where: recordWhereClause,
+        select: { style: true, time: true, distance: true, date: true, poolSize: true, competition: true },
+        orderBy: { date: 'desc' },
+      });
+      
+      for (const r of records) {
+        // Solo agregar si no hay filtro de distancia o si coincide
+        if (!distanceNum || r.distance === distanceNum) {
+          updateBestTime(r.style as string, r.time, r.distance, 'COMPETITION', r.date, null, null, r.competition);
+          addAllTime(r.style as string, r.time, r.date);
         }
       }
       
@@ -228,12 +227,14 @@ export async function GET(request: NextRequest) {
         }
       }
     } else {
+      // source === "COMPETITION"
       const whereClause: any = { childId: { in: allowedChildIds } };
       if (distanceNum != null) whereClause.distance = distanceNum;
+      if (poolType) whereClause.poolSize = poolType;
 
       const records = await prisma.record.findMany({
         where: whereClause,
-        select: { style: true, time: true, distance: true },
+        select: { style: true, time: true, distance: true, competition: true },
       });
       for (const r of records) {
         const current = result[r.style as string];
@@ -243,6 +244,7 @@ export async function GET(request: NextRequest) {
           result[`${r.style}_source`] = 'COMPETITION';
           result[`${r.style}_laps`] = null;
           result[`${r.style}_lapsData`] = null;
+          result[`${r.style}_competitionName`] = r.competition;
         }
       }
     }

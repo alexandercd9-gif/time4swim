@@ -28,6 +28,11 @@ interface TrialUser {
   trialExpiresAt: string | null;
   daysLeft: number | null;
   createdAt: string;
+  subscription?: {
+    mediaGalleryAddon: boolean;
+    mediaGalleryIsFree: boolean;
+    addonsAmount: number;
+  } | null;
 }
 
 const UserManagementPage = () => {
@@ -47,8 +52,9 @@ const UserManagementPage = () => {
     email: '',
     password: '',
     role: 'PARENT',
-    trialDays: 7,
-    accountType: 'trial' // 'trial' o 'permanent'
+    trialDays: 30,
+    accountType: 'trial', // 'trial' o 'permanent'
+    mediaGalleryAddon: false
   });
 
   // Solo mostrar usuarios con rol PARENT
@@ -210,8 +216,9 @@ const UserManagementPage = () => {
           email: '',
           password: '',
           role: 'PARENT',
-          trialDays: 7,
-          accountType: 'trial'
+          trialDays: 30,
+          accountType: 'trial',
+          mediaGalleryAddon: false
         });
         setShowCreateForm(false);
         await fetchUsers(); // Recargar lista
@@ -296,7 +303,8 @@ const UserManagementPage = () => {
       password: '',
       role: user.role,
       trialDays: 7,
-      accountType: user.isTrialAccount ? 'trial' : 'permanent'
+      accountType: user.isTrialAccount ? 'trial' : 'permanent',
+      mediaGalleryAddon: user.subscription?.mediaGalleryAddon || false
     });
     setShowEditForm(true);
   };
@@ -467,7 +475,8 @@ const UserManagementPage = () => {
                 password: '',
                 role: 'PARENT',
                 trialDays: 7,
-                accountType: 'trial'
+                accountType: 'trial',
+                mediaGalleryAddon: false
               });
               setShowCreateForm(true);
             }}
@@ -707,6 +716,64 @@ const UserManagementPage = () => {
                   <option value="TEACHER">Instructor</option>
                 </select>
               </div>
+
+              {/* Add-ons - Solo para padres */}
+              {formData.role === 'PARENT' && (
+                <div className="border-t border-gray-200 pt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    📦 Add-ons Gratuitos
+                  </label>
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.mediaGalleryAddon}
+                        onChange={async (e) => {
+                          const enable = e.target.checked;
+                          setFormData({...formData, mediaGalleryAddon: enable});
+                          
+                          // Actualizar inmediatamente en BD
+                          if (selectedUser) {
+                            try {
+                              const response = await fetch(`/api/admin/users/${selectedUser.id}/toggle-media-gallery`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ enableMediaGallery: enable }),
+                              });
+                              
+                              if (response.ok) {
+                                toast.success(
+                                  enable 
+                                    ? 'Galería de Medios activada GRATIS para el usuario' 
+                                    : 'Galería de Medios desactivada',
+                                  { icon: '📸' }
+                                );
+                              } else {
+                                throw new Error('Error al actualizar');
+                              }
+                            } catch (error) {
+                              toast.error('Error al actualizar el add-on');
+                              setFormData({...formData, mediaGalleryAddon: !enable}); // Revertir
+                            }
+                          }
+                        }}
+                        className="mt-1 h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-900">📸 Galería de Medios</span>
+                          <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
+                            GRATIS
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-600 mt-0.5">
+                          Permite subir fotos y videos sin costo adicional
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              )}
 
               <div className="flex gap-3 pt-4">
                 <button
@@ -964,6 +1031,7 @@ const UserManagementPage = () => {
                   <tr className="border-b">
                     <th className="text-left py-3 px-4">Usuario</th>
                     <th className="text-left py-3 px-4">Estado</th>
+                    <th className="text-left py-3 px-4">Add-ons</th>
                     <th className="text-left py-3 px-4">Registro</th>
                     <th className="text-left py-3 px-4">Acciones</th>
                   </tr>
@@ -984,6 +1052,21 @@ const UserManagementPage = () => {
                           <div className="text-xs text-gray-500 mt-1">
                             Expira: {new Date(user.trialExpiresAt).toLocaleDateString()}
                           </div>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        {user.subscription?.mediaGalleryAddon ? (
+                          user.subscription.mediaGalleryIsFree ? (
+                            <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-800 px-2 py-1 rounded font-medium">
+                              📸 GRATIS
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded font-medium">
+                              📸 +S/15
+                            </span>
+                          )
+                        ) : (
+                          <span className="text-xs text-gray-400">-</span>
                         )}
                       </td>
                       <td className="py-3 px-4">

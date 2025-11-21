@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
     if (!user) {
       isNewUser = true;
       const trialExpiresAt = new Date();
-      trialExpiresAt.setDate(trialExpiresAt.getDate() + 7);
+      trialExpiresAt.setDate(trialExpiresAt.getDate() + 30);
       user = await prisma.user.create({
         data: {
           email,

@@ -28,7 +28,7 @@ export default function ParentTrainingsAnalysisPage() {
   const [loading, setLoading] = useState(true);
   const [selectedChild, setSelectedChild] = useState("");
   const [styles, setStyles] = useState<SwimStyle[]>([]);
-  const [selectedSource, setSelectedSource] = useState("");
+  const [selectedSource, setSelectedSource] = useState("all");
   const [selectedDistance, setSelectedDistance] = useState("25");
   const [selectedDateRange, setSelectedDateRange] = useState("Mes");
   const [customStartDate, setCustomStartDate] = useState("");
@@ -122,16 +122,16 @@ export default function ParentTrainingsAnalysisPage() {
     try {
       setSearching(true);
       const params = new URLSearchParams();
-      // Solo agregar source si hay una fuente seleccionada
-      if (selectedSource) {
-        params.set("source", selectedSource);
-      }
       params.set("childId", selectedChild);
       params.set("distance", selectedDistance);
       if (poolType) {
         params.set("poolType", poolType);
       }
-      // Nota: Si no se especifica source, la API busca en TODAS las fuentes (Competencias, Prácticas, Competencias Internas)
+      // Solo agregar source si hay una fuente específica seleccionada (no vacío ni "all")
+      if (selectedSource && selectedSource !== "" && selectedSource !== "all") {
+        params.set("source", selectedSource);
+      }
+      // Nota: Si no se especifica source, la API busca en TODAS las fuentes (Entrenamientos, Competencias, Competencias Internas)
 
       const res = await fetch(`/api/parent/best-times?${params.toString()}`);
       if (!res.ok) throw new Error("Error al buscar mejores tiempos");
@@ -201,7 +201,7 @@ export default function ParentTrainingsAnalysisPage() {
                   </span>
                 </span>
               )}
-              {selectedSource && (
+              {selectedSource && selectedSource !== 'all' && (
                 <span className="inline-flex items-center gap-1 px-3 py-1 bg-white border border-blue-300 rounded-full text-sm">
                   {selectedSource === 'COMPETITION' ? '🏆' : selectedSource === 'TRAINING' ? '🏊' : '⏱️'}
                   <span className="font-medium text-gray-700">
@@ -234,8 +234,8 @@ export default function ParentTrainingsAnalysisPage() {
             </AccordionTrigger>
             <AccordionContent>
               <div className="rounded-lg border bg-white p-6 shadow-sm">
-                {/* Primera fila: Nadador, Distancia, Fuente, Tipo de Piscina */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                {/* Primera fila: Nadador, Distancia, Fuente */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                   <div className="space-y-2">
                     <Label htmlFor="nadador" className="text-sm font-medium">
                       Nadador <span className="text-red-500">*</span>
@@ -271,28 +271,13 @@ export default function ParentTrainingsAnalysisPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="poolType" className="text-sm font-medium">Tamaño de Piscina</Label>
-                    <Select value={poolType} onValueChange={setPoolType}>
-                      <SelectTrigger id="poolType" className="w-full">
-                        <SelectValue placeholder="Todas las piscinas" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {poolTypes.map((pool) => (
-                          <SelectItem key={pool.poolSize} value={pool.poolSize}>
-                            {pool.nameEs}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
                     <Label htmlFor="fuente" className="text-sm font-medium">Fuente de datos</Label>
                     <Select value={selectedSource} onValueChange={setSelectedSource}>
                       <SelectTrigger id="fuente" className="w-full">
                         <SelectValue placeholder="Todas las fuentes" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="all">📊 Todas las fuentes</SelectItem>
                         <SelectItem value="COMPETITION">🏆 Competencias</SelectItem>
                         <SelectItem value="TRAINING">🏊 Entrenamientos</SelectItem>
                         <SelectItem value="INTERNAL_COMPETITION">⏱️ Competencias Internas</SelectItem>
@@ -444,6 +429,8 @@ export default function ParentTrainingsAnalysisPage() {
                     {styles.map((s) => {
                       const time = bestTimes[s.style];
                       const source = bestTimes[`${s.style}_source`];
+                      const bestDate = bestTimes[`${s.style}_bestDate`];
+                      const competitionName = bestTimes[`${s.style}_competitionName`];
                       const isSelected = expandedStyle === s.style;
                       
                       // Mapear fuente a etiqueta legible
@@ -476,8 +463,26 @@ export default function ParentTrainingsAnalysisPage() {
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-gray-600">{s.nameEs}</p>
                               <p className={`text-2xl font-bold ${time != null ? 'text-blue-700' : 'text-gray-400'}`}>{time != null ? formatSeconds(time) : '—'}</p>
-                              {time != null && source && (
-                                <p className="text-xs text-gray-500 mt-1">{getSourceLabel(source)}</p>
+                              {time != null && (source || bestDate || competitionName) && (
+                                <div className="mt-1 space-y-0.5">
+                                  {source && (
+                                    <p className="text-xs text-gray-500">{getSourceLabel(source)}</p>
+                                  )}
+                                  {competitionName && source === 'COMPETITION' && (
+                                    <p className="text-xs font-semibold text-blue-600 truncate" title={String(competitionName)}>
+                                      📋 {String(competitionName)}
+                                    </p>
+                                  )}
+                                  {bestDate && (
+                                    <p className="text-xs text-gray-500">
+                                      📅 {new Date(String(bestDate)).toLocaleDateString('es-ES', { 
+                                        day: '2-digit', 
+                                        month: 'short',
+                                        year: 'numeric'
+                                      })}
+                                    </p>
+                                  )}
+                                </div>
                               )}
                             </div>
                             <div className="flex items-center justify-center flex-shrink-0 w-16">
@@ -487,7 +492,7 @@ export default function ParentTrainingsAnalysisPage() {
                                   s.style === 'BACKSTROKE' ? 'espalda.png' :
                                   s.style === 'BREASTSTROKE' ? 'pecho.png' :
                                   s.style === 'BUTTERFLY' ? 'mariposa.png' :
-                                  s.style === 'MEDLEY_RELAY' || s.style === 'INDIVIDUAL_MEDLEY' ? '4estilos.png' :
+                                  s.style === 'INDIVIDUAL_MEDLEY' ? 'combinado.png' :
                                   'libre.png'
                                 }`}
                                 alt={s.nameEs}

@@ -21,7 +21,7 @@ export default function ParentChronoPage() {
           <h2 className="text-xl font-bold mb-4">
             Mejores y Historial
           </h2>
-          <BestHistorySwitcher />
+          <BestHistorySwitcher defaultSource="TRAINING" />
         </div>
       </div>
     </div>

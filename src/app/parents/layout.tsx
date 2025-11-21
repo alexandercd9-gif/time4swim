@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ModernSidebar from "@/components/ModernSidebar";
-import TrialBanner from "@/components/TrialBanner";
 import { useUser } from "@/context/UserContext";
 import { useSidebar } from "@/hooks/use-sidebar";
 import TopBar from "@/components/TopBar";
@@ -53,16 +52,7 @@ export default function ParentsLayout({
       <ModernSidebar />
       <ResponsiveMain>
         <TopBar />
-        <div className="px-4 lg:px-6 pt-1 pb-6">
-        {/* Mostrar banner de trial si aplica */}
-        {/* TrialBanner internamente oculta si no es trial */}
-        <TrialBanner user={{
-          id: user.id,
-          accountStatus: (user as any).accountStatus,
-          isTrialAccount: (user as any).isTrialAccount,
-          trialExpiresAt: (user as any).trialExpiresAt || null,
-        }} />
-
+        <div className="px-4 lg:px-6 pt-6 pb-6">
           {children}
         </div>
       </ResponsiveMain>

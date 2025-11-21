@@ -1,18 +1,27 @@
-# https://www.robotstxt.org/robotstxt.html
 User-agent: *
 Allow: /
 
-# Disallow admin and API routes
+# Páginas públicas que sí deben indexarse
+Allow: /terms
+Allow: /privacy
+Allow: /security
+Allow: /help
+Allow: /docs
+Allow: /contact
+
+# Bloquear login y registro
+Disallow: /login
+Disallow: /register
+
+# Bloquear partes privadas del sistema
 Disallow: /admin/
 Disallow: /api/
 Disallow: /profesor/
-Disallow: /swimmer/
 Disallow: /parents/
+Disallow: /swimmer/
 Disallow: /club/
-
-# Allow public pages
-Allow: /login
-Allow: /register
+Disallow: /dashboard/
+Disallow: /panel/
 
 # Sitemap
 Sitemap: https://time4swim.com/sitemap.xml
