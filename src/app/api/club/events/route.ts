@@ -45,7 +45,7 @@ export async function GET(request: Request) {
       });
     } else {
       // Club ve solo sus eventos
-      const userClubRelation = await prisma.userClub.findFirst({
+      const userClubRelation = await (prisma as any).userclub.findFirst({
         where: { userId: auth.user.id },
         include: { club: true },
       });
@@ -159,7 +159,7 @@ export async function POST(request: Request) {
       }
       clubId = firstClub.id;
     } else {
-      const userClubRelation = await prisma.userClub.findFirst({
+      const userClubRelation = await (prisma as any).userclub.findFirst({
         where: { userId: auth.user.id },
         include: { club: true },
       });

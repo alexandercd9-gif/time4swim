@@ -35,9 +35,9 @@ export async function POST(
       );
     }
 
-    const userClub = await prisma.userClub.findFirst({
+    const userClub = await (prisma as any).userclub.findFirst({
       where: {
-        userId: user.id,
+        userId: auth.user.id,
         clubId: event.clubId,
         isActive: true
       }

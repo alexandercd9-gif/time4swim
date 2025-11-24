@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
+// Force recompile - fixed userchild relation
 export async function GET(request: NextRequest) {
   try {
     const { user } = await requireAuth(request, ['PARENT']);
@@ -12,13 +13,13 @@ export async function GET(request: NextRequest) {
       include: {
         subscription: {
           include: {
-            payments: {
+            payment: {
               orderBy: { createdAt: 'desc' },
               take: 12 // Últimos 12 pagos
             }
           }
         },
-        children: {
+        userchild: {
           where: { isActive: true }, // Solo contar hijos activos
           select: { id: true }
         }
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
     // Si no tiene suscripción, devolver datos de trial
     if (!data.subscription) {
       // Contar cuántos hijos tiene registrados actualmente
-      const childrenCount = data.children?.length || 0;
+      const childrenCount = data.userchild?.length || 0;
       
       return NextResponse.json({
         subscription: {
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
     };
 
     const sub = data.subscription;
-    const payments = sub.payments || [];
+    const payments = sub.payment || [];
 
     return NextResponse.json({
       subscription: {
@@ -71,7 +72,7 @@ export async function GET(request: NextRequest) {
         status: sub.status,
         currentPeriodEnd: sub.currentPeriodEnd,
         maxChildren: sub.maxChildren,
-        childrenCount: data.children?.length || 0,
+        childrenCount: data.userchild?.length || 0,
         cardLastFour: sub.culqiCardId ? sub.culqiCardId.slice(-4) : null,
         cardBrand: 'Visa', // TODO: Obtener de Culqi
         isTrialAccount: data.isTrialAccount,

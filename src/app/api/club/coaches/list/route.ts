@@ -24,7 +24,7 @@ export async function GET() {
     }
 
     // Obtener el club del usuario
-    const userClubRelation = await prisma.userClub.findFirst({
+    const userClubRelation = await (prisma as any).userclub.findFirst({
       where: { userId: decoded.userId },
     });
 

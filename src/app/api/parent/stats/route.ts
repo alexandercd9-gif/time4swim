@@ -7,7 +7,7 @@ export async function GET(request: Request) {
     const { user } = await requireAuth(request, ['PARENT']);
     
     // Obtener los hijos del padre
-    const userChildren = await (prisma as any).userChild.findMany({
+    const userChildren = await (prisma as any).userchild.findMany({
       where: {
         userId: user.id,
         isActive: true
@@ -15,7 +15,7 @@ export async function GET(request: Request) {
       include: {
         child: {
           include: {
-            records: true,
+            record: true,
             club: {
               select: {
                 name: true
@@ -31,11 +31,11 @@ export async function GET(request: Request) {
     // Calcular estadísticas familiares
     const totalChildren = children.length;
     const totalTrainings = 0; // Temporalmente 0 hasta implementar trainings
-    const totalRecords = children.reduce((sum: number, child: any) => sum + child.records.length, 0);
+    const totalRecords = children.reduce((sum: number, child: any) => sum + child.record.length, 0);
     
     // Competencias (records con competition)
     const totalCompetitions = children.reduce((sum: number, child: any) => {
-      return sum + child.records.filter((record: any) => record.competition && record.competition.trim() !== '').length;
+      return sum + child.record.filter((record: any) => record.competition && record.competition.trim() !== '').length;
     }, 0);
 
     // Entrenamientos este mes (temporalmente 0)
@@ -43,7 +43,7 @@ export async function GET(request: Request) {
 
     // Records personales (marcados como personal best)
     const personalBests = children.reduce((sum: number, child: any) => {
-      return sum + child.records.filter((record: any) => record.isPersonalBest).length;
+      return sum + child.record.filter((record: any) => record.isPersonalBest).length;
     }, 0);
 
     // Información detallada de los hijos
@@ -52,11 +52,11 @@ export async function GET(request: Request) {
       name: child.name,
       club: child.club?.name || 'Sin club asignado',
       trainings: 0, // Temporalmente 0
-      records: child.records.length,
-      competitions: child.records.filter((record: any) => 
+      records: child.record.length,
+      competitions: child.record.filter((record: any) => 
         record.competition && record.competition.trim() !== ''
       ).length,
-      personalBests: child.records.filter((record: any) => record.isPersonalBest).length
+      personalBests: child.record.filter((record: any) => record.isPersonalBest).length
     }));
 
     return NextResponse.json({

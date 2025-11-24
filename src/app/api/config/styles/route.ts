@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 // GET: Devuelve los estilos activos con nombre en español
 export async function GET(request: NextRequest) {
   try {
-    const styles = await prisma.swimStyleConfig.findMany({
+    const styles = await (prisma as any).swimstyleconfig.findMany({
       where: { 
         isActive: true,
         style: {
@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
     });
     return NextResponse.json(styles);
   } catch (error) {
+    console.error('Error en /api/config/styles:', error);
     return NextResponse.json({ error: "Error al obtener estilos" }, { status: 500 });
   }
 }

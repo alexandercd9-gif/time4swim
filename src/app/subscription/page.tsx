@@ -5,6 +5,8 @@ import { Check, Crown, Users, CreditCard, Lock, ArrowLeft, AlertCircle, Loader2 
 import Link from "next/link";
 import Script from "next/script";
 
+// Updated: Multiple payment processors support
+
 // Declaración global de Culqi
 declare global {
   interface Window {
@@ -24,11 +26,52 @@ export default function SubscriptionPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [culqiLoaded, setCulqiLoaded] = useState(false);
+  const [selectedProcessor, setSelectedProcessor] = useState<'culqi' | 'mercadopago'>('mercadopago');
+  const [availableProcessors, setAvailableProcessors] = useState<any[]>([]);
+  const [mercadopagoLoaded, setMercadopagoLoaded] = useState(false);
+  const [mercadopagoPublicKey, setMercadopagoPublicKey] = useState('');
+
+  // Obtener procesadores de pago disponibles
+  useEffect(() => {
+    fetch('/api/config/payment-processor')
+      .then(res => res.json())
+      .then(data => {
+        setAvailableProcessors(data.processors || []);
+        if (data.processors && data.processors.length > 0) {
+          const processor = data.processors[0];
+          setSelectedProcessor(processor.id);
+          if (processor.id === 'mercadopago' && processor.publicKey) {
+            setMercadopagoPublicKey(processor.publicKey);
+          }
+        }
+        console.log('✅ Procesadores disponibles:', data.processors);
+      })
+      .catch(err => {
+        console.error('Error obteniendo procesadores:', err);
+      });
+  }, []);
+
+  // Cargar SDK de MercadoPago
+  useEffect(() => {
+    if (selectedProcessor === 'mercadopago' && mercadopagoPublicKey && !mercadopagoLoaded) {
+      const script = document.createElement('script');
+      script.src = 'https://sdk.mercadopago.com/js/v2';
+      script.async = true;
+      script.onload = () => {
+        const mp = new (window as any).MercadoPago(mercadopagoPublicKey, {
+          locale: 'es-PE'
+        });
+        (window as any).mpInstance = mp;
+        setMercadopagoLoaded(true);
+        console.log('✅ MercadoPago SDK cargado');
+      };
+      document.body.appendChild(script);
+    }
+  }, [selectedProcessor, mercadopagoPublicKey, mercadopagoLoaded]);
 
   // Configurar Culqi cuando se cargue el script
   useEffect(() => {
-    if (window.Culqi && !culqiLoaded) {
-      // TODO: Reemplazar con tu NEXT_PUBLIC_CULQI_PUBLIC_KEY del .env.local
+    if (selectedProcessor === 'culqi' && window.Culqi && !culqiLoaded) {
       const publicKey = process.env.NEXT_PUBLIC_CULQI_PUBLIC_KEY || 'pk_test_XXXXXXXX';
       
       window.Culqi.publicKey = publicKey;
@@ -40,7 +83,7 @@ export default function SubscriptionPage() {
       setCulqiLoaded(true);
       console.log('✅ Culqi configurado correctamente');
     }
-  }, [culqiLoaded]);
+  }, [culqiLoaded, selectedProcessor]);
 
   // Formatear número de tarjeta (XXXX XXXX XXXX XXXX)
   const formatCardNumber = (value: string) => {
@@ -144,7 +187,8 @@ export default function SubscriptionPage() {
       return;
     }
 
-    if (!culqiLoaded || !window.Culqi) {
+    // Verificar procesador Culqi
+    if (selectedProcessor === 'culqi' && (!culqiLoaded || !window.Culqi)) {
       setError('Sistema de pagos no disponible. Recarga la página.');
       return;
     }
@@ -152,6 +196,42 @@ export default function SubscriptionPage() {
     setIsProcessing(true);
 
     try {
+      if (selectedProcessor === 'mercadopago') {
+        if (!mercadopagoLoaded || !(window as any).mpInstance) {
+          setError('Sistema de pagos no disponible. Recarga la página.');
+          setIsProcessing(false);
+          return;
+        }
+
+        const mp = (window as any).mpInstance;
+        const cardNumberClean = cardNumber.replace(/\s/g, '');
+        const [month, year] = expiry.split('/');
+
+        try {
+          const cardToken = await mp.createCardToken({
+            cardNumber: cardNumberClean,
+            cardholderName: cardName,
+            cardExpirationMonth: month,
+            cardExpirationYear: '20' + year,
+            securityCode: cvv,
+            identificationType: 'DNI',
+            identificationNumber: '12345678' // TODO: Obtener del usuario
+          });
+
+          if (cardToken.error) {
+            throw new Error(cardToken.error.message || 'Error al tokenizar tarjeta');
+          }
+
+          console.log('✅ Token MercadoPago creado:', cardToken.id);
+          await createSubscriptionMercadoPago(cardToken.id);
+        } catch (mpError: any) {
+          console.error('Error MercadoPago:', mpError);
+          setError(mpError.message || 'Error al procesar la tarjeta');
+          setIsProcessing(false);
+        }
+        return;
+      }
+
       // Crear token de Culqi
       const [month, year] = expiry.split('/');
       const cardNumberClean = cardNumber.replace(/\s/g, '');
@@ -162,7 +242,10 @@ export default function SubscriptionPage() {
           createSubscription(window.Culqi.token.id);
         } else {
           // Handler de error
-          setError(window.Culqi.error.user_message || 'Error al procesar la tarjeta');
+          const errorMessage = window.Culqi.error?.user_message || 
+                              window.Culqi.error?.merchant_message || 
+                              'Error al procesar la tarjeta';
+          setError(errorMessage);
           setIsProcessing(false);
         }
       };
@@ -183,7 +266,38 @@ export default function SubscriptionPage() {
     }
   };
 
-  // Crear suscripción en backend
+  // Crear suscripción con MercadoPago
+  const createSubscriptionMercadoPago = async (mpToken: string) => {
+    try {
+      const response = await fetch('/api/subscription/create-mercadopago', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          planId: selectedPlan,
+          token: mpToken,
+          cardholderName: cardName,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al crear la suscripción');
+      }
+
+      console.log('✅ Suscripción MercadoPago creada:', data);
+      window.location.href = '/parents/cuenta?success=true';
+
+    } catch (error: any) {
+      console.error('Error creando suscripción MP:', error);
+      setError(error.message || 'Error al completar la suscripción');
+      setIsProcessing(false);
+    }
+  };
+
+  // Crear suscripción en backend (Culqi)
   const createSubscription = async (culqiToken: string) => {
     try {
       const response = await fetch('/api/subscription/create', {
@@ -508,6 +622,50 @@ export default function SubscriptionPage() {
                     <CreditCard className="h-6 w-6 text-gray-600" />
                     <h2 className="text-2xl font-bold text-gray-900">Información de Pago</h2>
                   </div>
+
+                  {/* Selector de Método de Pago */}
+                  {availableProcessors.length > 0 && (
+                    <div className="mb-8">
+                      <label className="block text-sm font-medium text-gray-700 mb-3">
+                        Selecciona tu método de pago preferido
+                      </label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {availableProcessors.map((processor) => (
+                          <button
+                            key={processor.id}
+                            type="button"
+                            onClick={() => setSelectedProcessor(processor.id)}
+                            disabled={isProcessing}
+                            className={`
+                              relative p-6 rounded-xl border-2 transition-all
+                              ${selectedProcessor === processor.id
+                                ? 'border-blue-500 bg-blue-50 shadow-md'
+                                : 'border-gray-200 bg-white hover:border-gray-300'
+                              }
+                              ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                            `}
+                          >
+                            {selectedProcessor === processor.id && (
+                              <div className="absolute top-3 right-3">
+                                <div className="bg-blue-500 rounded-full p-1">
+                                  <Check className="h-4 w-4 text-white" />
+                                </div>
+                              </div>
+                            )}
+                            <div className="flex flex-col items-center gap-3">
+                              <div className="text-4xl font-bold text-gray-800">
+                                {processor.id === 'culqi' ? '💳' : '💰'}
+                              </div>
+                              <div className="text-center">
+                                <p className="font-semibold text-gray-900">{processor.name}</p>
+                                <p className="text-xs text-gray-500 mt-1">{processor.description}</p>
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Alerta de error */}
                   {error && (

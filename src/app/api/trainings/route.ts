@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 
     // Si es PARENT, validar que el hijo le pertenece
     if (auth.user.role === "PARENT") {
-      const relation = await (prisma as any).userChild.findFirst({
+      const relation = await (prisma as any).userchild.findFirst({
         where: { userId: auth.user.id, childId, isActive: true },
       });
       if (!relation) {
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
 
     // Validar relación padre-hijo para PARENT
     if (auth.user.role === "PARENT") {
-      const relation = await (prisma as any).userChild.findFirst({
+      const relation = await (prisma as any).userchild.findFirst({
         where: { userId: auth.user.id, childId, isActive: true },
       });
       if (!relation) {

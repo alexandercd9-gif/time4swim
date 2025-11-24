@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     const hasAccess = subscription?.mediaGalleryAddon || subscription?.mediaGalleryIsFree || false;
 
     // Get allowed children IDs
-    const relations = await (prisma as any).userChild.findMany({
+    const relations = await (prisma as any).userchild.findMany({
       where: { userId: auth.user.id, isActive: true },
       select: { childId: true },
     });

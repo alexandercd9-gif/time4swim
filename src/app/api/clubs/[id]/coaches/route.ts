@@ -11,7 +11,7 @@ export async function GET(
     console.log('🔍 Buscando entrenadores para club:', id);
 
     // Buscar entrenadores asociados al club a través de UserClub
-    const userClubs = await prisma.userClub.findMany({
+    const userClubs = await (prisma as any).userclub.findMany({
       where: {
         clubId: id,
         isActive: true,

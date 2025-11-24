@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type'); // 'styles' o 'pools'
 
     if (type === 'styles') {
-      const styles = await prisma.swimStyleConfig.findMany({
+      const styles = await (prisma as any).swimstyleconfig.findMany({
         where: { isActive: true },
         orderBy: { style: 'asc' }
       });
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     } 
     
     if (type === 'pools') {
-      const pools = await prisma.poolTypeConfig.findMany({
+      const pools = await (prisma as any).pooltypeconfig.findMany({
         where: { isActive: true },
         orderBy: { poolSize: 'asc' }
       });
@@ -27,11 +27,11 @@ export async function GET(request: NextRequest) {
 
     // Si no se especifica tipo, devolver ambos
     const [styles, pools] = await Promise.all([
-      prisma.swimStyleConfig.findMany({
+      (prisma as any).swimstyleconfig.findMany({
         where: { isActive: true },
         orderBy: { style: 'asc' }
       }),
-      prisma.poolTypeConfig.findMany({
+      (prisma as any).pooltypeconfig.findMany({
         where: { isActive: true },
         orderBy: { poolSize: 'asc' }
       })

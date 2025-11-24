@@ -23,7 +23,7 @@ export async function POST(
 
     // Verificar permisos
     if (auth.user.role === 'CLUB') {
-      const userClubRelation = await prisma.userClub.findFirst({
+      const userClubRelation = await (prisma as any).userclub.findFirst({
         where: { userId: auth.user.id },
       });
 

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const childId = searchParams.get('childId');
 
     // Obtener hijos del usuario (vía relación UserChild)
-    const relations = await (prisma as any).userChild.findMany({
+    const relations = await (prisma as any).userchild.findMany({
       where: {
         userId: user.user.id,
         isActive: true,

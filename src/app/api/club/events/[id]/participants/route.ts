@@ -29,7 +29,7 @@ export async function GET(
 
     // Verificar permisos para CLUB role
     if (auth.user.role === 'CLUB') {
-      const userClubRelation = await prisma.userClub.findFirst({
+      const userClubRelation = await (prisma as any).userclub.findFirst({
         where: { userId: auth.user.id },
       });
 
@@ -39,7 +39,7 @@ export async function GET(
     }
 
     // Obtener todas las participaciones del evento
-    const participations = await prisma.eventParticipation.findMany({
+    const participations = await (prisma as any).eventparticipation.findMany({
       where: {
         eventId,
       },

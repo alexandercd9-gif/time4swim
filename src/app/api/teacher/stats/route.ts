@@ -7,7 +7,7 @@ export async function GET(request: Request) {
     const { user } = await requireAuth(request, ['TEACHER']);
     
     // Obtener el club del profesor
-    const teacherClub = await (prisma as any).userClub.findFirst({
+    const teacherClub = await (prisma as any).userclub.findFirst({
       where: {
         userId: user.id,
         isActive: true

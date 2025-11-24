@@ -39,7 +39,7 @@ export async function GET(request: Request) {
     }
 
     // For parents: filter events by their children's clubs and categories
-    const userChildren = await prisma.userChild.findMany({
+    const userChildren = await (prisma as any).userchild.findMany({
       where: { 
         userId: auth.user.id,
         isActive: true

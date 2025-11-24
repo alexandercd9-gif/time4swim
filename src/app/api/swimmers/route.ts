@@ -24,8 +24,8 @@ export async function GET(request: NextRequest) {
           },
           _count: {
             select: {
-              records: true,
-              trainings: true
+              record: true,
+              training: true
             }
           }
         },
@@ -34,8 +34,8 @@ export async function GET(request: NextRequest) {
         }
       });
     } else {
-      // Para parents, obtener solo los hijos asociados a través de UserChild
-      const userChildRelations = await (prisma as any).userChild.findMany({
+      // Para parents, obtener solo los hijos asociados a través de userchild
+      const userChildRelations = await (prisma as any).userchild.findMany({
         where: {
           userId: auth.user.id,
           isActive: true
@@ -51,8 +51,8 @@ export async function GET(request: NextRequest) {
               },
               _count: {
                 select: {
-                  records: true,
-                  trainings: true
+                  record: true,
+                  training: true
                 }
               }
             }
@@ -132,15 +132,15 @@ export async function POST(request: NextRequest) {
       include: {
         _count: {
           select: {
-            records: true,
-            trainings: true
+            record: true,
+            training: true
           }
         }
       }
     });
 
     // Crear relación parent-child
-    await (prisma as any).userChild.create({
+    await (prisma as any).userchild.create({
       data: {
         userId: auth.user.id,
         childId: child.id

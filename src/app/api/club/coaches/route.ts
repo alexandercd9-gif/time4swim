@@ -8,7 +8,7 @@ export async function GET(request: Request) {
     const auth = await requireAuth(request as any, ['CLUB', 'ADMIN']);
     
     // Obtener el club del usuario
-    const userClubRelation = await prisma.userClub.findFirst({
+    const userClubRelation = await (prisma as any).userclub.findFirst({
       where: { userId: auth.user.id },
     });
 
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     }
 
     // Obtener el clubId del usuario autenticado
-    const userClubRelation = await prisma.userClub.findFirst({
+    const userClubRelation = await (prisma as any).userclub.findFirst({
       where: { userId: auth.user.id },
     });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -80,6 +80,11 @@ export default function BestTimesByStyle({ showExpandedView = false, compactFilt
     fetch("/api/swimmers", { credentials: "include" })
       .then((r) => r.json())
       .then((rows) => {
+        // Validar que rows sea un array
+        if (!Array.isArray(rows)) {
+          console.error('Swimmers API no devolvió un array:', rows);
+          return;
+        }
         const mapped: Array<{ id: string; name: string }> = (rows || []).map((c: any) => ({ id: c.id, name: c.name }));
         setChildren(mapped);
         if (mapped.length > 0) {
@@ -93,6 +98,11 @@ export default function BestTimesByStyle({ showExpandedView = false, compactFilt
     fetch('/api/config/styles')
       .then(res => res.json())
       .then(data => {
+        // Validar que data sea un array
+        if (!Array.isArray(data)) {
+          console.error('Styles API no devolvió un array:', data);
+          return;
+        }
         const stylesWithIcons = data.map((s: any) => ({
           key: s.style,
           label: s.nameEs,
@@ -544,9 +554,8 @@ export default function BestTimesByStyle({ showExpandedView = false, compactFilt
                 const showLaps = expandedLaps[r.key] || false;
 
                 return (
-                  <>
+                  <React.Fragment key={r.key}>
                     <tr 
-                      key={r.key}
                       className={`border-b border-gray-200 transition-colors ${
                         r.time != null 
                           ? 'hover:bg-blue-50/50' 
@@ -664,7 +673,7 @@ export default function BestTimesByStyle({ showExpandedView = false, compactFilt
                         </td>
                       </tr>
                     )}
-                  </>
+                  </React.Fragment>
                 );
               })}
             </tbody>

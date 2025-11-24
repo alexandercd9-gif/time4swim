@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Obtener los hijos del usuario a través de UserChild
-    const userChildren = await (prisma as any).userChild.findMany({
+    const userChildren = await (prisma as any).userchild.findMany({
       where: {
         userId: decoded.userId,
         isActive: true

@@ -15,7 +15,7 @@ const navByRole = {
   ],
   parents: [
     { href: "/parents/dashboard", label: "Mis Hijos", icon: <Users size={20} /> },
-    { href: "/parents/entrenamientos", label: "Entrenamientos", icon: <BarChart size={20} /> },
+    { href: "/parents/tiempos", label: "Entrenamientos", icon: <BarChart size={20} /> },
     { href: "/parents/competencias", label: "Competencias", icon: <Medal size={20} /> },
     { href: "/parents/records", label: "Records", icon: <Medal size={20} /> },
   ],

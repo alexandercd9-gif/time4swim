@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
     const user = await requireAuth(req, ['PARENT']);
     
     // Get all children IDs for this parent
-    const userChildren = await prisma.userChild.findMany({
+    const userChildren = await (prisma as any).userchild.findMany({
       where: {
         userId: user.user.id,
         isActive: true

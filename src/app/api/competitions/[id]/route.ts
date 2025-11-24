@@ -68,7 +68,7 @@ export async function PUT(
 
     // Si no es admin, verificar que el nadador le pertenece
     if ((user as any).role !== 'ADMIN') {
-      const userChildRelation = await (prisma as any).userChild.findFirst({
+      const userChildRelation = await (prisma as any).userchild.findFirst({
         where: {
           userId: decoded.userId,
           childId: existingRecord.childId,
@@ -230,7 +230,7 @@ export async function DELETE(
 
     // Si no es admin, verificar que el nadador le pertenece
     if ((user as any).role !== 'ADMIN') {
-      const userChildRelation = await (prisma as any).userChild.findFirst({
+      const userChildRelation = await (prisma as any).userchild.findFirst({
         where: {
           userId: decoded.userId,
           childId: existingRecord.childId,

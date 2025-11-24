@@ -116,7 +116,7 @@ export async function PUT(
 
     // Verificar permisos: ADMIN puede editar cualquier nadador, PARENT solo los suyos
     if ((auth.user as any).role !== 'ADMIN') {
-      const userChildRelation = await (prisma as any).userChild.findFirst({
+      const userChildRelation = await (prisma as any).userchild.findFirst({
         where: {
           userId: auth.user.id,
           childId: childId,
@@ -216,7 +216,7 @@ export async function DELETE(
 
     // Verificar permisos: ADMIN puede eliminar cualquier nadador, PARENT solo los suyos
     if ((auth.user as any).role !== 'ADMIN') {
-      const userChildRelation = await (prisma as any).userChild.findFirst({
+      const userChildRelation = await (prisma as any).userchild.findFirst({
         where: {
           userId: auth.user.id,
           childId: childId,

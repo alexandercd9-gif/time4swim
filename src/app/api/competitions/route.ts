@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       });
     } else {
       // Obtener hijos del padre a través de UserChild
-      const userChildren = await (prisma as any).userChild.findMany({
+      const userChildren = await (prisma as any).userchild.findMany({
         where: { 
           userId: decoded.userId,
           isActive: true
@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
 
     // Si no es admin, verificar que el nadador le pertenece
     if (user.role !== 'ADMIN') {
-      const userChildRelation = await (prisma as any).userChild.findFirst({
+      const userChildRelation = await (prisma as any).userchild.findFirst({
         where: {
           userId: decoded.userId,
           childId: childId,

@@ -22,26 +22,448 @@ export default function ConfiguracionPage() {
         </div>
       </div>
       
-      <Tabs defaultValue="culqi" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+      <Tabs defaultValue="procesador" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="procesador" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Procesador de Pago
+          </TabsTrigger>
           <TabsTrigger value="culqi" className="flex items-center gap-2">
             <DollarSign className="h-4 w-4" />
-            Culqi (Pagos)
+            Culqi
           </TabsTrigger>
-          <TabsTrigger value="promociones" className="flex items-center gap-2">
-            <Tag className="h-4 w-4" />
-            Promociones
+          <TabsTrigger value="mercadopago" className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4" />
+            MercadoPago
           </TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="procesador" className="mt-6">
+          <ProcessorSelection />
+        </TabsContent>
         
         <TabsContent value="culqi" className="mt-6">
           <CulqiConfiguration />
         </TabsContent>
         
-        <TabsContent value="promociones" className="mt-6">
-          <PromocionesConfiguration />
+        <TabsContent value="mercadopago" className="mt-6">
+          <MercadoPagoConfiguration />
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function ProcessorSelection() {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [activeProcessor, setActiveProcessor] = useState<string>('culqi');
+
+  useEffect(() => {
+    fetchActiveProcessor();
+  }, []);
+
+  const fetchActiveProcessor = async () => {
+    try {
+      // El endpoint retorna todos los procesadores disponibles
+      // El primero en la lista es el activo
+      const res = await fetch('/api/config/payment-processor');
+      if (res.ok) {
+        const data = await res.json();
+        // Si hay procesadores, usar el primero como activo
+        if (data.processors && data.processors.length > 0) {
+          setActiveProcessor(data.processors[0].id);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching processor:', error);
+      setActiveProcessor('culqi');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleProcessorChange = (processorId: string) => {
+    setActiveProcessor(processorId);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/admin/config/processor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          enabledProcessors: [activeProcessor] 
+        })
+      });
+
+      if (res.ok) {
+        toast.success('✅ Procesador de pago actualizado');
+      } else {
+        const data = await res.json();
+        toast.error(data.error || 'Error al actualizar');
+      }
+    } catch (error) {
+      toast.error('Error al guardar');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="h-5 w-5 text-blue-600" />
+            Seleccionar Procesador de Pagos Activo
+          </CardTitle>
+          <CardDescription>
+            Elige qué sistema de pagos usarán tus usuarios al suscribirse
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Opciones */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Culqi */}
+            <div 
+              onClick={() => handleProcessorChange('culqi')}
+              className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${
+                activeProcessor === 'culqi'
+                  ? 'border-blue-500 bg-blue-50' 
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <input
+                  type="radio"
+                  name="processor"
+                  checked={activeProcessor === 'culqi'}
+                  onChange={() => handleProcessorChange('culqi')}
+                  className="mt-1 w-4 h-4"
+                />
+                <div>
+                  <h3 className="font-semibold text-lg mb-1">🇵🇪 Culqi</h3>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Procesador de pagos peruano. Ideal para e-commerce.
+                  </p>
+                  <div className="text-xs text-gray-500 space-y-1">
+                    <div>✅ Tarjetas locales</div>
+                    <div>✅ Comisión: ~3.5% + IGV</div>
+                    <div>⚠️ Orientado a e-commerce</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* MercadoPago */}
+            <div 
+              onClick={() => handleProcessorChange('mercadopago')}
+              className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${
+                activeProcessor === 'mercadopago'
+                  ? 'border-blue-500 bg-blue-50' 
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <input
+                  type="radio"
+                  name="processor"
+                  checked={activeProcessor === 'mercadopago'}
+                  onChange={() => handleProcessorChange('mercadopago')}
+                  className="mt-1 w-4 h-4"
+                />
+                <div>
+                  <h3 className="font-semibold text-lg mb-1">💙 MercadoPago</h3>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Líder en Latinoamérica. Soporta suscripciones recurrentes.
+                  </p>
+                  <div className="text-xs text-gray-500 space-y-1">
+                    <div>✅ Suscripciones nativas</div>
+                    <div>✅ Comisión: ~4% + IGV</div>
+                    <div>✅ Excelente para SaaS</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Botón guardar */}
+          <Button onClick={handleSave} disabled={saving}>
+            <Save className="h-4 w-4 mr-2" />
+            {saving ? 'Guardando...' : 'Guardar Selección'}
+          </Button>
+
+          {/* Info */}
+          <Card className="border-amber-200 bg-amber-50">
+            <CardContent className="pt-6">
+              <div className="flex gap-3">
+                <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-amber-800">
+                  <p className="font-semibold mb-1">💡 Recomendación</p>
+                  <p>
+                    Configura <strong>ambos procesadores</strong> en sus respectivas pestañas y luego
+                    selecciona cuál estará activo. Podrás cambiar entre ellos en cualquier momento.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function MercadoPagoConfiguration() {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [showAccessToken, setShowAccessToken] = useState(false);
+  const [config, setConfig] = useState({
+    mercadopagoPublicKey: "",
+    mercadopagoAccessToken: "",
+    mercadopagoMode: "test" // test | live
+  });
+  const [isConfigured, setIsConfigured] = useState(false);
+
+  useEffect(() => {
+    fetchConfig();
+  }, []);
+
+  const fetchConfig = async () => {
+    try {
+      const res = await fetch('/api/admin/config/mercadopago', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setConfig({
+          mercadopagoPublicKey: data.mercadopagoPublicKey || "",
+          mercadopagoAccessToken: data.mercadopagoAccessToken || "",
+          mercadopagoMode: data.mercadopagoMode || "test"
+        });
+        setIsConfigured(!!data.mercadopagoPublicKey && !!data.mercadopagoAccessToken);
+      }
+    } catch (error) {
+      console.error('Error fetching config:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!config.mercadopagoPublicKey.trim() || !config.mercadopagoAccessToken.trim()) {
+      toast.error('Ambas credenciales son requeridas');
+      return;
+    }
+
+    // Validar formatos básicos
+    const keyPrefix = config.mercadopagoMode === 'test' ? 'TEST-' : 'APP_USR-';
+    if (!config.mercadopagoPublicKey.startsWith(keyPrefix)) {
+      toast.error(`La Public Key debe comenzar con ${keyPrefix}`);
+      return;
+    }
+    if (!config.mercadopagoAccessToken.startsWith(keyPrefix)) {
+      toast.error(`El Access Token debe comenzar con ${keyPrefix}`);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await fetch('/api/admin/config/mercadopago', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(config)
+      });
+
+      if (res.ok) {
+        toast.success('✅ Configuración de MercadoPago guardada');
+        setIsConfigured(true);
+      } else {
+        const data = await res.json();
+        toast.error(data.error || 'Error al guardar configuración');
+      }
+    } catch (error) {
+      console.error('Error saving config:', error);
+      toast.error('Error al conectar con el servidor');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Estado de Configuración */}
+      <Card className={isConfigured ? 'border-green-200 bg-green-50' : 'border-orange-200 bg-orange-50'}>
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-3">
+            {isConfigured ? (
+              <>
+                <CheckCircle2 className="h-6 w-6 text-green-600" />
+                <div>
+                  <p className="font-semibold text-green-900">✅ MercadoPago configurado</p>
+                  <p className="text-sm text-green-700">Las credenciales de MercadoPago están listas</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <AlertCircle className="h-6 w-6 text-orange-600" />
+                <div>
+                  <p className="font-semibold text-orange-900">⚠️ MercadoPago no configurado</p>
+                  <p className="text-sm text-orange-700">Agrega tus credenciales para habilitar MercadoPago</p>
+                </div>
+              </>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Formulario de Configuración */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5 text-blue-600" />
+            Credenciales de MercadoPago
+          </CardTitle>
+          <CardDescription>
+            Obtén tus credenciales desde: <a href="https://www.mercadopago.com.pe/developers/panel/app" target="_blank" className="text-blue-600 hover:underline">Developers Panel</a>
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSave} className="space-y-6">
+            {/* Modo */}
+            <div className="space-y-2">
+              <Label>Modo de Operación</Label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="mode"
+                    value="test"
+                    checked={config.mercadopagoMode === "test"}
+                    onChange={(e) => setConfig({ ...config, mercadopagoMode: e.target.value })}
+                    className="w-4 h-4"
+                  />
+                  <span>Test (Pruebas)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="mode"
+                    value="live"
+                    checked={config.mercadopagoMode === "live"}
+                    onChange={(e) => setConfig({ ...config, mercadopagoMode: e.target.value })}
+                    className="w-4 h-4"
+                  />
+                  <span>Live (Producción)</span>
+                </label>
+              </div>
+              <p className="text-xs text-gray-500">
+                {config.mercadopagoMode === 'test' 
+                  ? '🔧 Modo prueba: Usa credenciales TEST-xxxxx' 
+                  : '🚀 Modo producción: Usa credenciales APP_USR-xxxxx'}
+              </p>
+            </div>
+
+            {/* Public Key */}
+            <div className="space-y-2">
+              <Label htmlFor="publicKey">Public Key</Label>
+              <Input
+                id="publicKey"
+                type="text"
+                placeholder={config.mercadopagoMode === 'test' ? 'TEST-xxxxx-xxxxx-xxxxx' : 'APP_USR-xxxxx-xxxxx-xxxxx'}
+                value={config.mercadopagoPublicKey}
+                onChange={(e) => setConfig({ ...config, mercadopagoPublicKey: e.target.value })}
+              />
+            </div>
+
+            {/* Access Token */}
+            <div className="space-y-2">
+              <Label htmlFor="accessToken">Access Token</Label>
+              <div className="relative">
+                <Input
+                  id="accessToken"
+                  type={showAccessToken ? "text" : "password"}
+                  placeholder={config.mercadopagoMode === 'test' ? 'TEST-xxxxx-xxxxx-xxxxx' : 'APP_USR-xxxxx-xxxxx-xxxxx'}
+                  value={config.mercadopagoAccessToken}
+                  onChange={(e) => setConfig({ ...config, mercadopagoAccessToken: e.target.value })}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowAccessToken(!showAccessToken)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2"
+                >
+                  {showAccessToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Botones */}
+            <div className="flex gap-3">
+              <Button type="submit" disabled={saving}>
+                <Save className="h-4 w-4 mr-2" />
+                {saving ? 'Guardando...' : 'Guardar Configuración'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Guía de prueba */}
+      <Card className="border-blue-200 bg-blue-50">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <CheckCircle2 className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-blue-800">
+              <p className="font-semibold mb-2">💳 Tarjetas de prueba de MercadoPago</p>
+              <div className="space-y-1 font-mono text-xs">
+                <div><strong>Visa aprobada:</strong> 4509 9535 6623 3704</div>
+                <div><strong>Mastercard aprobada:</strong> 5031 7557 3453 0604</div>
+                <div><strong>CVV:</strong> Cualquier 3 dígitos (ej: 123)</div>
+                <div><strong>Fecha:</strong> Cualquier fecha futura</div>
+                <div><strong>Nombre:</strong> APRO (para aprobar) / OTHE (para rechazar)</div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Info de Seguridad */}
+      <Card className="border-amber-200 bg-amber-50">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-amber-800">
+              <p className="font-semibold mb-1">🔒 Seguridad</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Las credenciales se guardan cifradas en la base de datos</li>
+                <li>El Access Token nunca se envía al navegador</li>
+                <li>Usa modo <strong>Test</strong> hasta estar listo para producción</li>
+                <li>Las credenciales de TEST no funcionan en producción y viceversa</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

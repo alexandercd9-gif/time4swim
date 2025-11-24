@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
         );
       }
     } else if (isVideo) {
-      const maxVideoSize = 30 * 1024 * 1024; // 30MB para videos
+      const maxVideoSize = 35 * 1024 * 1024; // 35MB para videos (límite real interno)
       if (file.size > maxVideoSize) {
         return NextResponse.json(
           { 

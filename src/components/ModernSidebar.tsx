@@ -30,7 +30,7 @@ const navByRole = {
     { href: "/parents/dashboard", label: "Dashboard", icon: Home, description: "Vista general" },
     { href: "/parents/children", label: "Mis Hijos", icon: Users, description: "Nadadores registrados" },
     { href: "/parents/cronometro", label: "Cronómetro", icon: Timer, description: "Registrar tiempos" },
-    { href: "/parents/entrenamientos", label: "Análisis de Tiempos", icon: TrendingUp, description: "Análisis avanzado" },
+    { href: "/parents/tiempos", label: "Análisis de Tiempos", icon: TrendingUp, description: "Análisis avanzado" },
     { href: "/parents/galeria", label: "Galería", icon: Camera, description: "Fotos y videos" },
     { href: "/parents/competencias", label: "Competencias", icon: Medal, description: "Participaciones" },
     { href: "/parents/events", label: "Eventos", icon: Calendar, description: "Próximas competencias" },

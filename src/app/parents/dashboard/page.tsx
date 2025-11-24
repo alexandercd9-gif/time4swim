@@ -58,7 +58,10 @@ export default function ParentsDashboard() {
     const fetchStats = async () => {
       try {
         const res = await fetch('/api/parent/stats', { credentials: 'include' });
-        if (!res.ok) throw new Error('No se pudieron cargar las estadísticas');
+        if (!res.ok) {
+          console.error('Error en API stats:', res.status, res.statusText);
+          throw new Error('No se pudieron cargar las estadísticas');
+        }
         const data = await res.json();
         const mapped: ParentStats = {
           children: { total: data.children?.total || 0, active: data.children?.total || 0 },

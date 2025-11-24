@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
         allowedChildIds = all.map((c) => c.id);
       }
     } else {
-      const relations = await (prisma as any).userChild.findMany({
+      const relations = await (prisma as any).userchild.findMany({
         where: { userId: auth.user.id, isActive: true },
         select: { childId: true },
       });
@@ -249,7 +249,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Calcular último tiempo para cada estilo
+    // Calcular último tiempo y métricas avanzadas para cada estilo
     styles.forEach((style) => {
       const allTimes = result[`${style}_allTimes`];
       if (allTimes && allTimes.length > 0) {
@@ -257,6 +257,73 @@ export async function GET(request: NextRequest) {
         allTimes.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
         result[`${style}_lastTime`] = allTimes[0].time;
         result[`${style}_lastDate`] = allTimes[0].date;
+        
+        // 📊 INDICADORES AVANZADOS
+        const bestTime = result[style]; // PB (Personal Best)
+        const lastTime = allTimes[0].time;
+        
+        // 1. Delta vs PB
+        if (bestTime != null) {
+          result[`${style}_deltaVsPB`] = lastTime - bestTime;
+        }
+        
+        // 2. SB (Season Best) - Mejor tiempo del año actual
+        const currentYear = new Date().getFullYear();
+        const thisYearTimes = allTimes.filter((t: any) => new Date(t.date).getFullYear() === currentYear);
+        if (thisYearTimes.length > 0) {
+          const seasonBest = Math.min(...thisYearTimes.map((t: any) => t.time));
+          result[`${style}_seasonBest`] = seasonBest;
+          result[`${style}_seasonBestDate`] = thisYearTimes.find((t: any) => t.time === seasonBest)?.date;
+          
+          // Delta vs SB
+          result[`${style}_deltaVsSB`] = lastTime - seasonBest;
+        }
+        
+        // 3. Promedio últimos 5 entrenamientos (solo de source TRAINING)
+        // Necesitamos distinguir fuentes, por ahora usamos todos los tiempos
+        const last5 = allTimes.slice(0, Math.min(5, allTimes.length));
+        if (last5.length > 0) {
+          const avg = last5.reduce((sum: number, t: any) => sum + t.time, 0) / last5.length;
+          result[`${style}_avg5`] = avg;
+          
+          // 4. Consistency Score (desviación estándar)
+          if (last5.length >= 2) {
+            const mean = avg;
+            const variance = last5.reduce((sum: number, t: any) => sum + Math.pow(t.time - mean, 2), 0) / last5.length;
+            const stdDev = Math.sqrt(variance);
+            result[`${style}_consistencyScore`] = stdDev;
+            
+            // Badge de consistencia
+            if (stdDev < 0.5) result[`${style}_consistencyBadge`] = 'EXCELENTE';
+            else if (stdDev < 1.0) result[`${style}_consistencyBadge`] = 'BUENO';
+            else if (stdDev < 2.0) result[`${style}_consistencyBadge`] = 'REGULAR';
+            else result[`${style}_consistencyBadge`] = 'INCONSISTENTE';
+          }
+        }
+        
+        // 5. % Mejora anual (YoY) - Comparar primer vs último tiempo del año
+        if (thisYearTimes.length >= 2) {
+          const sortedYear = [...thisYearTimes].sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          const firstTimeYear = sortedYear[0].time;
+          const lastTimeYear = sortedYear[sortedYear.length - 1].time;
+          const improvement = firstTimeYear - lastTimeYear; // Positivo = mejoró
+          const percentImprovement = (improvement / firstTimeYear) * 100;
+          result[`${style}_yearImprovement`] = improvement;
+          result[`${style}_yearImprovementPercent`] = percentImprovement;
+        }
+        
+        // 6. Ritmo de mejora mensual
+        if (thisYearTimes.length >= 2) {
+          const sortedYear = [...thisYearTimes].sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          const firstDate = new Date(sortedYear[0].date);
+          const lastDate = new Date(sortedYear[sortedYear.length - 1].date);
+          const monthsDiff = (lastDate.getFullYear() - firstDate.getFullYear()) * 12 + (lastDate.getMonth() - firstDate.getMonth());
+          
+          if (monthsDiff > 0) {
+            const totalImprovement = sortedYear[0].time - sortedYear[sortedYear.length - 1].time;
+            result[`${style}_monthlyImprovement`] = totalImprovement / monthsDiff;
+          }
+        }
       }
     });
 

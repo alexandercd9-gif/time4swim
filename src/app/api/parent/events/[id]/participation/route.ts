@@ -42,7 +42,7 @@ export async function POST(
     }
 
     // Verificar que el hijo pertenece al usuario (padre)
-    const userChild = await prisma.userChild.findFirst({
+    const userChild = await (prisma as any).userchild.findFirst({
       where: {
         userId: auth.user.id,
         childId: childId,
@@ -58,7 +58,7 @@ export async function POST(
     }
 
     // Crear o actualizar participación
-    const participation = await prisma.eventParticipation.upsert({
+    const participation = await (prisma as any).eventparticipation.upsert({
       where: {
         eventId_childId: {
           eventId,
@@ -124,7 +124,7 @@ export async function GET(
     const { id: eventId } = await context.params;
 
     // Obtener todos los hijos del padre
-    const userChildren = await prisma.userChild.findMany({
+    const userChildren = await (prisma as any).userchild.findMany({
       where: {
         userId: auth.user.id,
         isActive: true,
@@ -137,7 +137,7 @@ export async function GET(
     const childIds = userChildren.map(uc => uc.childId);
 
     // Obtener participaciones de todos los hijos para este evento
-    const participations = await prisma.eventParticipation.findMany({
+    const participations = await (prisma as any).eventparticipation.findMany({
       where: {
         eventId,
         childId: {

@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   try {
     // Verificar que el niño pertenece al padre/usuario actual (si no es admin)
     if (auth.user.role !== "ADMIN") {
-      const relation = await (prisma as any).userChild.findFirst({
+      const relation = await (prisma as any).userchild.findFirst({
         where: {
           userId: auth.user.id,
           childId: childId,
