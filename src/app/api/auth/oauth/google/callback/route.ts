@@ -43,7 +43,7 @@ async function getGoogleUserInfo(accessToken: string, idToken?: string) {
         name: payload.name,
         picture: payload.picture
       };
-    } catch {}
+    } catch { }
   }
 
   const resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
@@ -121,11 +121,12 @@ export async function GET(req: NextRequest) {
       'PROFESOR': '/profesor/dashboard'
     };
     const redirectPath = roleMap[userRole.toUpperCase()] || '/parents/dashboard';
-    
+
     // Add success message parameter
     const successParam = isNewUser ? 'new_user' : 'login_success';
-    const res = NextResponse.redirect(`${url.origin}${redirectPath}?oauth=${successParam}`);
-    
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || url.origin;
+    const res = NextResponse.redirect(`${baseUrl}${redirectPath}?oauth=${successParam}`);
+
     res.cookies.set('token', token, { httpOnly: true, path: '/', maxAge: 60 * 60 * 24, sameSite: 'none', secure: true });
     // Clear state cookie
     res.cookies.set('oauth_state', '', { httpOnly: true, path: '/', maxAge: 0 });
