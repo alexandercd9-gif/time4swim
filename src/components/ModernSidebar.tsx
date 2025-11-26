@@ -34,7 +34,6 @@ const navByRole = {
     { href: "/parents/galeria", label: "Galería", icon: Camera, description: "Fotos y videos" },
     { href: "/parents/competencias", label: "Competencias", icon: Medal, description: "Participaciones" },
     { href: "/parents/events", label: "Eventos", icon: Calendar, description: "Próximas competencias" },
-    { href: "/parents/records", label: "Records", icon: BarChart, description: "Mejores marcas" },
   ],
     club: [
     { href: "/club/dashboard", label: "Dashboard", icon: Home, description: "Vista general" },
@@ -230,6 +229,14 @@ export default function ModernSidebar() {
           }`}
         >
           <div className="p-4 h-full flex flex-col">
+            {/* Info del usuario */}
+            <div className="mb-4 pb-4 border-b border-gray-200">
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-gray-800">{user?.name || 'Usuario'}</span>
+                <span className="text-xs text-gray-500">{user?.email || ''}</span>
+              </div>
+            </div>
+            
             <div className="flex-1 space-y-1 overflow-y-auto">
               {menuItems.map((item) => {
                 const isActive = pathname === item.href;
@@ -258,6 +265,21 @@ export default function ModernSidebar() {
 
               {/* Separador */}
               <div className="my-3 border-t border-gray-200"></div>
+
+              {/* Mi Cuenta - Solo en móvil */}
+              <Link
+                href={
+                  userRoleKey === 'admin' ? '/admin/cuenta' :
+                  userRoleKey === 'club' ? '/club/cuenta' :
+                  userRoleKey === 'profesor' ? '/profesor/cuenta' :
+                  '/parents/cuenta'
+                }
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                <Settings className="h-5 w-5" />
+                <span className="font-medium">Mi Cuenta</span>
+              </Link>
 
               {/* Cerrar Sesión */}
               <button

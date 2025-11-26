@@ -20,6 +20,13 @@ interface ChildItem {
   _count?: { records: number; trainings: number };
 }
 
+interface SubscriptionInfo {
+  maxChildren: number;
+  childrenCount: number;
+  plan: string;
+  planName: string;
+}
+
 export default function ParentChildrenPage() {
   const [children, setChildren] = useState<ChildItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,6 +35,7 @@ export default function ParentChildrenPage() {
   const [query, setQuery] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
+  const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null);
 
   const loadChildren = async () => {
     try {
@@ -44,8 +52,26 @@ export default function ParentChildrenPage() {
     }
   };
 
+  const loadSubscriptionInfo = async () => {
+    try {
+      const res = await fetch("/api/parents/account", { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setSubscriptionInfo({
+          maxChildren: data.subscription?.maxChildren || 3,
+          childrenCount: data.subscription?.childrenCount || 0,
+          plan: data.subscription?.plan || 'TRIAL',
+          planName: data.subscription?.planName || 'Trial'
+        });
+      }
+    } catch (err) {
+      console.error("Error loading subscription:", err);
+    }
+  };
+
   useEffect(() => {
     loadChildren();
+    loadSubscriptionInfo();
   }, []);
 
   const filtered = useMemo(() => {
@@ -59,6 +85,22 @@ export default function ParentChildrenPage() {
   }, [children, query]);
 
   const openCreate = () => {
+    // Validar límite de hijos según el plan
+    if (subscriptionInfo) {
+      const currentCount = children.length;
+      const maxAllowed = subscriptionInfo.maxChildren;
+      
+      if (currentCount >= maxAllowed) {
+        toast.error(
+          `Has alcanzado el límite de ${maxAllowed} ${maxAllowed === 1 ? 'nadador' : 'nadadores'} de tu plan ${subscriptionInfo.planName}. Ve a tu cuenta para cambiar de plan.`,
+          {
+            duration: 4000,
+          }
+        );
+        return;
+      }
+    }
+    
     setEditing(null);
     setOpenForm(true);
   };
@@ -82,6 +124,8 @@ export default function ParentChildrenPage() {
       }
       toast.success("Nadador eliminado");
       setChildren((prev) => prev.filter((c) => c.id !== id));
+      // Recargar info de suscripción para actualizar el contador
+      loadSubscriptionInfo();
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || "Error al eliminar");
@@ -100,6 +144,20 @@ export default function ParentChildrenPage() {
               <Users className="h-6 w-6 text-blue-600" /> Mis Hijos
             </h1>
             <p className="text-gray-600">Administra a tus nadadores: crea, edita y elimina.</p>
+            {subscriptionInfo && (
+              <div className="mt-2">
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
+                  children.length >= subscriptionInfo.maxChildren
+                    ? 'bg-red-100 text-red-700'
+                    : children.length >= subscriptionInfo.maxChildren * 0.8
+                    ? 'bg-amber-100 text-amber-700'
+                    : 'bg-blue-100 text-blue-700'
+                }`}>
+                  <Users className="h-3.5 w-3.5" />
+                  {children.length} / {subscriptionInfo.maxChildren} nadadores
+                </span>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={loadChildren} disabled={loading}>
@@ -110,6 +168,23 @@ export default function ParentChildrenPage() {
             </Button>
           </div>
         </div>
+
+        {/* Alerta de límite alcanzado */}
+        {subscriptionInfo && children.length >= subscriptionInfo.maxChildren && (
+          <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3">
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-sm text-amber-800">
+                Has alcanzado el límite de {subscriptionInfo.maxChildren} {subscriptionInfo.maxChildren === 1 ? 'nadador' : 'nadadores'} de tu plan {subscriptionInfo.planName}.
+              </p>
+              <a
+                href="/parents/cuenta"
+                className="flex-shrink-0 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-md text-sm font-medium transition-colors"
+              >
+                Cambiar Plan
+              </a>
+            </div>
+          </div>
+        )}
 
         {/* Filtros y Vista */}
         <div className="mb-4 flex flex-col sm:flex-row gap-3">

@@ -17,7 +17,7 @@ declare global {
 export default function SubscriptionPage() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [userType, setUserType] = useState<"parent" | "club">("parent");
-  
+
   // Estados para el formulario de pago
   const [cardNumber, setCardNumber] = useState("");
   const [expiry, setExpiry] = useState("");
@@ -73,7 +73,7 @@ export default function SubscriptionPage() {
   useEffect(() => {
     if (selectedProcessor === 'culqi' && window.Culqi && !culqiLoaded) {
       const publicKey = process.env.NEXT_PUBLIC_CULQI_PUBLIC_KEY || 'pk_test_XXXXXXXX';
-      
+
       window.Culqi.publicKey = publicKey;
       window.Culqi.options = {
         lang: 'es',
@@ -236,15 +236,15 @@ export default function SubscriptionPage() {
       const [month, year] = expiry.split('/');
       const cardNumberClean = cardNumber.replace(/\s/g, '');
 
-      window.Culqi.createToken = function() {
+      window.Culqi.createToken = function () {
         // Handler de éxito
         if (window.Culqi.token) {
           createSubscription(window.Culqi.token.id);
         } else {
           // Handler de error
-          const errorMessage = window.Culqi.error?.user_message || 
-                              window.Culqi.error?.merchant_message || 
-                              'Error al procesar la tarjeta';
+          const errorMessage = window.Culqi.error?.user_message ||
+            window.Culqi.error?.merchant_message ||
+            'Error al procesar la tarjeta';
           setError(errorMessage);
           setIsProcessing(false);
         }
@@ -262,6 +262,33 @@ export default function SubscriptionPage() {
     } catch (error: any) {
       console.error('Error al tokenizar tarjeta:', error);
       setError('Error al procesar la tarjeta. Intenta nuevamente.');
+      setIsProcessing(false);
+    }
+  };
+
+  // Crear suscripción con Checkout Pro (Redirect - MÁS SEGURO)
+  const createSubscriptionCheckoutPro = async () => {
+    try {
+      setIsProcessing(true);
+      setError(null);
+
+      const response = await fetch('/api/subscription/create-checkout-pro', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId: selectedPlan }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Error al crear la suscripción');
+
+      console.log('✅ Checkout URL generada:', data.checkoutUrl);
+
+      // Redirigir a MercadoPago
+      window.location.href = data.checkoutUrl;
+
+    } catch (error: any) {
+      console.error('Error creando checkout:', error);
+      setError(error.message || 'Error al procesar la suscripción');
       setIsProcessing(false);
     }
   };
@@ -457,22 +484,20 @@ export default function SubscriptionPage() {
               <div className="inline-flex bg-white rounded-xl p-1 shadow-sm">
                 <button
                   onClick={() => setUserType("parent")}
-                  className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                    userType === "parent"
-                      ? "bg-blue-600 text-white"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
+                  className={`px-6 py-3 rounded-lg font-medium transition-all ${userType === "parent"
+                    ? "bg-blue-600 text-white"
+                    : "text-gray-600 hover:text-gray-900"
+                    }`}
                 >
                   <Users className="h-5 w-5 inline mr-2" />
                   Para Padres
                 </button>
                 <button
                   onClick={() => setUserType("club")}
-                  className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                    userType === "club"
-                      ? "bg-purple-600 text-white"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
+                  className={`px-6 py-3 rounded-lg font-medium transition-all ${userType === "club"
+                    ? "bg-purple-600 text-white"
+                    : "text-gray-600 hover:text-gray-900"
+                    }`}
                 >
                   <Crown className="h-5 w-5 inline mr-2" />
                   Para Clubes
@@ -486,9 +511,8 @@ export default function SubscriptionPage() {
                 {parentPlans.map((plan) => (
                   <div
                     key={plan.id}
-                    className={`bg-white rounded-2xl shadow-lg p-8 relative cursor-pointer hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 ${
-                      plan.popular ? "ring-4 ring-purple-500 ring-offset-4 scale-105" : ""
-                    }`}
+                    className={`bg-white rounded-2xl shadow-lg p-8 relative cursor-pointer hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 ${plan.popular ? "ring-4 ring-purple-500 ring-offset-4 scale-105" : ""
+                      }`}
                     onClick={() => handleSelectPlan(plan.id)}
                   >
                     {plan.popular && (
@@ -573,7 +597,7 @@ export default function SubscriptionPage() {
                 {/* Order Summary */}
                 <div className="bg-white rounded-2xl shadow-lg p-8">
                   <h2 className="text-2xl font-bold text-gray-900 mb-6">Resumen del Pedido</h2>
-                  
+
                   <div className="space-y-4 mb-6">
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Plan:</span>
@@ -687,86 +711,48 @@ export default function SubscriptionPage() {
                   </div>
 
                   {/* Formulario de pago */}
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Número de tarjeta *
-                      </label>
-                      <input
-                        type="text"
-                        value={cardNumber}
-                        onChange={handleCardNumberChange}
-                        placeholder="1234 5678 9012 3456"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        disabled={isProcessing}
-                      />
-                    </div>
+                  {/* Formulario de pago - REEMPLAZADO POR CHECKOUT PRO */}
+                  <div className="space-y-6">
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Fecha de expiración *
-                        </label>
-                        <input
-                          type="text"
-                          value={expiry}
-                          onChange={handleExpiryChange}
-                          placeholder="MM/YY"
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          disabled={isProcessing}
-                        />
+                    {/* Mensaje de Seguridad */}
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
+                      <div className="bg-green-100 rounded-full p-2 mt-1">
+                        <Lock className="h-5 w-5 text-green-600" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          CVV *
-                        </label>
-                        <input
-                          type="text"
-                          value={cvv}
-                          onChange={handleCvvChange}
-                          placeholder="123"
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          disabled={isProcessing}
-                        />
+                        <h4 className="font-semibold text-green-900 text-sm">Pago 100% Seguro</h4>
+                        <p className="text-green-800 text-xs mt-1">
+                          Serás redirigido a <strong>mercadopago.com.pe</strong> para completar tu suscripción de forma segura. Tus datos financieros nunca tocan nuestros servidores.
+                        </p>
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Nombre del titular *
-                      </label>
-                      <input
-                        type="text"
-                        value={cardName}
-                        onChange={(e) => setCardName(e.target.value)}
-                        placeholder="Como aparece en la tarjeta"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        disabled={isProcessing}
-                      />
-                    </div>
-
+                    {/* Botón de Acción */}
                     <button
-                      onClick={handlePayment}
-                      disabled={isProcessing || !culqiLoaded}
-                      className={`w-full py-4 rounded-xl font-semibold text-lg flex items-center justify-center gap-2 ${
-                        isProcessing || !culqiLoaded
+                      onClick={createSubscriptionCheckoutPro}
+                      disabled={isProcessing}
+                      className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 ${isProcessing
                           ? 'bg-gray-400 cursor-not-allowed'
-                          : 'bg-blue-600 hover:bg-blue-700 text-white'
-                      }`}
+                          : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800'
+                        }`}
                     >
                       {isProcessing ? (
                         <>
                           <Loader2 className="h-5 w-5 animate-spin" />
-                          Procesando...
+                          Redirigiendo...
                         </>
-                      ) : !culqiLoaded ? (
-                        'Cargando sistema de pagos...'
                       ) : (
-                        'Iniciar Prueba Gratuita'
+                        <>
+                          <span className="text-xl">🔒</span>
+                          Pagar Seguro con MercadoPago
+                        </>
                       )}
                     </button>
-                  </div>
 
+                    <p className="text-center text-xs text-gray-500">
+                      Al hacer clic, se abrirá la pasarela de pagos de MercadoPago.
+                    </p>
+                  </div>
                   {/* Security badges */}
                   <div className="mt-6 pt-6 border-t">
                     <div className="flex items-center justify-center gap-6 text-sm text-gray-500">

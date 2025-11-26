@@ -22,7 +22,7 @@ export async function GET(
         },
         _count: {
           select: {
-            heatLanes: true,
+            heatlane: true,
           },
         },
       },

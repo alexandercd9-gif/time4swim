@@ -15,9 +15,9 @@ export async function GET(
     const event = await prisma.event.findUnique({
       where: { id },
       include: {
-        heatLanes: {
+        heatlane: {
           include: {
-            swimmer: {
+            child: {
               select: {
                 id: true,
                 name: true,
@@ -45,11 +45,11 @@ export async function GET(
     // Agrupar resultados por categoría Y género
     const resultsByCategoryAndGender: Record<string, any[]> = {};
     
-    event.heatLanes.forEach((lane) => {
-      if (!lane.swimmer || !lane.finalTime) return;
+    event.heatlane.forEach((lane: any) => {
+      if (!lane.child || !lane.finalTime) return;
       
-      const category = calculateCategory(lane.swimmer.birthDate);
-      const gender = lane.swimmer.gender || 'MALE'; // Default a MALE si no está definido
+      const category = calculateCategory(lane.child.birthDate);
+      const gender = lane.child.gender || 'MALE'; // Default a MALE si no está definido
       const genderLabel = gender === 'FEMALE' ? 'Niñas' : 'Niños';
       
       // Clave combinada: categoría + género
@@ -65,8 +65,8 @@ export async function GET(
         gender: gender,
         genderLabel: genderLabel,
         swimmer: {
-          id: lane.swimmer.id,
-          name: lane.swimmer.name,
+          id: lane.child.id,
+          name: lane.child.name,
         },
         time: lane.finalTime,
         heatNumber: lane.heatNumber,

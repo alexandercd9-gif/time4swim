@@ -6,10 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     const styles = await (prisma as any).swimstyleconfig.findMany({
       where: { 
-        isActive: true,
-        style: {
-          not: 'MEDLEY_RELAY' // Excluir el estilo de relevos (no individual)
-        }
+        isActive: true
       },
       select: {
         style: true,

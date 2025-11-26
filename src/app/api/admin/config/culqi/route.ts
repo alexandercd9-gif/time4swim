@@ -66,12 +66,9 @@ export async function GET() {
       return NextResponse.json({ error: "Acceso solo para administradores" }, { status: 403 });
     }
 
-    // Buscar configuración
-    const config = await prisma.systemConfig.findFirst({
-      where: { key: 'culqi_credentials' }
-    });
+    const config = await prisma.systemConfig.findFirst();
 
-    if (!config || !config.value) {
+    if (!config || (!config.culqiPublicKey && !config.culqiSecretKey)) {
       return NextResponse.json({
         culqiPublicKey: "",
         culqiSecretKey: "",
@@ -79,14 +76,14 @@ export async function GET() {
       });
     }
 
-    // Descifrar y devolver (con secret key parcialmente oculta)
-    const decrypted = JSON.parse(decrypt(config.value));
-    
+    const decryptedSecret = config.culqiSecretKey ? decrypt(config.culqiSecretKey) : "";
+
     return NextResponse.json({
-      culqiPublicKey: decrypted.culqiPublicKey || "",
-      culqiSecretKey: decrypted.culqiSecretKey ? 
-        decrypted.culqiSecretKey.substring(0, 10) + '**********************' : "",
-      culqiMode: decrypted.culqiMode || "test"
+      culqiPublicKey: config.culqiPublicKey || "",
+      culqiSecretKey: decryptedSecret
+        ? decryptedSecret.substring(0, 10) + '**********************'
+        : "",
+      culqiMode: config.culqiMode || "test"
     });
 
   } catch (err) {
@@ -147,17 +144,28 @@ export async function POST(request: Request) {
     }));
 
     // Guardar o actualizar en base de datos
-    await prisma.systemConfig.upsert({
-      where: { key: 'culqi_credentials' },
-      update: {
-        value: encrypted,
-        updatedAt: new Date()
-      },
-      create: {
-        key: 'culqi_credentials',
-        value: encrypted
-      }
-    });
+    const existingConfig = await prisma.systemConfig.findFirst();
+
+    if (existingConfig) {
+      await prisma.systemConfig.update({
+        where: { id: existingConfig.id },
+        data: {
+          culqiPublicKey,
+          culqiSecretKey: encrypted,
+          culqiMode: culqiMode || "test",
+          updatedAt: new Date()
+        }
+      });
+    } else {
+      await prisma.systemConfig.create({
+        data: {
+          activePaymentProcessor: "culqi",
+          culqiPublicKey,
+          culqiSecretKey: encrypted,
+          culqiMode: culqiMode || "test"
+        }
+      });
+    }
 
     return NextResponse.json({
       success: true,

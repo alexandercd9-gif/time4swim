@@ -63,7 +63,7 @@ export async function GET(request: Request) {
     // Get unique club IDs from children
     const childrenClubIds = new Set(
       userChildren
-        .map(uc => uc.child.clubId)
+        .map((uc: any) => uc.child.clubId)
         .filter(Boolean) as string[]
     );
 
@@ -112,7 +112,7 @@ export async function GET(request: Request) {
       const eventDate = event.startDate;
       const competitionYear = eventDate.getFullYear();
 
-      return userChildren.some(uc => {
+      return userChildren.some((uc: any) => {
         // Solo considerar hijos del mismo club que el evento
         if (uc.child.clubId !== event.clubId) {
           return false;
@@ -126,7 +126,7 @@ export async function GET(request: Request) {
     console.log('✅ Eventos filtrados por categoría:', filteredEvents.length);
 
     return NextResponse.json(
-      filteredEvents.map(event => ({
+      filteredEvents.map((event: any) => ({
         id: event.id,
         title: event.title,
         startDate: event.startDate.toISOString(),

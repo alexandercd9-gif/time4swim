@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Buscar competencias internas en el mismo rango de fecha
-    const internalCompetitions = await prisma.heatLane.findMany({
+    const internalCompetitions = await prisma.heatlane.findMany({
       where: {
         swimmerId: childId,
         finalTime: { not: null },

@@ -21,9 +21,12 @@ export async function GET(request: NextRequest) {
         },
         userchild: {
           where: { isActive: true }, // Solo contar hijos activos
-          select: { id: true }
+          select: { id: true, userId: true }
         }
       }
+    }).catch((error) => {
+      console.error('Error en Prisma query:', error);
+      throw new Error(`Database query failed: ${error.message}`);
     });
 
     if (!userData) {
@@ -32,11 +35,13 @@ export async function GET(request: NextRequest) {
 
     const data = userData as any;
 
+    // Contar hijos de forma segura
+    const childrenCount = Array.isArray(data.userchild) ? data.userchild.length : 0;
+
     // Si no tiene suscripción, devolver datos de trial
     if (!data.subscription) {
       // Contar cuántos hijos tiene registrados actualmente
-      const childrenCount = data.userchild?.length || 0;
-      
+
       return NextResponse.json({
         subscription: {
           plan: 'TRIAL',
@@ -64,6 +69,20 @@ export async function GET(request: NextRequest) {
     const sub = data.subscription;
     const payments = sub.payment || [];
 
+    // Determinar información de tarjeta según el procesador
+    let cardLastFour = null;
+    let cardBrand = null;
+
+    if (sub.processor === 'mercadopago' && sub.mercadopagoCardId) {
+      // MercadoPago: el cardId ya contiene información, extraer los últimos 4
+      cardLastFour = sub.mercadopagoCardId.toString().slice(-4);
+      cardBrand = 'Tarjeta'; // MercadoPago no siempre devuelve el brand en el cardId
+    } else if (sub.culqiCardId) {
+      // Culqi
+      cardLastFour = sub.culqiCardId.slice(-4);
+      cardBrand = 'Visa'; // TODO: Obtener de Culqi
+    }
+
     return NextResponse.json({
       subscription: {
         plan: sub.plan,
@@ -72,9 +91,10 @@ export async function GET(request: NextRequest) {
         status: sub.status,
         currentPeriodEnd: sub.currentPeriodEnd,
         maxChildren: sub.maxChildren,
-        childrenCount: data.userchild?.length || 0,
-        cardLastFour: sub.culqiCardId ? sub.culqiCardId.slice(-4) : null,
-        cardBrand: 'Visa', // TODO: Obtener de Culqi
+        childrenCount: childrenCount,
+        cardLastFour: cardLastFour,
+        cardBrand: cardBrand,
+        processor: sub.processor || 'culqi',
         isTrialAccount: data.isTrialAccount,
         // Add-ons
         mediaGalleryAddon: sub.mediaGalleryAddon || false,
@@ -94,10 +114,15 @@ export async function GET(request: NextRequest) {
       }))
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching account data:', error);
+    console.error('Error stack:', error?.stack);
+    console.error('Error message:', error?.message);
     return NextResponse.json(
-      { error: 'Error al obtener datos de la cuenta' },
+      { 
+        error: 'Error al obtener datos de la cuenta',
+        details: process.env.NODE_ENV === 'development' ? error?.message : undefined
+      },
       { status: 500 }
     );
   }

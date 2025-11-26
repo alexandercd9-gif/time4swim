@@ -8,7 +8,9 @@
  */
 
 export type CategoryCode = 
-  | 'pre_minima'
+  | 'baby_splash'
+  | 'pre_minima_1'
+  | 'pre_minima_2'
   | 'minima_1'
   | 'minima_2'
   | 'infantil_a1'
@@ -35,81 +37,93 @@ export interface Category {
 export function getCategoriesForCompetitionYear(competitionYear: number): Category[] {
   return [
     {
-      code: 'pre_minima',
+      code: 'baby_splash',
+      name: 'Baby Splash',
+      description: `Año ${competitionYear - 4} y posteriores (< 5 años)`,
+      birthYear: competitionYear - 4,
+    },
+    {
+      code: 'pre_minima_1',
       name: 'Pre-Mínima',
-      description: `Año ${competitionYear - 6} y posteriores`,
+      description: `Año ${competitionYear - 6} (6 años)`,
       birthYear: competitionYear - 6,
+    },
+    {
+      code: 'pre_minima_2',
+      name: 'Pre-Mínima',
+      description: `Año ${competitionYear - 7} (7 años)`,
+      birthYear: competitionYear - 7,
     },
     {
       code: 'minima_1',
       name: 'Mínima 1',
-      description: `Años ${competitionYear - 8} - ${competitionYear - 7}`,
+      description: `Año ${competitionYear - 8} (8 años)`,
       birthYear: competitionYear - 8,
     },
     {
       code: 'minima_2',
       name: 'Mínima 2',
-      description: `Años ${competitionYear - 10} - ${competitionYear - 9}`,
-      birthYear: competitionYear - 10,
+      description: `Año ${competitionYear - 9} (9 años)`,
+      birthYear: competitionYear - 9,
     },
     {
       code: 'infantil_a1',
       name: 'Infantil A1',
-      description: `Año ${competitionYear - 11}`,
-      birthYear: competitionYear - 11,
+      description: `Año ${competitionYear - 10} (10 años)`,
+      birthYear: competitionYear - 10,
     },
     {
       code: 'infantil_a2',
       name: 'Infantil A2',
-      description: `Año ${competitionYear - 12}`,
-      birthYear: competitionYear - 12,
+      description: `Año ${competitionYear - 11} (11 años)`,
+      birthYear: competitionYear - 11,
     },
     {
       code: 'infantil_b1',
       name: 'Infantil B1',
-      description: `Año ${competitionYear - 13}`,
-      birthYear: competitionYear - 13,
+      description: `Año ${competitionYear - 12} (12 años)`,
+      birthYear: competitionYear - 12,
     },
     {
       code: 'infantil_b2',
       name: 'Infantil B2',
-      description: `Año ${competitionYear - 14}`,
-      birthYear: competitionYear - 14,
+      description: `Año ${competitionYear - 13} (13 años)`,
+      birthYear: competitionYear - 13,
     },
     {
       code: 'juvenil_a',
       name: 'Juvenil A',
-      description: `Año ${competitionYear - 15}`,
-      birthYear: competitionYear - 15,
+      description: `Año ${competitionYear - 14} (14 años)`,
+      birthYear: competitionYear - 14,
     },
     {
       code: 'juvenil_b',
       name: 'Juvenil B',
-      description: `Año ${competitionYear - 16}`,
-      birthYear: competitionYear - 16,
+      description: `Año ${competitionYear - 15} (15 años)`,
+      birthYear: competitionYear - 15,
     },
     {
       code: 'juvenil_c',
       name: 'Juvenil C',
-      description: `Año ${competitionYear - 17}`,
-      birthYear: competitionYear - 17,
+      description: `Año ${competitionYear - 16} (16 años)`,
+      birthYear: competitionYear - 16,
     },
     {
       code: 'junior',
       name: 'Junior',
-      description: `Años ${competitionYear - 19} - ${competitionYear - 18}`,
-      birthYear: competitionYear - 19,
+      description: `Años ${competitionYear - 18} - ${competitionYear - 17} (17-18 años)`,
+      birthYear: competitionYear - 18,
     },
     {
       code: 'senior',
       name: 'Senior',
-      description: `Años ${competitionYear - 24} - ${competitionYear - 20}`,
+      description: `Años ${competitionYear - 24} - ${competitionYear - 19} (19-24 años)`,
       birthYear: competitionYear - 24,
     },
     {
       code: 'master',
       name: 'Master',
-      description: `Año ${competitionYear - 25} y anteriores`,
+      description: `Año ${competitionYear - 25} y anteriores (25+ años)`,
       birthYear: null,
     },
   ];
@@ -130,129 +144,148 @@ export function calculateCategory(
   const birth = typeof birthDate === 'string' ? new Date(birthDate) : birthDate;
   const birthYear = birth.getFullYear();
   const compYear = competitionYear || new Date().getFullYear();
-  const yearDifference = compYear - birthYear;
 
-  // Pre-Mínima: ≤6 años (2019+ en 2025)
-  if (yearDifference <= 6) {
+  // Baby Splash: 2020-2021 en 2025 (nacidos compYear-4 o después)
+  if (birthYear >= compYear - 4) {
     return {
-      code: 'pre_minima',
+      code: 'baby_splash',
+      name: 'Baby Splash',
+      description: `Año ${compYear - 4} y posteriores`,
+      birthYear: compYear - 4,
+    };
+  }
+
+  // Pre-Mínima 1: 2019 en 2025 (nacidos compYear-6)
+  if (birthYear === compYear - 6) {
+    return {
+      code: 'pre_minima_1',
       name: 'Pre-Mínima',
-      description: `Año ${compYear - 6} y posteriores`,
+      description: `Año ${compYear - 6}`,
       birthYear: compYear - 6,
     };
   }
 
-  // Mínima 1: 7-8 años (2017-2018 en 2025)
-  if (yearDifference <= 8) {
+  // Pre-Mínima 2: 2018 en 2025 (nacidos compYear-7)
+  if (birthYear === compYear - 7) {
+    return {
+      code: 'pre_minima_2',
+      name: 'Pre-Mínima',
+      description: `Año ${compYear - 7}`,
+      birthYear: compYear - 7,
+    };
+  }
+
+  // Mínima 1: 2017 en 2025 (nacidos compYear-8)
+  if (birthYear === compYear - 8) {
     return {
       code: 'minima_1',
       name: 'Mínima 1',
-      description: `Años ${compYear - 8} - ${compYear - 7}`,
+      description: `Año ${compYear - 8}`,
       birthYear: compYear - 8,
     };
   }
 
-  // Mínima 2: 9-10 años (2015-2016 en 2025)
-  if (yearDifference <= 10) {
+  // Mínima 2: 2016 en 2025 (nacidos compYear-9)
+  if (birthYear === compYear - 9) {
     return {
       code: 'minima_2',
       name: 'Mínima 2',
-      description: `Años ${compYear - 10} - ${compYear - 9}`,
+      description: `Año ${compYear - 9}`,
+      birthYear: compYear - 9,
+    };
+  }
+
+  // Infantil A1: 2015 en 2025 (nacidos compYear-10)
+  if (birthYear === compYear - 10) {
+    return {
+      code: 'infantil_a1',
+      name: 'Infantil A1',
+      description: `Año ${compYear - 10}`,
       birthYear: compYear - 10,
     };
   }
 
-  // Infantil A1: 11 años (2014 en 2025)
-  if (yearDifference === 11) {
+  // Infantil A2: 2014 en 2025 (nacidos compYear-11)
+  if (birthYear === compYear - 11) {
     return {
-      code: 'infantil_a1',
-      name: 'Infantil A1',
+      code: 'infantil_a2',
+      name: 'Infantil A2',
       description: `Año ${compYear - 11}`,
       birthYear: compYear - 11,
     };
   }
 
-  // Infantil A2: 12 años (2013 en 2025)
-  if (yearDifference === 12) {
+  // Infantil B1: 2013 en 2025 (nacidos compYear-12)
+  if (birthYear === compYear - 12) {
     return {
-      code: 'infantil_a2',
-      name: 'Infantil A2',
+      code: 'infantil_b1',
+      name: 'Infantil B1',
       description: `Año ${compYear - 12}`,
       birthYear: compYear - 12,
     };
   }
 
-  // Infantil B1: 13 años (2012 en 2025)
-  if (yearDifference === 13) {
+  // Infantil B2: 2012 en 2025 (nacidos compYear-13)
+  if (birthYear === compYear - 13) {
     return {
-      code: 'infantil_b1',
-      name: 'Infantil B1',
+      code: 'infantil_b2',
+      name: 'Infantil B2',
       description: `Año ${compYear - 13}`,
       birthYear: compYear - 13,
     };
   }
 
-  // Infantil B2: 14 años (2011 en 2025)
-  if (yearDifference === 14) {
+  // Juvenil A: 2011 en 2025 (nacidos compYear-14)
+  if (birthYear === compYear - 14) {
     return {
-      code: 'infantil_b2',
-      name: 'Infantil B2',
+      code: 'juvenil_a',
+      name: 'Juvenil A',
       description: `Año ${compYear - 14}`,
       birthYear: compYear - 14,
     };
   }
 
-  // Juvenil A: 15 años (2010 en 2025)
-  if (yearDifference === 15) {
+  // Juvenil B: 2010 en 2025 (nacidos compYear-15)
+  if (birthYear === compYear - 15) {
     return {
-      code: 'juvenil_a',
-      name: 'Juvenil A',
+      code: 'juvenil_b',
+      name: 'Juvenil B',
       description: `Año ${compYear - 15}`,
       birthYear: compYear - 15,
     };
   }
 
-  // Juvenil B: 16 años (2009 en 2025)
-  if (yearDifference === 16) {
+  // Juvenil C: 2009 en 2025 (nacidos compYear-16)
+  if (birthYear === compYear - 16) {
     return {
-      code: 'juvenil_b',
-      name: 'Juvenil B',
+      code: 'juvenil_c',
+      name: 'Juvenil C',
       description: `Año ${compYear - 16}`,
       birthYear: compYear - 16,
     };
   }
 
-  // Juvenil C: 17 años (2008 en 2025)
-  if (yearDifference === 17) {
-    return {
-      code: 'juvenil_c',
-      name: 'Juvenil C',
-      description: `Año ${compYear - 17}`,
-      birthYear: compYear - 17,
-    };
-  }
-
-  // Junior: 18-19 años (2006-2007 en 2025)
-  if (yearDifference <= 19) {
+  // Junior: 2007-2008 en 2025 (nacidos compYear-17 o compYear-18)
+  if (birthYear === compYear - 17 || birthYear === compYear - 18) {
     return {
       code: 'junior',
       name: 'Junior',
-      description: `Años ${compYear - 19} - ${compYear - 18}`,
-      birthYear: compYear - 19,
+      description: `Años ${compYear - 18} - ${compYear - 17}`,
+      birthYear: compYear - 18,
     };
   }
 
-  // Senior: 20-24 años (2001-2005 en 2025)
-  if (yearDifference <= 24) {
+  // Senior: 2001-2006 en 2025 (nacidos entre compYear-19 y compYear-24)
+  if (birthYear >= compYear - 24 && birthYear <= compYear - 19) {
     return {
       code: 'senior',
       name: 'Senior',
-      description: `Años ${compYear - 24} - ${compYear - 20}`,
+      description: `Años ${compYear - 24} - ${compYear - 19}`,
       birthYear: compYear - 24,
     };
   }
 
-  // Master: 25+ años (2000- en 2025)
+  // Master: 2000 y anteriores en 2025 (nacidos compYear-25 o antes)
   return {
     code: 'master',
     name: 'Master',

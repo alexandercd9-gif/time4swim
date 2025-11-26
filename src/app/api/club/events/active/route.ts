@@ -12,9 +12,9 @@ export async function GET() {
         }
       },
       include: {
-        heatLanes: {
+        heatlane: {
           include: {
-            swimmer: {
+            child: {
               select: {
                 id: true,
                 name: true,
@@ -33,10 +33,10 @@ export async function GET() {
     });
 
     // Transformar los datos para agrupar lanes por heat
-    const eventsWithHeats = events.map(event => {
+    const eventsWithHeats = events.map((event: any) => {
       const heatMap = new Map();
       
-      event.heatLanes.forEach(lane => {
+      event.heatlane.forEach((lane: any) => {
         if (!heatMap.has(lane.heatNumber)) {
           heatMap.set(lane.heatNumber, {
             id: `${event.id}-heat-${lane.heatNumber}`,
@@ -48,7 +48,7 @@ export async function GET() {
           id: lane.id,
           laneNumber: lane.lane,
           swimmerId: lane.swimmerId,
-          swimmer: lane.swimmer,
+          swimmer: lane.child,
           coachId: lane.coachId
         });
       });

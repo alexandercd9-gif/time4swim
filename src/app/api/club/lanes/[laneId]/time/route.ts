@@ -18,11 +18,11 @@ export async function POST(
     }
 
     // Actualizar el tiempo final del carril
-    const updatedLane = await prisma.heatLane.update({
+    const updatedLane = await prisma.heatlane.update({
       where: { id: laneId },
       data: { finalTime },
       include: {
-        swimmer: {
+        child: {
           select: {
             id: true,
             name: true,

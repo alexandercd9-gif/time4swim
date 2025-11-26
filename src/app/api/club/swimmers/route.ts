@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
         clubId: club.id
       },
       include: {
-        parents: {
+        userchild: {
           include: {
             user: {
               select: {
@@ -82,13 +82,13 @@ export async function GET(req: NextRequest) {
             }
           }
         },
-        records: {
+        record: {
           orderBy: {
             date: 'desc'
           },
           take: 5 // Últimos 5 records
         },
-        trainings: {
+        training: {
           orderBy: {
             date: 'desc'
           },
@@ -103,9 +103,9 @@ export async function GET(req: NextRequest) {
     console.log(`Nadadores encontrados para club ${club.name}:`, swimmers.length);
 
     // Calcular estadísticas por nadador
-    const swimmersWithStats = swimmers.map(swimmer => {
-      const totalRecords = swimmer.records.length;
-      const totalTrainings = swimmer.trainings.length;
+    const swimmersWithStats = swimmers.map((swimmer: any) => {
+      const totalRecords = swimmer.record.length;
+      const totalTrainings = swimmer.training.length;
       
       // Calcular edad
       const birthDate = new Date(swimmer.birthDate);
@@ -121,7 +121,7 @@ export async function GET(req: NextRequest) {
         age,
         totalRecords,
         totalTrainings,
-        personalBests: swimmer.records.filter(r => r.isPersonalBest).length
+        personalBests: swimmer.record.filter((r: any) => r.isPersonalBest).length
       };
     });
 

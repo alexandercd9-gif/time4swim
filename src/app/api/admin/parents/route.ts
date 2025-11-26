@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient, UserRole } from "@prisma/client";
+import { PrismaClient, user_role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -9,7 +9,7 @@ export async function GET() {
   try {
     const parents = await (prisma as any).user.findMany({
       where: {
-        role: UserRole.PARENT
+        role: user_role.PARENT
       },
       select: {
         id: true,
@@ -20,7 +20,7 @@ export async function GET() {
         createdAt: true,
         _count: {
           select: {
-            children: true
+            userchild: true
           }
         }
       },
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
         name,
         email,
         password: hashedPassword,
-        role: UserRole.PARENT,
+        role: user_role.PARENT,
         parentType: parentType || null
       },
       select: {
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
         createdAt: true,
         _count: {
           select: {
-            children: true
+            userchild: true
           }
         }
       }

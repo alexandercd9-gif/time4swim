@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { validateWebhookSignature } from '@/lib/culqi';
-import { PaymentStatus } from '@prisma/client';
+import { payment_status } from '@prisma/client';
 
 /**
  * Webhook de Culqi
@@ -103,18 +103,21 @@ async function handleChargeSucceeded(charge: any) {
     }
 
     // Crear registro de pago
+    const paymentId = `PAY_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const payment = await prisma.payment.create({
       data: {
+        id: paymentId,
         subscriptionId: subscription.id,
         amount: charge.amount / 100, // Convertir de centavos a soles
         currency: charge.currency_code,
-        status: PaymentStatus.PAID,
+        status: payment_status.PAID,
         paymentMethod: 'CARD',
         description: 'Pago mensual de suscripción',
         culqiChargeId: charge.id,
         paidAt: new Date(charge.creation_date * 1000),
         cardBrand: charge.source?.brand || 'Visa',
         cardLastFour: charge.source?.last_four || '****',
+        updatedAt: new Date()
       },
     });
 
@@ -175,17 +178,20 @@ async function handleChargeFailed(charge: any) {
     }
 
     // Crear registro de pago fallido
+    const failedPaymentId = `PAY_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     await prisma.payment.create({
       data: {
+        id: failedPaymentId,
         subscriptionId: subscription.id,
         amount: charge.amount / 100,
         currency: charge.currency_code,
-        status: PaymentStatus.FAILED,
+        status: payment_status.FAILED,
         paymentMethod: 'CARD',
         description: 'Intento de pago mensual (fallido)',
         failedReason: charge.failure_message || 'Tarjeta rechazada',
         culqiChargeId: charge.id,
         paidAt: null,
+        updatedAt: new Date()
       },
     });
 

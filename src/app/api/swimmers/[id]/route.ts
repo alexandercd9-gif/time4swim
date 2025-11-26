@@ -22,7 +22,7 @@ export async function GET(
             name: true
           }
         },
-        parents: {
+        userchild: {
           where: { isActive: true },
           include: {
             user: {
@@ -34,11 +34,11 @@ export async function GET(
             }
           }
         },
-        records: {
+        record: {
           orderBy: { date: 'desc' },
           take: 20
         },
-        trainings: {
+        training: {
           orderBy: { date: 'desc' },
           take: 10
         }
@@ -54,7 +54,7 @@ export async function GET(
 
     // Verificar permisos: ADMIN puede ver cualquier nadador, PARENT solo los suyos
     if ((auth.user as any).role !== 'ADMIN') {
-      const userChildRelation = child.parents.find(p => p.userId === auth.user.id);
+      const userChildRelation = (child as any).userchild.find((p: any) => p.userId === auth.user.id);
       
       if (!userChildRelation) {
         return NextResponse.json(
@@ -75,9 +75,9 @@ export async function GET(
       coach: child.coach,
       photo: child.photo,
       club: child.club,
-      user: child.parents[0]?.user || null,
-      records: child.records,
-      trainings: child.trainings,
+      user: (child as any).userchild[0]?.user || null,
+      records: (child as any).record,
+      trainings: (child as any).training,
       fdpnData: (child as any).fdpnData,
       fdpnLastSync: (child as any).fdpnLastSync
     };
@@ -174,8 +174,8 @@ export async function PUT(
         },
         _count: {
           select: {
-            records: true,
-            trainings: true
+            record: true,
+            training: true
           }
         }
       }

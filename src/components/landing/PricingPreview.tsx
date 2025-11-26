@@ -5,8 +5,11 @@ import Link from "next/link";
 
 export default function PricingPreview() {
   return (
-    <section id="pricing" className="py-20 bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="pricing" className="relative py-20 bg-gradient-to-br from-sky-50 via-blue-50 to-purple-50">
+      {/* Parche sólido para asegurar transición perfecta con la ola superior */}
+      <div className="absolute top-0 left-0 w-full h-20 bg-sky-50 z-0" />
+
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">

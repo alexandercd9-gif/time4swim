@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import * as jwt from "jsonwebtoken";
+import { parseLocalDate } from "@/lib/dateUtils";
 
 const prisma = new PrismaClient();
 
@@ -220,52 +221,33 @@ export async function POST(request: NextRequest) {
       take: 1
     });
 
-    const isPersonalBest = existingRecords.length === 0 || time < existingRecords[0].time;
-
-    // Si es récord personal, actualizar records anteriores
-    if (isPersonalBest && existingRecords.length > 0) {
-      await prisma.record.updateMany({
-        where: {
-          childId: childId,
-          style: style,
-          distance: distance,
-          poolSize: poolSize,
-          isPersonalBest: true
-        },
-        data: {
-          isPersonalBest: false
-        }
-      });
-    }
-
+    // Primero, crear el registro sin marcar como personal best
     console.log('🏊 Creando registro de competencia:', {
       childId,
       style,
       poolSize,
       competition,
-      date: new Date(date),
+      date: parseLocalDate(date),
       distance,
       time,
       position,
       medal: medal || null,
-      notes: notes || null,
-      isPersonalBest
+      notes: notes || null
     });
 
-    // Crear registro de competencia
     const record = await prisma.record.create({
       data: {
         childId,
         style,
         poolSize,
         competition,
-        date: new Date(date),
+        date: parseLocalDate(date),
         distance,
         time,
         position,
         medal: medal || null,
         notes: notes || null,
-        isPersonalBest
+        isPersonalBest: false
       },
       include: {
         child: {
@@ -278,6 +260,49 @@ export async function POST(request: NextRequest) {
         }
       }
     });
+
+    // Después de crear el registro, recalcular el personal best para esta combinación
+    // 1. Limpiar todos los personal bests de esta combinación
+    await prisma.record.updateMany({
+      where: {
+        childId: childId,
+        style: style,
+        distance: distance,
+        poolSize: poolSize,
+        isPersonalBest: true
+      },
+      data: {
+        isPersonalBest: false
+      }
+    });
+
+    // 2. Encontrar el tiempo más rápido de esta combinación
+    const fastestRecord = await prisma.record.findFirst({
+      where: {
+        childId: childId,
+        style: style,
+        distance: distance,
+        poolSize: poolSize
+      },
+      orderBy: {
+        time: 'asc'
+      },
+      select: {
+        id: true
+      }
+    });
+
+    // 3. Marcar solo el más rápido como personal best
+    if (fastestRecord) {
+      await prisma.record.update({
+        where: {
+          id: fastestRecord.id
+        },
+        data: {
+          isPersonalBest: true
+        }
+      });
+    }
 
     return NextResponse.json(record, { status: 201 });
   } catch (error) {

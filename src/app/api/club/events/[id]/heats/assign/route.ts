@@ -37,7 +37,7 @@ export async function POST(
 
     const userClub = await (prisma as any).userclub.findFirst({
       where: {
-        userId: auth.user.id,
+        userId: user.id,
         clubId: event.clubId,
         isActive: true
       }
@@ -53,21 +53,23 @@ export async function POST(
     // Si es Serie 1, eliminar carriles existentes (comportamiento original)
     // Si es Serie 2+, NO eliminar, solo agregar nuevos carriles
     if (serieNumber === 1) {
-      await prisma.heatLane.deleteMany({
+      await prisma.heatlane.deleteMany({
         where: { eventId }
       });
     }
 
     // Crear los nuevos carriles con los profesores asignados
     const heatLanesToCreate = lanesData.map((lc: any) => ({
+      id: `HL_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${lc.lane}`,
       eventId,
       lane: lc.lane,
       heatNumber: serieNumber,
       coachId: lc.coachId || lc.coach?.id,
-      swimmerId: null // Se asignará después en el control
+      swimmerId: null, // Se asignará después en el control
+      updatedAt: new Date()
     }));
 
-    await prisma.heatLane.createMany({
+    await prisma.heatlane.createMany({
       data: heatLanesToCreate
     });
 

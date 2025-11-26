@@ -247,37 +247,38 @@ model record {
 }
 
 model subscription {
-  id                  String              @id @default(cuid())
-  userId              String?             @unique(map: "Subscription_userId_key")
-  clubId              String?             @unique(map: "Subscription_clubId_key")
-  plan                subscription_plan
-  status              subscription_status @default(ACTIVE)
-  currentPrice        Decimal             @db.Decimal(10, 2)
-  currency            String              @default("PEN")
-  startDate           DateTime            @default(now())
-  currentPeriodStart  DateTime            @default(now())
-  currentPeriodEnd    DateTime
-  canceledAt          DateTime?
-  culqiCustomerId     String?
-  culqiSubscriptionId String?             @unique(map: "Subscription_culqiSubscriptionId_key")
-  culqiCardId         String?
-  processor           String?             @default("culqi")
-  mercadopagoCustomerId String?
-  mercadopagoCardId     String?
+  id                        String              @id @default(cuid())
+  userId                    String?             @unique(map: "Subscription_userId_key")
+  clubId                    String?             @unique(map: "Subscription_clubId_key")
+  plan                      subscription_plan
+  status                    subscription_status @default(ACTIVE)
+  currentPrice              Decimal             @db.Decimal(10, 2)
+  currency                  String              @default("PEN")
+  startDate                 DateTime            @default(now())
+  currentPeriodStart        DateTime            @default(now())
+  currentPeriodEnd          DateTime
+  canceledAt                DateTime?
+  culqiCustomerId           String?
+  culqiSubscriptionId       String?             @unique(map: "Subscription_culqiSubscriptionId_key")
+  culqiCardId               String?
+  processor                 String?             @default("culqi")
+  mercadopagoCustomerId     String?
+  mercadopagoCardId         String?
   mercadopagoSubscriptionId String?
-  maxChildren         Int                 @default(1)
-  maxTeachers         Int?
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
-  mediaGalleryAddon   Boolean             @default(false)
-  mediaGalleryIsFree  Boolean             @default(false)
-  addonsAmount        Decimal             @default(0.00) @db.Decimal(10, 2)
-  promotionId         String?
-  promotionEndsAt     DateTime?
-  payment             payment[]
-  club                club?               @relation(fields: [clubId], references: [id], onDelete: Cascade, map: "Subscription_clubId_fkey")
-  promotion           promotion?          @relation(fields: [promotionId], references: [id], map: "Subscription_promotionId_fkey")
-  user                user?               @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Subscription_userId_fkey")
+  mercadopagoPreapprovalId  String?
+  maxChildren               Int                 @default(1)
+  maxTeachers               Int?
+  createdAt                 DateTime            @default(now())
+  updatedAt                 DateTime            @updatedAt
+  mediaGalleryAddon         Boolean             @default(false)
+  mediaGalleryIsFree        Boolean             @default(false)
+  addonsAmount              Decimal             @default(0.00) @db.Decimal(10, 2)
+  promotionId               String?
+  promotionEndsAt           DateTime?
+  payment                   payment[]
+  club                      club?               @relation(fields: [clubId], references: [id], onDelete: Cascade, map: "Subscription_clubId_fkey")
+  promotion                 promotion?          @relation(fields: [promotionId], references: [id], map: "Subscription_promotionId_fkey")
+  user                      user?               @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Subscription_userId_fkey")
 
   @@index([culqiCustomerId], map: "Subscription_culqiCustomerId_idx")
   @@index([promotionId], map: "Subscription_promotionId_idx")
@@ -295,26 +296,22 @@ model swimstyleconfig {
   updatedAt   DateTime
 }
 
-model systemconfig {
-  id        String   @id @default(cuid())
-  key       String   @unique(map: "SystemConfig_key_key")
-  value     String   @db.Text
+model SystemConfig {
+  id                     String @id @default(cuid())
+  // Procesador de pagos activo
+  activePaymentProcessor String @default("culqi") // "culqi" | "mercadopago"
+
+  // Credenciales MercadoPago
+  culqiPublicKey         String?
+  culqiSecretKey         String? @db.Text
+  culqiMode              String? @default("test")
+
+  mercadopagoPublicKey   String?
+  mercadopagoAccessToken String? @db.Text // Cifrado
+  mercadopagoMode        String? @default("test") // "test" | "live"
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
-
-model SystemConfig {
-  id                       String   @id @default(cuid())
-  // Procesador de pagos activo
-  activePaymentProcessor   String   @default("culqi") // "culqi" | "mercadopago"
-  
-  // Credenciales MercadoPago
-  mercadopagoPublicKey     String?
-  mercadopagoAccessToken   String?  @db.Text // Cifrado
-  mercadopagoMode          String?  @default("test") // "test" | "live"
-  
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt
 }
 
 model training {

@@ -48,10 +48,12 @@ export default function ParentsLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
+    <div className="flex min-h-screen bg-gray-50">
       <ModernSidebar />
       <ResponsiveMain>
-        <TopBar />
+        <div className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-sm shadow-sm">
+          <TopBar />
+        </div>
         <div className="px-4 lg:px-6 pt-6 pb-6">
           {children}
         </div>
@@ -65,9 +67,8 @@ function ResponsiveMain({ children }: { children: React.ReactNode }) {
   const { isSidebarCollapsed } = useSidebar();
   return (
     <main
-      className={`flex-1 transition-all duration-300 overflow-x-hidden w-full ${
-        isSidebarCollapsed ? "lg:ml-20" : "lg:ml-80"
-      }`}
+      className={`flex-1 transition-all duration-300 w-full ${isSidebarCollapsed ? "lg:ml-20" : "lg:ml-80"
+        }`}
     >
       {children}
     </main>

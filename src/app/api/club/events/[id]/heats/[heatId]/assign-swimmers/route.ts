@@ -35,7 +35,7 @@ export async function POST(
 
     const userClub = await (prisma as any).userclub.findFirst({
       where: {
-        userId: auth.user.id,
+        userId: user.id,
         clubId: event.clubId,
         isActive: true
       }
@@ -51,7 +51,7 @@ export async function POST(
     // Verificar que los carriles pertenecen al evento
     if (assignments.length > 0) {
       const laneIds = assignments.map(a => a.laneId);
-      const lanes = await prisma.heatLane.findMany({
+      const lanes = await prisma.heatlane.findMany({
         where: {
           id: { in: laneIds },
           eventId
@@ -69,7 +69,7 @@ export async function POST(
     // Actualizar cada carril con su nadador
     await Promise.all(
       assignments.map(({ laneId, swimmerId }) =>
-        prisma.heatLane.update({
+        prisma.heatlane.update({
           where: { id: laneId },
           data: { swimmerId }
         })

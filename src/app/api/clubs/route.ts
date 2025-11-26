@@ -45,7 +45,16 @@ export async function POST(request: NextRequest) {
     }
 
     const club = await (prisma as any).club.create({
-      data: { name, address, phone, email, website, description }
+      data: { 
+        id: `club_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        name, 
+        address, 
+        phone, 
+        email, 
+        website, 
+        description,
+        updatedAt: new Date()
+      }
     })
 
     return NextResponse.json(club, { status: 201 })

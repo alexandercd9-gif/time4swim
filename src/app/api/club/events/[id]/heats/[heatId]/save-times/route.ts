@@ -24,7 +24,7 @@ export async function POST(
 
     // Actualizar cada carril con su tiempo final
     const updatePromises = times.map(({ laneId, finalTime }) =>
-      prisma.heatLane.update({
+      prisma.heatlane.update({
         where: { id: laneId },
         data: { finalTime }
       })

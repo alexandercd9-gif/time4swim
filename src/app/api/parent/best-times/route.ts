@@ -130,7 +130,7 @@ export async function GET(request: NextRequest) {
       
       // 3. Buscar en INTERNAL_COMPETITION (HeatLane) - Solo si NO hay filtro de poolType
       if (!poolType) {
-        const heatLanes = await prisma.heatLane.findMany({
+        const heatLanes = await prisma.heatlane.findMany({
           where: {
             swimmerId: { in: allowedChildIds },
             finalTime: { not: null },
@@ -188,7 +188,7 @@ export async function GET(request: NextRequest) {
       
       // Consultar tiempos de competencias internas desde HeatLane
       // NOTA: finalTime está en milisegundos, necesitamos convertir a segundos
-      const heatLanes = await prisma.heatLane.findMany({
+      const heatLanes = await prisma.heatlane.findMany({
         where: {
           swimmerId: { in: allowedChildIds },
           finalTime: { not: null },

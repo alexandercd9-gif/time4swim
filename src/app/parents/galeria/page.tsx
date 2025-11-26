@@ -382,7 +382,7 @@ export default function GaleriaPage() {
                       </div>
                       
                       {/* Nadadores */}
-                      {item.swimmers.length > 0 && (
+                      {item.swimmers && item.swimmers.length > 0 && (
                         <div className="flex items-center gap-2 text-xs text-gray-600">
                           <Users className="h-3.5 w-3.5 text-pink-600" />
                           <span className="truncate">
@@ -485,7 +485,7 @@ export default function GaleriaPage() {
                     </div>
                   )}
                   
-                  {selectedMedia.swimmers.length > 0 && (
+                  {selectedMedia.swimmers && selectedMedia.swimmers.length > 0 && (
                     <div>
                       <h4 className="text-sm font-semibold text-gray-700 mb-1">Nadadores</h4>
                       <div className="flex flex-wrap gap-2">

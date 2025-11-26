@@ -43,7 +43,7 @@ export default function Benefits() {
   ];
 
   return (
-    <section id="funciones" className="relative py-20 lg:py-32 bg-gradient-to-b from-sky-50 to-cyan-50">
+    <section id="funciones" className="relative pt-10 pb-20 lg:pt-16 lg:pb-32 bg-gradient-to-b from-sky-50 to-cyan-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center mb-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -58,7 +58,7 @@ export default function Benefits() {
             </span>
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Cronómetro profesional, análisis de tiempos, gestión de entrenamientos y competencias. 
+            Cronómetro profesional, análisis de tiempos, gestión de entrenamientos y competencias.
             Herramientas completas para mejorar el rendimiento de nadadores, clubes y familias.
           </p>
         </div>
@@ -75,7 +75,7 @@ export default function Benefits() {
               >
                 {/* Gradient Glow on Hover */}
                 <div className={`absolute inset-0 rounded-2xl bg-gradient-to-r ${benefit.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
-                
+
                 {/* Icon */}
                 <div className={`w-14 h-14 rounded-xl bg-gradient-to-r ${benefit.gradient} flex items-center justify-center mb-4 shadow-md group-hover:scale-110 transition-transform duration-300`}>
                   <Icon className="h-7 w-7 text-white" />

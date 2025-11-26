@@ -30,7 +30,7 @@ export async function GET(
       }
     });
 
-    const coaches = userClubs.map(uc => uc.user);
+    const coaches = userClubs.map((uc: any) => uc.user);
 
     console.log('👥 Entrenadores encontrados:', coaches.length);
 

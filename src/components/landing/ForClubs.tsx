@@ -55,7 +55,23 @@ export default function ForClubs() {
   ];
 
   return (
-    <section id="clubes" className="relative mt-[-2px] mb-[-2px] py-20 lg:py-32 bg-gradient-to-b from-blue-900 via-blue-800 to-cyan-700 text-white overflow-hidden">
+    <section id="clubes" className="relative pt-32 lg:pt-48 pb-20 lg:pb-32 bg-gradient-to-b from-blue-900 via-blue-800 to-cyan-700 text-white overflow-hidden">
+      {/* Ola Superior (Máscara de transición desde ForParents) */}
+      <div className="absolute top-0 left-0 w-full overflow-hidden leading-[0] z-20 pointer-events-none rotate-180">
+        <svg
+          viewBox="0 0 1440 120"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="relative block w-full h-[60px] sm:h-[100px] lg:h-[120px]"
+          preserveAspectRatio="none"
+        >
+          <path
+            d="M0 0L60 10C120 20 240 40 360 46.7C480 53 600 47 720 43.3C840 40 960 40 1080 46.7C1200 53 1320 67 1380 73.3L1440 80V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0V0Z"
+            fill="#f0f9ff" // Color sky-50 (fondo de ForParents/Benefits)
+          />
+        </svg>
+      </div>
+
       {/* Animated Background (small floating dots) */}
       <div className="absolute inset-0 opacity-20 pointer-events-none">
         <div className="absolute top-0 left-0 w-full h-full">
@@ -74,7 +90,7 @@ export default function ForClubs() {
         </div>
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Visual Section */}
           <div className="relative order-2 lg:order-1 animate-in fade-in slide-in-from-left-8 duration-700">
@@ -141,8 +157,8 @@ export default function ForClubs() {
             </h2>
 
             <p className="text-lg text-cyan-50 mb-8 leading-relaxed">
-              Cronómetro profesional para entrenamientos, reportes automáticos y análisis de rendimiento. 
-              Mide, compara y mejora los tiempos de tu equipo con herramientas diseñadas específicamente 
+              Cronómetro profesional para entrenamientos, reportes automáticos y análisis de rendimiento.
+              Mide, compara y mejora los tiempos de tu equipo con herramientas diseñadas específicamente
               para la gestión profesional de clubes de natación.
             </p>
 
@@ -175,6 +191,22 @@ export default function ForClubs() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Ola de salida integrada hacia Pricing */}
+      <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-[0] z-20 pointer-events-none">
+        <svg
+          viewBox="0 0 1440 120"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="relative block w-full h-[60px] sm:h-[100px] lg:h-[120px]"
+          preserveAspectRatio="none"
+        >
+          <path
+            d="M0 0L60 10C120 20 240 40 360 46.7C480 53 600 47 720 43.3C840 40 960 40 1080 46.7C1200 53 1320 67 1380 73.3L1440 80V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0V0Z"
+            fill="#f0f9ff" // Color sky-50 para coincidir con Pricing (celeste)
+          />
+        </svg>
       </div>
     </section>
   );

@@ -4,9 +4,10 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Edit, Trash2, Trophy, Medal, Clock, Target, Search } from "lucide-react";
+import { Edit, Trash2, Trophy, Medal, Clock, Target, BarChart3, Table } from "lucide-react";
 import CompetitionForm from "@/components/CompetitionForm";
 import MedalleroModal from "@/components/MedalleroModal";
+import TrainingChart from "@/components/TrainingChart";
 import { toast } from "react-hot-toast";
 
 interface Competition {
@@ -52,13 +53,21 @@ export default function CompetitionsPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [medalleroOpen, setMedalleroOpen] = useState(false);
   const [editingCompetition, setEditingCompetition] = useState<Competition | null>(null);
+  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
   
   // Filtros
   const [filters, setFilters] = useState({
     swimmer: 'all',
     style: 'all',
-    search: ''
+    poolSize: 'all',
+    distance: 'all',
+    month: 'all',
+    year: 'all'
   });
+  
+  // Paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   const fetchCompetitions = async () => {
     try {
@@ -176,6 +185,17 @@ export default function CompetitionsPage() {
     return config ? config.nameEs : style;
   };
 
+  const getStyleIcon = (style: string) => {
+    const iconMap: Record<string, string> = {
+      'FREESTYLE': '/estilos/libre.png',
+      'BACKSTROKE': '/estilos/espalda.png',
+      'BREASTSTROKE': '/estilos/pecho.png',
+      'BUTTERFLY': '/estilos/mariposa.png',
+      'MEDLEY': '/estilos/combinado.png'
+    };
+    return iconMap[style] || '/estilos/libre.png';
+  };
+
   const getPoolSize = (poolSize: string) => {
     const poolMap: Record<string, string> = {
       'SHORT_25M': 'Piscina 25m',
@@ -228,12 +248,32 @@ export default function CompetitionsPage() {
   const filteredCompetitions = competitions.filter((comp: Competition) => {
     const matchesSwimmer = filters.swimmer === 'all' || !filters.swimmer || comp.child.id === filters.swimmer;
     const matchesStyle = filters.style === 'all' || !filters.style || comp.style === filters.style;
-    const matchesSearch = !filters.search || 
-      comp.competition.toLowerCase().includes(filters.search.toLowerCase()) ||
-      comp.child.name.toLowerCase().includes(filters.search.toLowerCase());
+    const matchesPoolSize = filters.poolSize === 'all' || !filters.poolSize || comp.poolSize === filters.poolSize;
+    const matchesDistance = filters.distance === 'all' || !filters.distance || comp.distance === parseInt(filters.distance);
     
-    return matchesSwimmer && matchesStyle && matchesSearch;
+    // Filtro por mes y año
+    const compDate = new Date(comp.date);
+    const matchesMonth = filters.month === 'all' || compDate.getMonth() === parseInt(filters.month);
+    const matchesYear = filters.year === 'all' || compDate.getFullYear() === parseInt(filters.year);
+    
+    return matchesSwimmer && matchesStyle && matchesPoolSize && matchesDistance && matchesMonth && matchesYear;
   });
+
+  // Paginación
+  const totalPages = Math.ceil(filteredCompetitions.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedCompetitions = filteredCompetitions.slice(startIndex, endIndex);
+
+  // Obtener años, meses y distancias únicos de las competencias
+  const availableYears = Array.from(new Set(competitions.map(c => new Date(c.date).getFullYear()))).sort((a, b) => b - a);
+  const availableMonths = Array.from(new Set(competitions.map(c => new Date(c.date).getMonth()))).sort((a, b) => a - b);
+  const availableDistances = Array.from(new Set(competitions.map(c => c.distance))).sort((a, b) => a - b);
+
+  // Reset a página 1 cuando cambien los filtros
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters.swimmer, filters.style, filters.poolSize, filters.distance, filters.month, filters.year]);
 
   // Estadísticas
   const stats = {
@@ -244,6 +284,42 @@ export default function CompetitionsPage() {
       ? filteredCompetitions.reduce((sum: number, c: Competition) => sum + c.time, 0) / filteredCompetitions.length 
       : 0
   };
+
+  // Calcular diferencia con la competencia anterior
+  // SOLO si los filtros están específicos (no en "all")
+  const getTimeDifference = () => {
+    // Validar que los filtros críticos estén seleccionados específicamente
+    const hasSpecificFilters = 
+      filters.style !== 'all' && 
+      filters.poolSize !== 'all' && 
+      filters.distance !== 'all';
+    
+    // Si no hay filtros específicos, no calcular progreso
+    if (!hasSpecificFilters) return null;
+    
+    // Las competencias ya están filtradas, solo comparamos las 2 más recientes
+    if (filteredCompetitions.length < 2) return null;
+    
+    // Ordenar por fecha descendente (más reciente primero)
+    const sorted = [...filteredCompetitions].sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    
+    const lastComp = sorted[0];
+    const previousComp = sorted[1];
+    
+    const diff = lastComp.time - previousComp.time;
+    const improving = diff < 0; // Negativo significa que mejoró (menos tiempo)
+    
+    return {
+      diff: Math.abs(diff),
+      improving,
+      lastTime: lastComp.time,
+      previousTime: previousComp.time
+    };
+  };
+
+  const timeDiff = getTimeDifference();
 
   if (loading) {
     return (
@@ -262,113 +338,299 @@ export default function CompetitionsPage() {
       <div className="max-w-7xl mx-auto space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
+        <div className="w-full sm:w-auto">
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Trophy className="h-7 w-7 text-yellow-600" />
             Competencias
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 hidden sm:block">
             Registra y gestiona las competencias de tus nadadores
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          <Button 
-            onClick={() => setMedalleroOpen(true)} 
-            variant="outline"
-            className="w-full sm:w-auto"
-          >
-            <Medal className="mr-2 h-4 w-4" />
-            Ver Medallero
-          </Button>
+        {/* Botones de acción - En móvil: 2 columnas + fila completa, en desktop: 3 en línea */}
+        <div className="w-full sm:w-auto">
+          {/* Vista móvil: 2 columnas en primera fila */}
+          <div className="grid grid-cols-2 gap-2 sm:hidden">
+            <Button 
+              onClick={() => setViewMode(viewMode === 'table' ? 'chart' : 'table')} 
+              variant="outline"
+              className="w-full"
+            >
+              {viewMode === 'table' ? (
+                <>
+                  <BarChart3 className="mr-2 h-4 w-4" />
+                  Ver Gráfico
+                </>
+              ) : (
+                <>
+                  <Table className="mr-2 h-4 w-4" />
+                  Ver Tabla
+                </>
+              )}
+            </Button>
+            <Button 
+              onClick={() => setMedalleroOpen(true)} 
+              variant="outline"
+              className="w-full"
+            >
+              <Medal className="mr-2 h-4 w-4" />
+              Ver Medallero
+            </Button>
+          </div>
+          {/* Vista móvil: Nueva Competencia en segunda fila completa */}
           <Button 
             onClick={() => setFormOpen(true)} 
-            className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
+            className="bg-blue-600 hover:bg-blue-700 w-full mt-2 sm:hidden"
           >
             <Trophy className="mr-2 h-4 w-4" />
             Nueva Competencia
           </Button>
+          
+          {/* Vista desktop/tablet: 3 botones en línea horizontal */}
+          <div className="hidden sm:flex gap-2">
+            <Button 
+              onClick={() => setViewMode(viewMode === 'table' ? 'chart' : 'table')} 
+              variant="outline"
+            >
+              {viewMode === 'table' ? (
+                <>
+                  <BarChart3 className="mr-2 h-4 w-4" />
+                  Ver Gráfico
+                </>
+              ) : (
+                <>
+                  <Table className="mr-2 h-4 w-4" />
+                  Ver Tabla
+                </>
+              )}
+            </Button>
+            <Button 
+              onClick={() => setMedalleroOpen(true)} 
+              variant="outline"
+            >
+              <Medal className="mr-2 h-4 w-4" />
+              Ver Medallero
+            </Button>
+            <Button 
+              onClick={() => setFormOpen(true)} 
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Trophy className="mr-2 h-4 w-4" />
+              Nueva Competencia
+            </Button>
+          </div>
         </div>
   </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
-        <div className="rounded-lg border bg-white p-3 md:p-4 shadow-sm">
-          <div className="flex items-center space-x-2">
-            <Trophy className="h-4 w-4 md:h-5 md:w-5 text-blue-500 flex-shrink-0" />
-            <h3 className="text-xs md:text-sm font-semibold text-gray-700 leading-tight">Total Competencias</h3>
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+        <div className="relative overflow-hidden rounded-xl border bg-gradient-to-br from-blue-50 to-white p-4 shadow-sm hover:shadow-md transition-shadow">
+          <h3 className="text-sm font-bold text-gray-700 mb-3 text-center tracking-tight">Total Competencias</h3>
+          <div className="flex items-center justify-between">
+            <Trophy className="h-10 w-10 text-blue-500" />
+            <p className="text-4xl md:text-5xl font-bold text-blue-600">{stats.total}</p>
           </div>
-          <p className="text-xl md:text-2xl font-bold mt-2 text-gray-900">{stats.total}</p>
         </div>
-        <div className="rounded-lg border bg-white p-3 md:p-4 shadow-sm">
-          <div className="flex items-center space-x-2">
-            <Target className="h-4 w-4 md:h-5 md:w-5 text-green-500 flex-shrink-0" />
-            <h3 className="text-xs md:text-sm font-semibold text-gray-700 leading-tight">Mejores Tiempos</h3>
+        
+        <div className="relative overflow-hidden rounded-xl border bg-gradient-to-br from-cyan-50 to-white p-4 shadow-sm hover:shadow-md transition-shadow">
+          <h3 className="text-sm font-bold text-gray-700 mb-3 text-center tracking-tight">Mejores Tiempos</h3>
+          <div className="flex items-center justify-between">
+            <Target className="h-10 w-10 text-cyan-500" />
+            <p className="text-4xl md:text-5xl font-bold text-cyan-600">{stats.personalBests}</p>
           </div>
-          <p className="text-xl md:text-2xl font-bold mt-2 text-gray-900">{stats.personalBests}</p>
         </div>
-        <div className="rounded-lg border bg-white p-3 md:p-4 shadow-sm">
-          <div className="flex items-center space-x-2">
-            <Medal className="h-4 w-4 md:h-5 md:w-5 text-yellow-500 flex-shrink-0" />
-            <h3 className="text-xs md:text-sm font-semibold text-gray-700 leading-tight">Medallas</h3>
+        
+        <div className="relative overflow-hidden rounded-xl border bg-gradient-to-br from-yellow-50 to-white p-4 shadow-sm hover:shadow-md transition-shadow">
+          <h3 className="text-sm font-bold text-gray-700 mb-3 text-center tracking-tight">Medallas</h3>
+          <div className="flex items-center justify-between">
+            <Medal className="h-10 w-10 text-yellow-500" />
+            <p className="text-4xl md:text-5xl font-bold text-yellow-600">{stats.medals}</p>
           </div>
-          <p className="text-xl md:text-2xl font-bold mt-2 text-gray-900">{stats.medals}</p>
         </div>
-        <div className="rounded-lg border bg-white p-3 md:p-4 shadow-sm">
-          <div className="flex items-center space-x-2">
-            <Clock className="h-4 w-4 md:h-5 md:w-5 text-purple-500 flex-shrink-0" />
-            <h3 className="text-xs md:text-sm font-semibold text-gray-700 leading-tight">Tiempo Promedio</h3>
+        
+        <div className={`relative overflow-hidden rounded-xl border p-4 shadow-sm hover:shadow-md transition-shadow ${
+          timeDiff ? (timeDiff.improving ? 'bg-gradient-to-br from-green-50 to-white' : 'bg-gradient-to-br from-red-50 to-white') : 'bg-gradient-to-br from-gray-50 to-white'
+        }`}>
+          <h3 className="text-sm font-bold text-gray-700 mb-3 text-center tracking-tight">
+            Progreso
+          </h3>
+          <div className="flex items-center justify-between">
+            {timeDiff ? (
+              timeDiff.improving ? (
+                <svg className="h-10 w-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+              ) : (
+                <svg className="h-10 w-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                </svg>
+              )
+            ) : (
+              <svg className="h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+              </svg>
+            )}
+            <div className="text-right">
+              {timeDiff ? (
+                <>
+                  <p className={`text-4xl md:text-5xl font-bold font-mono ${
+                    timeDiff.improving ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {timeDiff.improving ? '−' : '+'}{formatTime(timeDiff.diff)}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">vs última competencia</p>
+                </>
+              ) : (
+                <p className="text-xs text-gray-500 leading-tight mt-1">
+                  🎯 Filtra por estilo, piscina y distancia para ver tu progreso
+                </p>
+              )}
+            </div>
           </div>
-          <p className="text-xl md:text-2xl font-bold mt-2 text-gray-900">
-            {stats.avgTime > 0 ? formatTime(stats.avgTime) : '—'}
-          </p>
         </div>
       </div>
 
       {/* Filtros */}
-      <div className="flex flex-col sm:flex-row gap-4 p-4 bg-gray-50 rounded-lg border">
-        <div className="flex items-center space-x-2 flex-1">
-          <Search className="h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Buscar por competencia o nadador..."
-            value={filters.search}
-            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-            className="flex-1 bg-white"
-          />
+      <div className="space-y-3">
+        {/* Barra de filtros compacta */}
+        <div className="bg-white rounded-xl border shadow-sm p-4">
+          {/* Filtros en grid - En vista gráfico: 4 columnas, en vista tabla: 6 columnas */}
+          <div className={`grid grid-cols-2 gap-3 ${viewMode === 'chart' ? 'lg:grid-cols-4' : 'lg:grid-cols-6'}`}>
+              <Select
+                value={filters.swimmer}
+                onValueChange={(value) => setFilters({ ...filters, swimmer: value })}
+              >
+                <SelectTrigger className="w-full border-gray-200">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los nadadores</SelectItem>
+                  {swimmers.map((swimmer) => (
+                    <SelectItem key={swimmer.id} value={swimmer.id}>
+                      {swimmer.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select
+                value={filters.style}
+                onValueChange={(value) => setFilters({ ...filters, style: value, poolSize: 'all', distance: 'all' })}
+              >
+                <SelectTrigger className="w-full border-gray-200">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los estilos</SelectItem>
+                  {styles.map((style) => (
+                    <SelectItem key={style.style} value={style.style}>
+                      <div className="flex items-center gap-2">
+                        <img src={getStyleIcon(style.style)} alt={style.nameEs} className="h-5 w-5" />
+                        {style.nameEs}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              {viewMode === 'table' && (
+                <>
+                  <Select
+                    value={filters.poolSize}
+                    onValueChange={(value) => setFilters({ ...filters, poolSize: value })}
+                  >
+                    <SelectTrigger className="w-full border-gray-200">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas las piscinas</SelectItem>
+                      <SelectItem value="SHORT_25M">Piscina de 25m</SelectItem>
+                      <SelectItem value="LONG_50M">Piscina de 50m</SelectItem>
+                      <SelectItem value="OPEN_WATER">Aguas abiertas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select
+                    value={filters.distance}
+                    onValueChange={(value) => setFilters({ ...filters, distance: value })}
+                  >
+                    <SelectTrigger className="w-full border-gray-200">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas las distancias</SelectItem>
+                      {availableDistances.map((distance) => (
+                        <SelectItem key={distance} value={distance.toString()}>
+                          {distance}m
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </>
+              )}
+              
+              <Select
+                value={filters.year}
+                onValueChange={(value) => setFilters({ ...filters, year: value })}
+              >
+                <SelectTrigger className="w-full border-gray-200">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los años</SelectItem>
+                  {availableYears.map((year) => (
+                    <SelectItem key={year} value={year.toString()}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select
+                value={filters.month}
+                onValueChange={(value) => setFilters({ ...filters, month: value })}
+              >
+                <SelectTrigger className="w-full border-gray-200">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los meses</SelectItem>
+                  <SelectItem value="0">Enero</SelectItem>
+                  <SelectItem value="1">Febrero</SelectItem>
+                  <SelectItem value="2">Marzo</SelectItem>
+                  <SelectItem value="3">Abril</SelectItem>
+                  <SelectItem value="4">Mayo</SelectItem>
+                  <SelectItem value="5">Junio</SelectItem>
+                  <SelectItem value="6">Julio</SelectItem>
+                  <SelectItem value="7">Agosto</SelectItem>
+                  <SelectItem value="8">Septiembre</SelectItem>
+                  <SelectItem value="9">Octubre</SelectItem>
+                  <SelectItem value="10">Noviembre</SelectItem>
+                  <SelectItem value="11">Diciembre</SelectItem>
+                </SelectContent>
+              </Select>
+          </div>
         </div>
-        <Select
-          value={filters.swimmer}
-          onValueChange={(value) => setFilters({ ...filters, swimmer: value })}
-        >
-          <SelectTrigger className="w-full sm:w-48 bg-white">
-            <SelectValue placeholder="Todos los nadadores" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los nadadores</SelectItem>
-            {swimmers.map((swimmer) => (
-              <SelectItem key={swimmer.id} value={swimmer.id}>
-                {swimmer.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={filters.style}
-          onValueChange={(value) => setFilters({ ...filters, style: value })}
-        >
-          <SelectTrigger className="w-full sm:w-48 bg-white">
-            <SelectValue placeholder="Todos los estilos" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los estilos</SelectItem>
-            {styles.map((style) => (
-              <SelectItem key={style.style} value={style.style}>
-                {style.nameEs}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
 
+      {/* Vista de Gráfico */}
+      {viewMode === 'chart' ? (
+        <div className="rounded-lg border bg-white shadow-sm p-6">
+          <TrainingChart 
+            childId={filters.swimmer !== 'all' ? filters.swimmer : undefined}
+            competitions={filteredCompetitions.map(comp => ({
+              id: comp.id,
+              date: comp.date,
+              time: comp.time,
+              distance: comp.distance,
+              style: comp.style,
+              childId: comp.child.id,
+              poolSize: comp.poolSize
+            }))}
+          />
+        </div>
+      ) : (
+        <>
       {/* Competitions - Desktop Table & Mobile Cards */}
       {filteredCompetitions.length === 0 ? (
         <div className="rounded-lg border bg-white shadow-sm p-12">
@@ -405,7 +667,7 @@ export default function CompetitionsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredCompetitions.map((competition) => (
+                  {paginatedCompetitions.map((competition) => (
                     <tr key={competition.id} className="border-b hover:bg-gray-50">
                       <td className="p-4">
                         <p className="font-medium text-gray-900">{competition.child.name}</p>
@@ -479,7 +741,7 @@ export default function CompetitionsPage() {
 
           {/* Mobile Cards */}
           <div className="md:hidden space-y-4">
-            {filteredCompetitions.map((competition) => (
+            {paginatedCompetitions.map((competition) => (
               <div key={competition.id} className="bg-white rounded-lg border shadow-sm p-4 space-y-3">
                 {/* Header */}
                 <div className="flex items-start justify-between">
@@ -564,7 +826,65 @@ export default function CompetitionsPage() {
               </div>
             ))}
           </div>
+
+          {/* Paginación */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-white rounded-lg border mt-4">
+              <div className="text-sm text-gray-700 font-medium">
+                Página {currentPage} de {totalPages} • Mostrando {startIndex + 1}-{Math.min(endIndex, filteredCompetitions.length)} de {filteredCompetitions.length}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Anterior
+                </Button>
+                <div className="flex gap-1">
+                  {[...Array(totalPages)].map((_, i) => {
+                    const pageNum = i + 1;
+                    // Mostrar solo páginas cercanas a la actual
+                    if (
+                      pageNum === 1 ||
+                      pageNum === totalPages ||
+                      (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                    ) {
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={currentPage === pageNum ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={currentPage === pageNum ? "bg-blue-600 hover:bg-blue-700" : ""}
+                        >
+                          {pageNum}
+                        </Button>
+                      );
+                    } else if (
+                      pageNum === currentPage - 2 ||
+                      pageNum === currentPage + 2
+                    ) {
+                      return <span key={pageNum} className="px-2">...</span>;
+                    }
+                    return null;
+                  })}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            </div>
+          )}
         </>
+      )}
+      </>
       )}
 
       {/* Competition Form Modal */}

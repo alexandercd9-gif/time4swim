@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 
     // Build query filter
     const whereClause: any = {
-      swimmers: {
+      mediaswimmer: {
         some: {
           childId: childId && allowedChildIds.includes(childId) 
             ? childId 
@@ -58,15 +58,13 @@ export async function GET(request: NextRequest) {
         title: true,
         capturedAt: true,
         duration: true,
-        medal: true,
-        position: true,
         event: {
           select: {
             title: true,
             location: true,
           },
         },
-        swimmers: {
+        mediaswimmer: {
           select: {
             lane: true,
             child: {
@@ -76,7 +74,7 @@ export async function GET(request: NextRequest) {
             },
           },
         },
-        moments: {
+        mediamoment: {
           select: {
             time: true,
             label: true,

@@ -61,10 +61,10 @@ export async function GET(
 
     // Agrupar por estado
     const summary = {
-      confirmed: participations.filter(p => p.status === 'CONFIRMED').length,
-      declined: participations.filter(p => p.status === 'DECLINED').length,
-      maybe: participations.filter(p => p.status === 'MAYBE').length,
-      pending: participations.filter(p => p.status === 'INVITED').length,
+      confirmed: participations.filter((p: any) => p.status === 'CONFIRMED').length,
+      declined: participations.filter((p: any) => p.status === 'DECLINED').length,
+      maybe: participations.filter((p: any) => p.status === 'MAYBE').length,
+      pending: participations.filter((p: any) => p.status === 'INVITED').length,
     };
 
     const competitionYear = event.startDate.getFullYear();
@@ -79,7 +79,7 @@ export async function GET(
         eligibleCategories: event.eligibleCategories ? JSON.parse(event.eligibleCategories) : null,
       },
       summary,
-      participants: participations.map(p => {
+      participants: participations.map((p: any) => {
         const category = calculateCategory(p.child.birthDate, competitionYear);
         return {
           id: p.id,

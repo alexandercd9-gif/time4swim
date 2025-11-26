@@ -78,15 +78,17 @@ export default function ClubCredentialsModal({ isOpen, onClose, onSuccess, club 
       const data = await response.json();
 
       if (response.ok) {
-        toast.success('Credenciales creadas exitosamente');
+        toast.success('✅ Credenciales creadas exitosamente');
         
-        // Llamar callback de éxito si existe
-        if (onSuccess) {
-          onSuccess();
-        }
-        
-        // Cerrar el modal después de crear exitosamente
+        // Cerrar el modal primero
         onClose();
+        
+        // Llamar callback de éxito para refrescar la lista
+        setTimeout(() => {
+          if (onSuccess) {
+            onSuccess();
+          }
+        }, 300);
       } else {
         toast.error(data.error || 'Error al crear credenciales');
       }

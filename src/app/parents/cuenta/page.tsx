@@ -295,11 +295,16 @@ export default function CuentaPage() {
   const fetchAccountData = async () => {
     try {
       const response = await fetch('/api/parents/account');
-      if (!response.ok) throw new Error('Error al cargar datos');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
+        console.error('Error en API:', response.status, errorData);
+        throw new Error(errorData.error || 'Error al cargar datos');
+      }
       const data = await response.json();
       setAccountData(data);
     } catch (error) {
       console.error('Error fetching account data:', error);
+      toast.error(`No se pudieron cargar los datos de tu cuenta. ${error instanceof Error ? error.message : ''}`);
     } finally {
       setLoading(false);
     }

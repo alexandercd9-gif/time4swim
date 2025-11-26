@@ -5,9 +5,9 @@ import { Play } from "lucide-react";
 
 export default function Hero() {
   return (
-  <section id="inicio" className="relative min-h-screen flex items-center justify-center overflow-hidden">
+    <section id="inicio" className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Video Background */}
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 bg-blue-900"> {/* Fondo sólido de fallback inmediato */}
         <video
           autoPlay
           loop
@@ -15,7 +15,7 @@ export default function Hero() {
           playsInline
           preload="auto"
           className="absolute inset-0 w-full h-full object-cover"
-          poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 1080'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%2306b6d4;stop-opacity:1' /%3E%3Cstop offset='50%25' style='stop-color:%230ea5e9;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%232563eb;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='1920' height='1080' fill='url(%23grad)'/%3E%3C/svg%3E"
+          poster="https://images.unsplash.com/photo-1530549387789-4c1017266635?q=80&w=2070&auto=format&fit=crop" // Imagen real de piscina
           onError={(e) => {
             console.log('Error cargando video, mostrando fallback gradient');
             e.currentTarget.style.display = 'none';
@@ -25,7 +25,7 @@ export default function Hero() {
           <source src="/videos/time4swim.mp4" type="video/mp4" />
         </video>
         {/* Fallback gradient background si el video no carga */}
-        <div className="absolute inset-0 bg-gradient-to-br from-cyan-500 via-sky-500 to-blue-700 -z-10" />
+        <div className="absolute inset-0 bg-gradient-to-br from-cyan-900 via-blue-900 to-slate-900 -z-10" />
         {/* Overlay for contrast and readability */}
         <div className="absolute inset-0 bg-gradient-to-b from-cyan-600/40 via-blue-700/50 to-blue-900/60" />
       </div>
@@ -38,7 +38,7 @@ export default function Hero() {
       </div>
 
       {/* Content */}
-  <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 text-center">
+      <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 text-center">
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
           {/* Main Heading - H1 optimizado para SEO */}
           <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-white leading-tight">
@@ -51,10 +51,10 @@ export default function Hero() {
 
           {/* Subtitle */}
           <p className="text-lg sm:text-xl lg:text-2xl text-white/90 max-w-3xl mx-auto leading-relaxed">
-            El historial de natación que viaja contigo. Registra tiempos, analiza evolución 
+            El historial de natación que viaja contigo. Registra tiempos, analiza evolución
             y <span className="font-bold text-white">lleva todos los datos aunque cambies de club</span>.
           </p>
-          
+
           {/* Value Proposition Badge */}
           <div className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-white animate-in fade-in slide-in-from-bottom-4 delay-200">
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -72,7 +72,7 @@ export default function Hero() {
               Comenzar Gratis 30 días
               <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
             </Link>
-            
+
             <Link
               href="#pricing"
               className="inline-flex items-center justify-center px-8 py-4 rounded-full bg-white/10 backdrop-blur-md border-2 border-white/40 text-white font-semibold text-lg hover:bg-white/20 hover:scale-105 transition-all duration-200"
@@ -99,6 +99,22 @@ export default function Hero() {
           {/* Línea fantasma bajo el hero eliminada: si existía por algún border accidental, aseguramos reset */}
           <div className="h-px w-full opacity-0 pointer-events-none select-none" aria-hidden="true" />
         </div>
+      </div>
+
+      {/* Ola de transición integrada para suavizar el corte con la siguiente sección */}
+      <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-[0] z-20 pointer-events-none">
+        <svg
+          viewBox="0 0 1440 120"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="relative block w-full h-[60px] sm:h-[100px] lg:h-[120px]"
+          preserveAspectRatio="none"
+        >
+          <path
+            d="M0 0L60 10C120 20 240 40 360 46.7C480 53 600 47 720 43.3C840 40 960 40 1080 46.7C1200 53 1320 67 1380 73.3L1440 80V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0V0Z"
+            fill="#f0f9ff" // Color sky-50 para coincidir con la sección Benefits
+          />
+        </svg>
       </div>
     </section>
   );

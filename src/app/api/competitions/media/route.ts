@@ -47,8 +47,10 @@ export async function POST(request: NextRequest) {
     // Crear registros en la BD para cada media
     const savedMedias = await Promise.all(
       uploadedMedias.map(async (media: any) => {
+        const mediaId = `MEDIA_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const mediaRecord = await prisma.media.create({
           data: {
+            id: mediaId,
             type: media.resourceType === 'video' ? 'VIDEO' : 'PHOTO',
             cloudinaryPublicId: media.publicId,
             cloudinaryUrl: media.url,
@@ -59,18 +61,18 @@ export async function POST(request: NextRequest) {
             width: media.width,
             height: media.height,
             fileSize: media.fileSize,
-            medal: medal,
-            position: position,
             clubId: clubId,
             eventId: eventId || null,
             uploadedBy: userId,
             capturedAt: new Date(competitionDate),
+            updatedAt: new Date()
           },
         });
 
         // Vincular el nadador con el media
-        await prisma.mediaSwimmer.create({
+        await prisma.mediaswimmer.create({
           data: {
+            id: `MS_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             mediaId: mediaRecord.id,
             childId: childId,
             lane: null, // El padre no especifica carril

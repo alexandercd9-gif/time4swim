@@ -26,7 +26,7 @@ export async function GET(
 
     const userClub = await (prisma as any).userclub.findFirst({
       where: {
-        userId: auth.user.id,
+        userId: user.id,
         clubId: event.clubId,
         isActive: true
       }
@@ -40,16 +40,16 @@ export async function GET(
     }
 
     // Obtener todos los carriles del evento
-    const heatLanes = await prisma.heatLane.findMany({
+    const heatLanes = await prisma.heatlane.findMany({
       where: { eventId },
       include: {
-        swimmer: {
+        child: {
           select: {
             id: true,
             name: true
           }
         },
-        coach: {
+        user: {
           select: {
             id: true,
             name: true
@@ -79,8 +79,8 @@ export async function GET(
       heatsMap.get(heatNum)!.lanes.push({
         id: heatLane.id,
         lane: heatLane.lane,
-        swimmer: heatLane.swimmer,
-        coach: heatLane.coach,
+        swimmer: heatLane.child,
+        coach: heatLane.user,
         finalTime: heatLane.finalTime
       });
     });

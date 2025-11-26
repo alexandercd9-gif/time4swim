@@ -112,7 +112,7 @@ export default function Footer() {
         <div className="pt-8 border-t border-white/10">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-slate-400">
-              © {new Date().getFullYear()} Time4Swim. Todos los derechos reservados.
+              © {new Date().getFullYear()} Compuimpact. Todos los derechos reservados.
             </p>
             <div className="flex items-center gap-6 text-sm text-slate-400">
               <a href="#" className="hover:text-cyan-400 transition-colors">

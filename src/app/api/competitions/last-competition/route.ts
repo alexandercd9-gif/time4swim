@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
       }
     });
 
-    const childIds = userChildren.map(uc => uc.childId);
+    const childIds = userChildren.map((uc: any) => uc.childId);
 
     if (childIds.length === 0) {
       return NextResponse.json({ 

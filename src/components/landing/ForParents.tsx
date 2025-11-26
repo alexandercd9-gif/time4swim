@@ -27,12 +27,15 @@ export default function ForParents() {
   ];
 
   return (
-    <section id="padres" className="relative py-20 lg:py-32 bg-gradient-to-br from-white via-cyan-50/30 to-sky-50/50 overflow-hidden">
+    <section id="padres" className="relative py-20 lg:py-32 bg-gradient-to-br from-white via-cyan-50/30 to-sky-50 overflow-hidden">
       {/* Decorative Background */}
       <div className="absolute inset-0 opacity-30 pointer-events-none">
         <div className="absolute top-10 left-10 w-72 h-72 bg-cyan-200 rounded-full blur-3xl" />
         <div className="absolute bottom-10 right-10 w-96 h-96 bg-blue-200 rounded-full blur-3xl" />
       </div>
+
+      {/* Gradient Overlay para asegurar transición perfecta con la ola inferior */}
+      <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-b from-transparent to-sky-50 z-10 pointer-events-none" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
@@ -51,11 +54,11 @@ export default function ForParents() {
             </h2>
 
             <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-              <strong>Tus datos son tuyos, no del club.</strong> Tú asocias a tu hijo(a) al club, y mientras estén asociados, 
-              el club puede gestionar su perfil. Pero <strong>si cambias de club, el anterior pierde acceso</strong> y 
+              <strong>Tus datos son tuyos, no del club.</strong> Tú asocias a tu hijo(a) al club, y mientras estén asociados,
+              el club puede gestionar su perfil. Pero <strong>si cambias de club, el anterior pierde acceso</strong> y
               todo el historial (marcas, evolución, estadísticas) <strong>viaja contigo</strong>. Sin pérdidas, siempre bajo tu control.
             </p>
-            
+
             {/* Additional Badge */}
             <div className="inline-flex items-center gap-3 px-6 py-3 rounded-xl bg-gradient-to-r from-pink-50 to-purple-50 border-2 border-pink-200 mb-6">
               <svg className="w-6 h-6 text-pink-600" fill="currentColor" viewBox="0 0 20 20">
@@ -105,7 +108,7 @@ export default function ForParents() {
                     -2.4s este mes
                   </span>
                 </div>
-                
+
                 {/* Mock Chart */}
                 <div className="h-48 bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl p-4 mb-4 relative overflow-hidden">
                   <svg className="w-full h-full" viewBox="0 0 300 150">

@@ -38,7 +38,7 @@ export async function GET() {
     const coaches = await prisma.user.findMany({
       where: {
         role: "TEACHER",
-        clubs: {
+        userclub: {
           some: {
             clubId,
             isActive: true,
@@ -51,7 +51,7 @@ export async function GET() {
         email: true,
         profilePhoto: true,
         createdAt: true,
-        clubs: {
+        userclub: {
           where: {
             clubId,
           },
@@ -61,7 +61,7 @@ export async function GET() {
         },
         _count: {
           select: {
-            coachingLanes: true,
+            heatlane: true,
           },
         },
       },

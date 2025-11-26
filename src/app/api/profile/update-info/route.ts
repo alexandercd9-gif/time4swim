@@ -62,7 +62,7 @@ export async function PUT(request: NextRequest) {
         createdAt: true,
         _count: {
           select: {
-            children: true
+            userchild: true
           }
         }
       }

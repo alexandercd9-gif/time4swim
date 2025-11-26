@@ -43,10 +43,12 @@ export async function POST(
     // Crear usuario con rol CLUB
     const newUser = await (prisma as any).user.create({
       data: {
+        id: `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
         email,
         password: hashedPassword,
         name: `Administrador ${club.name}`,
-        role: 'CLUB'
+        role: 'CLUB',
+        updatedAt: new Date()
       }
     });
 
@@ -65,9 +67,12 @@ export async function POST(
       // Crear nueva relación UserClub
       await (prisma as any).userClub.create({
         data: {
+          id: `uc_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
           userId: newUser.id,
           clubId: clubId,
-          isActive: true
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
         }
       });
     }

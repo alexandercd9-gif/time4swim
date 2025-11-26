@@ -7,7 +7,7 @@ import {
   createSubscription,
   CULQI_CONFIG,
 } from '@/lib/culqi';
-import { PaymentStatus } from '@prisma/client';
+import { payment_status } from '@prisma/client';
 
 // Mapeo de planes a precios y límites
 const PLAN_CONFIG = {
@@ -190,16 +190,19 @@ export async function POST(request: NextRequest) {
     });
 
     // 13. Crear registro de pago inicial
+    const paymentId = `PAY_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     await prisma.payment.create({
       data: {
+        id: paymentId,
         subscriptionId: subscription.id,
         amount: planConfig.price,
         currency: 'PEN',
-        status: PaymentStatus.PENDING,
+        status: payment_status.PENDING,
         paymentMethod: 'CARD',
         description: `Suscripción ${planConfig.name} - Primer cobro`,
         culqiChargeId: `pending_${Date.now()}`, // Se actualizará cuando llegue el webhook
         paidAt: null,
+        updatedAt: new Date()
       },
     });
 

@@ -134,7 +134,7 @@ export async function GET(
       },
     });
 
-    const childIds = userChildren.map(uc => uc.childId);
+    const childIds = userChildren.map((uc: any) => uc.childId);
 
     // Obtener participaciones de todos los hijos para este evento
     const participations = await (prisma as any).eventparticipation.findMany({
@@ -156,7 +156,7 @@ export async function GET(
     });
 
     return NextResponse.json(
-      participations.map(p => ({
+      participations.map((p: any) => ({
         id: p.id,
         eventId: p.eventId,
         childId: p.childId,

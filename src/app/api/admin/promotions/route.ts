@@ -50,8 +50,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Crear promoción
+    const promotionId = `PROMO_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const promotion = await prisma.promotion.create({
       data: {
+        id: promotionId,
         code: code.toUpperCase(),
         name,
         description: description || null,
@@ -62,7 +64,8 @@ export async function POST(req: NextRequest) {
         endDate: new Date(endDate),
         maxUses: maxUses ? parseInt(maxUses) : null,
         isActive: true,
-        currentUses: 0
+        currentUses: 0,
+        updatedAt: new Date()
       }
     });
 

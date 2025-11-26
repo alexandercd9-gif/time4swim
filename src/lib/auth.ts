@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import * as jwt from 'jsonwebtoken'
-import { UserRole } from '@prisma/client'
+import { user_role } from '@prisma/client'
 import { db, prisma } from '@/lib/prisma'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
@@ -8,7 +8,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 export interface AuthUser {
   id: string
   email: string
-  role: UserRole
+  role: user_role
   fullName: string
 }
 
@@ -57,7 +57,7 @@ export class AuthMiddleware {
   }
 
   // Check if user has required role
-  static checkRole(user: AuthUser, allowedRoles: UserRole[]): boolean {
+  static checkRole(user: AuthUser, allowedRoles: user_role[]): boolean {
     return allowedRoles.includes(user.role)
   }
 
@@ -69,10 +69,10 @@ export class AuthMiddleware {
       if (!user) return false
       
       // Admin can access all children
-      if (user.role === UserRole.ADMIN) return true
-      
+      if (user.role === user_role.ADMIN) return true
+
       // Check if user is parent of the child
-      if (user.role === UserRole.PARENT) {
+      if (user.role === user_role.PARENT) {
         const userChildren = await db.findUserChildren(userId)
         return userChildren.some((uc: any) => uc.childId === childId)
       }
@@ -102,7 +102,7 @@ export class AuthMiddleware {
       if (!user) return false
       
       // Admin can access all clubs
-      if (user.role === UserRole.ADMIN) return true
+      if (user.role === user_role.ADMIN) return true
       
       // Check if user is associated with this club
       if ((user.role as string) === 'TEACHER' || (user.role as string) === 'CLUB') {
@@ -121,7 +121,7 @@ export class AuthMiddleware {
   static withAuth(
     handler: (request: NextRequest, user: AuthUser, ...args: any[]) => Promise<NextResponse>,
     options: {
-      allowedRoles?: UserRole[]
+      allowedRoles?: user_role[]
       requireChildAccess?: boolean
       requireClubAccess?: boolean
     } = {}
@@ -221,20 +221,20 @@ export class AuthMiddleware {
 }
 
 // Utility functions for common auth checks
-export const requireAdmin = (allowedRoles: UserRole[] = [UserRole.ADMIN]) => ({
+export const requireAdmin = (allowedRoles: user_role[] = [user_role.ADMIN]) => ({
   allowedRoles
 })
 
-export const requireParentOrAdmin = (allowedRoles: UserRole[] = [UserRole.PARENT, UserRole.ADMIN]) => ({
+export const requireParentOrAdmin = (allowedRoles: user_role[] = [user_role.PARENT, user_role.ADMIN]) => ({
   allowedRoles
 })
 
-export const requireChildAccess = (allowedRoles: UserRole[] = [UserRole.PARENT, UserRole.ADMIN]) => ({
+export const requireChildAccess = (allowedRoles: user_role[] = [user_role.PARENT, user_role.ADMIN]) => ({
   allowedRoles,
   requireChildAccess: true
 })
 
-export const requireClubAccess = (allowedRoles: UserRole[] = [UserRole.ADMIN]) => ({
+export const requireClubAccess = (allowedRoles: user_role[] = [user_role.ADMIN]) => ({
   allowedRoles,
   requireClubAccess: true
 })

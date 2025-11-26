@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { UserRole, SwimStyle, MedalType } from '@prisma/client'
+import { user_role, record_style, record_medal } from '@prisma/client'
 
 // Define ParentType locally since it's not exported properly
 const ParentTypeEnum = z.enum(['PADRE', 'MADRE', 'TUTOR', 'ABUELO', 'ABUELA', 'OTRO'])
@@ -9,7 +9,7 @@ export const CreateUserSchema = z.object({
   email: z.string().email('Email inválido'),
   password: z.string().min(6, 'Password debe tener al menos 6 caracteres'),
   fullName: z.string().min(2, 'Nombre completo requerido'),
-  role: z.nativeEnum(UserRole),
+  role: z.nativeEnum(user_role),
   phone: z.string().optional(),
   isActive: z.boolean().default(true)
 })
@@ -72,9 +72,9 @@ export const UpdateCompetitionSchema = CreateCompetitionSchema.partial()
 export const CreateCompetitionResultSchema = z.object({
   childId: z.string().uuid('ID de niño inválido'),
   competitionId: z.string().uuid('ID de competencia inválido'),
-  swimStyle: z.nativeEnum(SwimStyle),
+  swimStyle: z.nativeEnum(record_style),
   timeInSeconds: z.number().positive('Tiempo debe ser positivo'),
-  medal: z.nativeEnum(MedalType).optional(),
+  medal: z.nativeEnum(record_medal).optional(),
   position: z.number().int().positive().optional(),
   notes: z.string().optional()
 })
@@ -87,7 +87,7 @@ export const CreateTrainingSchema = z.object({
   date: z.string().transform((str) => new Date(str)),
   duration: z.number().positive('Duración debe ser positiva'),
   distance: z.number().positive('Distancia debe ser positiva'),
-  swimStyle: z.nativeEnum(SwimStyle),
+  swimStyle: z.nativeEnum(record_style),
   notes: z.string().optional(),
   avgHeartRate: z.number().int().positive().optional(),
   caloriesBurned: z.number().int().positive().optional()
@@ -115,7 +115,7 @@ export const RegisterSchema = z.object({
   email: z.string().email('Email inválido'),
   password: z.string().min(6, 'Password debe tener al menos 6 caracteres'),
   fullName: z.string().min(2, 'Nombre completo requerido'),
-  role: z.nativeEnum(UserRole).default(UserRole.PARENT),
+  role: z.nativeEnum(user_role).default(user_role.PARENT),
   phone: z.string().optional()
 })
 
@@ -128,7 +128,7 @@ export const PaginationSchema = z.object({
 export const FilterSchema = z.object({
   clubId: z.string().uuid().optional(),
   isActive: z.coerce.boolean().optional(),
-  role: z.nativeEnum(UserRole).optional()
+  role: z.nativeEnum(user_role).optional()
 })
 
 // Generic validation utilities

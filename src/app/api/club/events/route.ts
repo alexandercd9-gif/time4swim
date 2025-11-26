@@ -25,7 +25,7 @@ export async function GET(request: Request) {
               name: true,
             },
           },
-          participations: {
+          eventparticipation: {
             where: {
               status: 'CONFIRMED',
             },
@@ -35,7 +35,7 @@ export async function GET(request: Request) {
           },
           _count: {
             select: {
-              heatLanes: true,
+              heatlane: true,
             },
           },
         },
@@ -66,7 +66,7 @@ export async function GET(request: Request) {
               name: true,
             },
           },
-          participations: {
+          eventparticipation: {
             where: {
               status: 'CONFIRMED',
             },
@@ -76,7 +76,7 @@ export async function GET(request: Request) {
           },
           _count: {
             select: {
-              heatLanes: true,
+              heatlane: true,
             },
           },
         },
@@ -100,7 +100,7 @@ export async function GET(request: Request) {
         eligibleCategories: event.eligibleCategories ? JSON.parse(event.eligibleCategories) : null,
         createdAt: event.createdAt.toISOString(),
         updatedAt: event.updatedAt ? event.updatedAt.toISOString() : null,
-        confirmedParticipants: event.participations.length,
+        confirmedParticipants: event.eventparticipation.length,
         // Datos de competencia interna
         isInternalCompetition: event.isInternalCompetition,
         isCompleted: isCompleted,
@@ -174,8 +174,10 @@ export async function POST(request: Request) {
     console.log('📝 Creating event for club:', clubId);
     console.log('📝 Eligible categories:', eligibleCategories);
 
+    const eventId = `EVT_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const newEvent = await prisma.event.create({
       data: {
+        id: eventId,
         title,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
@@ -191,6 +193,7 @@ export async function POST(request: Request) {
           ? JSON.stringify(categoryDistances)
           : null,
         clubId,
+        updatedAt: new Date()
       },
       include: {
         club: {

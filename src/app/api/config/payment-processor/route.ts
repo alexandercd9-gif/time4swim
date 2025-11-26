@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 export async function GET() {
   try {
     // Usar SystemConfig estructurado (no el key-value systemconfig)
-    const config = await (prisma as any).systemConfig.findFirst({
+    const config = await prisma.systemConfig.findFirst({
       select: { 
         activePaymentProcessor: true,
         mercadopagoPublicKey: true 

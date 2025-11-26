@@ -8,10 +8,10 @@ export async function GET(
   try {
     const { laneId } = await params;
 
-    const lane = await prisma.heatLane.findUnique({
+    const lane = await prisma.heatlane.findUnique({
       where: { id: laneId },
       include: {
-        swimmer: {
+        child: {
           select: {
             id: true,
             name: true,

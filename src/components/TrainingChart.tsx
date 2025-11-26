@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card } from "@/components/ui/card";
 import { useSidebar } from "@/hooks/use-sidebar";
 
-type Training = { id: string; date: string; time: number; distance: number; style: string; source?: 'TRAINING' | 'COMPETITION' | 'INTERNAL_COMPETITION' };
+type Training = { id: string; date: string; time: number; distance: number; style: string; poolSize?: string; source?: 'TRAINING' | 'COMPETITION' | 'INTERNAL_COMPETITION' };
 
 interface StyleOption {
   value: string;
@@ -16,16 +16,34 @@ type ViewMode = "year" | "month" | "day";
 
 interface TrainingChartProps {
   childId?: string;
+  competitions?: Array<{ id: string; date: string; time: number; distance: number; style: string; childId: string; poolSize?: string }>;
 }
 
-export default function TrainingChart({ childId: propChildId }: TrainingChartProps = {}) {
+export default function TrainingChart({ childId: propChildId, competitions: propCompetitions }: TrainingChartProps = {}) {
   const now = new Date();
   const { isSidebarCollapsed } = useSidebar();
-  const [children, setChildren] = useState<Array<{ id: string; name: string }>>([]);
+  const [children, setChildren] = useState<Array<{ id: string; name: string }>>();
   const [selectedChildId, setSelectedChildId] = useState(propChildId || "");
   const [styleOptions, setStyleOptions] = useState<StyleOption[]>([]);
-  // Filtros: en móvil ocultos por defecto, en desktop visibles (evitar window en SSR)
+  const [distanceOptions, setDistanceOptions] = useState<Array<{ value: string; label: string }>>([
+    { value: "25", label: "25m" },
+    { value: "50", label: "50m" },
+    { value: "100", label: "100m" },
+    { value: "200", label: "200m" },
+    { value: "400", label: "400m" },
+    { value: "800", label: "800m" }
+  ]);
   const [filtersCollapsed, setFiltersCollapsed] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>("day");
+  const [year, setYear] = useState<number>(now.getFullYear());
+  const [month, setMonth] = useState<number>(now.getMonth() + 1);
+  const [style, setStyle] = useState<string>("FREESTYLE");
+  const [distance, setDistance] = useState<string>("25");
+  const [poolSizeFilter, setPoolSizeFilter] = useState<string>("ALL");
+  const [allData, setAllData] = useState<Training[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Cargar configuraciones desde API
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setFiltersCollapsed(window.innerWidth < 1024);
@@ -40,29 +58,23 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
           label: s.nameEs
         }));
         setStyleOptions(styles);
-        // Auto-seleccionar el primer estilo si no hay uno seleccionado
         if (!style && styles.length > 0) {
           setStyle(styles[0].value);
         }
       })
       .catch(err => console.error('Error cargando estilos:', err));
+    
+    // Cargar distancias desde API
+    fetch('/api/config/distances')
+      .then(res => res.json())
+      .then(data => {
+        console.log('Distancias cargadas:', data);
+        if (Array.isArray(data) && data.length > 0) {
+          setDistanceOptions(data);
+        }
+      })
+      .catch(err => console.error('Error cargando distancias:', err));
   }, []);
-  const [viewMode, setViewMode] = useState<ViewMode>("day");
-  const [year, setYear] = useState<number>(now.getFullYear());
-  const [month, setMonth] = useState<number>(now.getMonth() + 1); // 1-12
-  const [style, setStyle] = useState<string>("FREESTYLE");
-  const [distance, setDistance] = useState<string>("25");
-  const [allData, setAllData] = useState<Training[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const DISTANCE_OPTIONS = [
-    { value: "25", label: "25m" },
-    { value: "50", label: "50m" },
-    { value: "100", label: "100m" },
-    { value: "200", label: "200m" },
-    { value: "400", label: "400m" },
-    { value: "800", label: "800m" },
-  ];
 
   // Función formatTime debe estar antes de useMemo
   const formatTime = (secs: number) => {
@@ -98,19 +110,46 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
     load();
   }, []);
 
-  // Guardar selección en localStorage
+  // Actualizar selectedChildId cuando cambia propChildId
   useEffect(() => {
-    if (selectedChildId) {
+    if (propChildId) {
+      setSelectedChildId(propChildId);
+    }
+  }, [propChildId]);
+
+  // Guardar selección en localStorage (solo si no viene de prop)
+  useEffect(() => {
+    if (selectedChildId && !propChildId) {
       localStorage.setItem("selectedChildId", selectedChildId);
     }
-  }, [selectedChildId]);
+  }, [selectedChildId, propChildId]);
 
-  // Cargar datos según vista - COMBINANDO entrenamientos, competencias y competencias internas
+  // Cargar datos según vista - Si vienen competitions como prop, usarlas directamente
   useEffect(() => {
     const fetchData = async () => {
       if (!selectedChildId) return;
       setLoading(true);
+      
       try {
+        // Si vienen competencias desde el componente padre (página de competencias)
+        // USAR DIRECTAMENTE sin filtrar más (ya vienen filtradas desde la página padre)
+        if (propCompetitions) {
+          const mappedCompetitions = propCompetitions.map((r: any) => ({
+            id: r.id,
+            date: r.date,
+            time: r.time,
+            distance: r.distance,
+            style: r.style,
+            poolSize: r.poolSize,
+            source: 'COMPETITION' as const
+          }));
+          
+          setAllData(mappedCompetitions);
+          setLoading(false);
+          return;
+        }
+        
+        // Si NO vienen competitions, hacer fetch normal (para página de records)
         let params;
         if (viewMode === "year") {
           params = new URLSearchParams({ childId: selectedChildId, year: String(year) });
@@ -166,13 +205,28 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
       }
     };
     fetchData();
-  }, [selectedChildId, month, year, viewMode]);
+  }, [selectedChildId, month, year, viewMode, propCompetitions]);
 
   // Procesar datos según el modo de vista
   const points = useMemo(() => {
-    let filtered = style === "ALL" ? allData : allData.filter((t) => t.style === style);
-    if (distance !== "ALL") {
-      filtered = filtered.filter((t) => t.distance === parseInt(distance));
+    // Si vienen competitions del padre, aplicar filtros visuales
+    let filtered = allData;
+    
+    if (propCompetitions) {
+      // Filtrar por poolSize si no es ALL
+      if (poolSizeFilter !== "ALL") {
+        filtered = filtered.filter((t) => t.poolSize === poolSizeFilter);
+      }
+      // Filtrar por distance si no es ALL
+      if (distance !== "ALL") {
+        filtered = filtered.filter((t) => t.distance === parseInt(distance));
+      }
+    } else {
+      // Modo normal (sin propCompetitions)
+      filtered = style === "ALL" ? allData : allData.filter((t) => t.style === style);
+      if (distance !== "ALL") {
+        filtered = filtered.filter((t) => t.distance === parseInt(distance));
+      }
     }
 
     if (viewMode === "year") {
@@ -225,51 +279,84 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
         .sort((a, b) => a.x - b.x);
         
     } else {
-      // Vista diaria: mejor tiempo por día (agrupado por día del mes)
-      const dailyBest = new Map<number, { time: number; count: number; style: string; distance: number }>();
+      // Vista diaria: mejor tiempo por día
+      // Si vienen propCompetitions, agrupar por fecha completa, sino por día del mes
+      const dailyBest = new Map<string, { time: number; count: number; style: string; distance: number; date: Date }>();
       
       filtered.forEach((t) => {
         const d = new Date(t.date);
-        if (d.getMonth() + 1 !== month) return;
+        // Si vienen competitions del padre, NO filtrar por mes
+        if (!propCompetitions && d.getMonth() + 1 !== month) return;
         
-        const day = d.getDate();
-        const existing = dailyBest.get(day);
+        // Si vienen propCompetitions, usar fecha completa como key, sino solo día del mes
+        const key = propCompetitions ? d.toISOString().split('T')[0] : d.getDate().toString();
+        const existing = dailyBest.get(key);
         
         if (!existing || t.time < existing.time) {
-          dailyBest.set(day, { 
+          dailyBest.set(key, { 
             time: t.time, 
             count: (existing?.count || 0) + 1,
             style: t.style,
-            distance: t.distance
+            distance: t.distance,
+            date: d
           });
         }
       });
 
-      return Array.from(dailyBest.entries())
+      const entries = Array.from(dailyBest.entries());
+      
+      // Si vienen propCompetitions, ordenar por fecha y usar índice secuencial
+      if (propCompetitions) {
+        entries.sort((a, b) => a[1].date.getTime() - b[1].date.getTime());
+        return entries.map(([key, data], index) => ({
+          x: index + 1,
+          y: data.time,
+          label: `${data.date.getDate()}/${data.date.getMonth() + 1}`,
+          detail: `${formatTime(data.time)} - ${styleOptions.find(s => s.value === data.style)?.label || data.style} ${data.distance}m`
+        }));
+      }
+      
+      // Modo normal: día del mes
+      return entries
         .map(([day, data]) => ({
-          x: day,
+          x: parseInt(day),
           y: data.time,
           label: `${day}`,
           detail: `${formatTime(data.time)} - ${styleOptions.find(s => s.value === data.style)?.label || data.style} ${data.distance}m (${data.count} entreno${data.count > 1 ? 's' : ''})`
         }))
         .sort((a, b) => a.x - b.x);
     }
-  }, [allData, style, distance, viewMode, month, year, styleOptions]);
+  }, [allData, style, distance, viewMode, month, year, styleOptions, propCompetitions, poolSizeFilter]);
 
-  // Puntos clave: primero, mejor y último
-  const keyPoints = useMemo(() => {
-    if (!points.length) return { first: null, best: null, last: null };
+  // Adaptación para móvil: limitar puntos en pantallas pequeñas
+  const displayPoints = useMemo(() => {
+    if (typeof window === 'undefined') return points;
     
-    const first = points[0];
-    const last = points[points.length - 1];
-    const best = points.reduce((min, p) => (p.y < min.y ? p : min), points[0]);
+    const isMobile = window.innerWidth < 640; // Tailwind sm breakpoint
+    const maxMobilePoints = 7;
+    
+    if (isMobile && points.length > maxMobilePoints) {
+      // En móvil, mostrar solo los N puntos más recientes
+      return points.slice(-maxMobilePoints);
+    }
+    
+    return points;
+  }, [points]);
+
+  // Puntos clave: primero, mejor y último (basado en displayPoints)
+  const keyPoints = useMemo(() => {
+    if (!displayPoints.length) return { first: null, best: null, last: null };
+    
+    const first = displayPoints[0];
+    const last = displayPoints[displayPoints.length - 1];
+    const best = displayPoints.reduce((min, p) => (p.y < min.y ? p : min), displayPoints[0]);
     
     return { first, best, last };
-  }, [points]);
+  }, [displayPoints]);
 
   // Renderizado moderno del gráfico SVG
   const renderChart = () => {
-    if (!points.length) {
+    if (!displayPoints.length) {
       return (
         <div className="flex items-center justify-center h-60 lg:h-80 text-gray-400">
           <div className="text-center">
@@ -286,8 +373,8 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
 
-    const xs = points.map((p) => p.x);
-    const ys = points.map((p) => p.y);
+    const xs = displayPoints.map((p) => p.x);
+    const ys = displayPoints.map((p) => p.y);
     const minX = Math.min(...xs);
     const maxX = Math.max(...xs);
     const rawMinY = Math.min(...ys);
@@ -338,12 +425,12 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
     }
 
     // Path
-    const pathD = points
+    const pathD = displayPoints
       .map((p, i) => `${i === 0 ? "M" : "L"}${xScale(p.x)},${yScale(p.y)}`)
       .join(" ");
 
     // Area gradient
-    const areaPath = `${pathD} L${xScale(points[points.length - 1].x)},${height - padding.bottom} L${xScale(points[0].x)},${height - padding.bottom} Z`;
+    const areaPath = `${pathD} L${xScale(displayPoints[displayPoints.length - 1].x)},${height - padding.bottom} L${xScale(displayPoints[0].x)},${height - padding.bottom} Z`;
 
     return (
       <div className="relative w-full h-full">
@@ -372,7 +459,7 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
           />
 
           {/* Points */}
-          {points.map((p, i) => {
+          {displayPoints.map((p, i) => {
             const isFirst = keyPoints.first && p.x === keyPoints.first.x && p.y === keyPoints.first.y;
             const isBest = keyPoints.best && p.x === keyPoints.best.x && p.y === keyPoints.best.y;
             const isLast = keyPoints.last && p.x === keyPoints.last.x && p.y === keyPoints.last.y;
@@ -435,8 +522,8 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
           })}
 
           {/* X Axis labels */}
-          {points.map((p, i) => {
-            if (viewMode === "day" && points.length > 15 && i % 2 !== 0) return null;
+          {displayPoints.map((p, i) => {
+            if (viewMode === "day" && displayPoints.length > 15 && i % 2 !== 0) return null;
             return (
               <text
                 key={`xlabel-${i}`}
@@ -518,46 +605,53 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
   return (
     <div className="space-y-4">
 
-      {/* Botón para mostrar/ocultar filtros SOLO en móvil */}
-      <button
-        onClick={() => setFiltersCollapsed(!filtersCollapsed)}
-        className="flex lg:hidden items-center gap-2 px-4 py-2 mb-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors w-full justify-center"
-      >
-        {filtersCollapsed ? (
-          <>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-            </svg>
-            <span className="text-sm font-medium">Mostrar Filtros</span>
-          </>
-        ) : (
-          <>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-            </svg>
-            <span className="text-sm font-medium">Ocultar Filtros</span>
-          </>
-        )}
-      </button>
+      {/* Botón para mostrar/ocultar filtros SOLO en móvil y solo si NO viene childId desde competencias */}
+      {!propChildId && (
+        <button
+          onClick={() => setFiltersCollapsed(!filtersCollapsed)}
+          className="flex lg:hidden items-center gap-2 px-4 py-2 mb-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors w-full justify-center"
+        >
+          {filtersCollapsed ? (
+            <>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+              </svg>
+              <span className="text-sm font-medium">Mostrar Filtros</span>
+            </>
+          ) : (
+            <>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+              </svg>
+              <span className="text-sm font-medium">Ocultar Filtros</span>
+            </>
+          )}
+        </button>
+      )}
 
       {/* Layout responsive: columna en móvil, adaptado para tablets y desktop */}
       <div className={`grid gap-4 transition-all duration-300
         grid-cols-1
-        ${filtersCollapsed 
-          ? 'lg:grid-cols-5' 
-          : isSidebarCollapsed 
-            ? 'md:grid-cols-[28%_57%_15%] lg:grid-cols-[24%_61%_15%] xl:grid-cols-[21.5%_63.5%_15%]'  // Sidebar cerrado - más espacio en tablets
-            : 'md:grid-cols-[32%_51%_17%] lg:grid-cols-[28%_55%_17%] xl:grid-cols-[26.5%_56.5%_17%]'  // Sidebar abierto - adaptativo
+        ${propCompetitions
+          ? 'lg:grid-cols-1'  // Si vienen competitions desde competencias, solo mostrar gráfico
+          : propChildId 
+            ? 'lg:grid-cols-1'  // Si viene childId desde competencias, solo mostrar gráfico (sin filtros)
+            : filtersCollapsed 
+              ? 'lg:grid-cols-5' 
+              : isSidebarCollapsed 
+                ? 'md:grid-cols-[28%_57%_15%] lg:grid-cols-[24%_61%_15%] xl:grid-cols-[21.5%_63.5%_15%]'  // Sidebar cerrado - más espacio en tablets
+                : 'md:grid-cols-[32%_51%_17%] lg:grid-cols-[28%_55%_17%] xl:grid-cols-[26.5%_56.5%_17%]'  // Sidebar abierto - adaptativo
       }`} style={{ gridAutoRows: '1fr' }}>
         
         {/* Columna 1: Filtros - En móvil primero, en desktop a la izquierda */}
-        {!filtersCollapsed && (
+        {!propCompetitions && !propChildId && !filtersCollapsed && (
           <div className="overflow-hidden order-first lg:order-1 animate-fade-in">
             {/* Card de Filtros */}
             <Card className="p-3 h-full flex flex-col overflow-hidden">
             <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
               {/* Fila 1: Nadador + Año - En móvil: columna, en desktop: fila */}
-              {children.length > 0 && (
+              {/* Solo mostrar selector de nadador si no viene como prop */}
+              {!propChildId && children && children.length > 0 && (
                 <div className="grid grid-cols-1 lg:grid-cols-[1fr_90px] gap-2">
                   <div>
                     <label className="text-xs font-medium text-gray-600 block mb-1.5">Nadador</label>
@@ -587,6 +681,22 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+              )}
+              {/* Si viene propChildId, solo mostrar selector de año */}
+              {propChildId && (
+                <div>
+                  <label className="text-xs font-medium text-gray-600 block mb-1.5">Año</label>
+                  <Select value={String(year)} onValueChange={(v) => setYear(parseInt(v))}>
+                    <SelectTrigger className="h-9 lg:h-8 text-sm lg:text-xs bg-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 6 }, (_, i) => now.getFullYear() - i).map((y) => (
+                        <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
 
@@ -670,7 +780,7 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-gray-600">Distancia</label>
                 <div className="grid grid-cols-3 lg:grid-cols-2 gap-1.5">
-                  {DISTANCE_OPTIONS.map((opt) => (
+                  {Array.isArray(distanceOptions) && distanceOptions.map((opt) => (
                     <button
                       key={opt.value}
                       onClick={() => setDistance(opt.value)}
@@ -710,20 +820,115 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
                 </div>
               </div>
             ) : (
-              <div className="w-full h-full p-2 lg:p-4 pt-12">
-                {renderChart()}
-              </div>
+              <>
+                {/* Filtros visuales modernos - Solo cuando vienen propCompetitions - ARRIBA del gráfico */}
+                {propCompetitions && (
+                  <div className="border-b border-gray-200 p-4 bg-gradient-to-br from-gray-50 to-white space-y-3">
+                    {/* Fila 1: Tamaño de Piscina */}
+                    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+                      <span className="text-sm font-semibold text-gray-700 flex-shrink-0">Piscina:</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setPoolSizeFilter("ALL")}
+                          className={`px-3 py-1.5 rounded-lg font-medium text-xs transition-all ${
+                            poolSizeFilter === "ALL"
+                              ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md shadow-blue-200"
+                              : "bg-white text-gray-700 border border-gray-300 hover:border-blue-400 hover:bg-blue-50"
+                          }`}
+                        >
+                          Todas
+                        </button>
+                      <button
+                        onClick={() => setPoolSizeFilter("SHORT_25M")}
+                        className={`px-3 py-1.5 rounded-lg font-medium text-xs transition-all ${
+                          poolSizeFilter === "SHORT_25M"
+                            ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md shadow-emerald-200"
+                            : "bg-white text-gray-700 border border-gray-300 hover:border-emerald-400 hover:bg-emerald-50"
+                        }`}
+                      >
+                        25m
+                      </button>
+                      <button
+                        onClick={() => setPoolSizeFilter("LONG_50M")}
+                        className={`px-3 py-1.5 rounded-lg font-medium text-xs transition-all ${
+                          poolSizeFilter === "LONG_50M"
+                            ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md shadow-purple-200"
+                            : "bg-white text-gray-700 border border-gray-300 hover:border-purple-400 hover:bg-purple-50"
+                        }`}
+                      >
+                        50m
+                      </button>
+                      <button
+                        onClick={() => setPoolSizeFilter("OPEN_WATER")}
+                        className={`px-3 py-1.5 rounded-lg font-medium text-xs transition-all ${
+                          poolSizeFilter === "OPEN_WATER"
+                            ? "bg-gradient-to-r from-cyan-500 to-cyan-600 text-white shadow-md shadow-cyan-200"
+                            : "bg-white text-gray-700 border border-gray-300 hover:border-cyan-400 hover:bg-cyan-50"
+                        }`}
+                      >
+                        Aguas Abiertas
+                      </button>
+                      </div>
+                    </div>
+                    
+                    {/* Fila 2: Distancias con scroll horizontal */}
+                    <div className="flex items-center gap-2 -mx-4 px-4">
+                      <span className="text-sm font-semibold text-gray-700 flex-shrink-0">Distancia:</span>
+                      <div 
+                        className="flex gap-2 overflow-x-auto scrollbar-hide flex-1 pr-4"
+                        style={{ 
+                          WebkitOverflowScrolling: 'touch',
+                          scrollSnapType: 'x mandatory',
+                          scrollBehavior: 'smooth',
+                          scrollPaddingRight: '1rem'
+                        }}
+                      >
+                          <button
+                            onClick={() => setDistance("ALL")}
+                            className={`px-3 py-1.5 rounded-lg font-medium text-xs transition-all flex-shrink-0 ${
+                              distance === "ALL"
+                                ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md shadow-blue-200"
+                                : "bg-white text-gray-700 border border-gray-300 hover:border-blue-400 hover:bg-blue-50"
+                            }`}
+                            style={{ scrollSnapAlign: 'start' }}
+                          >
+                            Todas
+                          </button>
+                          {Array.isArray(distanceOptions) && distanceOptions.map((opt) => (
+                            <button
+                              key={opt.value}
+                              onClick={() => setDistance(opt.value)}
+                              className={`px-3 py-1.5 rounded-lg font-medium text-xs transition-all flex-shrink-0 ${
+                                distance === opt.value
+                                  ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md shadow-orange-200"
+                                  : "bg-white text-gray-700 border border-gray-300 hover:border-orange-400 hover:bg-orange-50"
+                              }`}
+                              style={{ scrollSnapAlign: 'start' }}
+                            >
+                              {opt.label}
+                            </button>
+                          ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="w-full h-full p-2 lg:p-4 pt-12">
+                  {renderChart()}
+                </div>
+              </>
             )}
           </div>
         </div>
 
-        {/* Columna 3: Estadísticas - En móvil tercero */}
+        {/* Columna 3: Estadísticas - Ocultar completamente cuando vienen propCompetitions */}
+        {!propCompetitions && (
         <div className={`overflow-hidden order-3 lg:order-3 ${
           filtersCollapsed ? 'lg:col-span-1' : ''
         }`}>
           <Card className="p-3 h-full flex flex-col overflow-hidden">
             <div className="flex-1 overflow-y-auto space-y-2.5">
-            {/* Mejor tiempo del período - Compacto pero visible */}
+            {/* Mejor tiempo */}
             {keyPoints.best && (
             <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
               <div className="flex items-center justify-between gap-2">
@@ -740,24 +945,20 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
             </div>
           )}
 
-          {/* Tiempos por Estilo del período seleccionado */}
-          <div className="flex-1 flex flex-col">
-            <h4 className="text-[11px] font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
-              <span>📊</span>
-              Tiempos por Estilo
-              <span className="text-[9px] font-normal text-gray-500">
-                ({viewMode === "year" ? "del año" : viewMode === "month" ? "del mes" : "del mes"})
-              </span>
-            </h4>
-            {loading ? (
-              <div className="flex items-center justify-center flex-1">
-                <div className="animate-spin w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full"></div>
-              </div>
-            ) : distance === "ALL" ? (
-              <div className="flex items-center justify-center flex-1 text-center">
-                <p className="text-[10px] text-gray-500">Selecciona una distancia para ver tiempos</p>
-              </div>
-            ) : (
+          {/* Sección removida cuando vienen propCompetitions */}
+          {!propCompetitions && (
+          <div className="flex-1 flex flex-col items-center justify-center">
+            <div className="text-center text-gray-400">
+              <svg className="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <p className="text-xs font-medium">Visualiza tus tiempos</p>
+              <p className="text-[10px] mt-1">en el gráfico principal</p>
+            </div>
+          </div>
+          )}
+          <div style={{display: 'none'}}>
+            {loading ? null : distance === "ALL" ? null : (
               <div className="mt-1 grid grid-rows-6 gap-2 flex-1">
                 {bestByStyleForPeriod.map((row) => {
                   const getSourceIcon = (src: string | null) => {
@@ -802,6 +1003,7 @@ export default function TrainingChart({ childId: propChildId }: TrainingChartPro
           </div>
           </Card>
         </div>
+        )}
       </div>
     </div>
   );

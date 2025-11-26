@@ -29,10 +29,10 @@ export default function TopBar() {
           const res = await fetch('/api/parent/events', { credentials: 'include' });
           if (res.ok) {
             const data = await res.json();
-            
+
             // Obtener la última vez que se revisaron los eventos
             const lastCheck = localStorage.getItem('lastEventCheck');
-            
+
             if (!lastCheck) {
               // Si nunca ha visto los eventos, contar todos
               setEventsCount(data.length);
@@ -52,7 +52,7 @@ export default function TopBar() {
         }
       };
       fetchEventsCount();
-      
+
       // Actualizar cada 5 minutos
       const interval = setInterval(fetchEventsCount, 5 * 60 * 1000);
       return () => clearInterval(interval);
@@ -81,7 +81,7 @@ export default function TopBar() {
   useEffect(() => {
     const isTrialAccount = (user as any).isTrialAccount;
     const trialExpiresAt = (user as any).trialExpiresAt;
-    
+
     if (!isTrialAccount || !trialExpiresAt) {
       setTrialDaysLeft(null);
       return;
@@ -133,12 +133,12 @@ export default function TopBar() {
       console.error('Logout error', err);
     } finally {
       // clean local data and redirect
-      try { 
-        localStorage.removeItem('token'); 
-        localStorage.removeItem('userRole'); 
-        localStorage.removeItem('userData'); 
+      try {
+        localStorage.removeItem('token');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('userData');
         localStorage.removeItem('lastEventCheck');
-      } catch(e){}
+      } catch (e) { }
       window.location.href = '/login';
     }
   };
@@ -152,13 +152,13 @@ export default function TopBar() {
 
   const handleNovedadesClick = async () => {
     setIsPanelOpen(true);
-    
+
     // Marcar novedades como leídas
     if (hasUnreadNews) {
       try {
-        await fetch('/api/club/mark-news-read', { 
-          method: 'POST', 
-          credentials: 'include' 
+        await fetch('/api/club/mark-news-read', {
+          method: 'POST',
+          credentials: 'include'
         });
         setHasUnreadNews(false);
       } catch (error) {
@@ -173,7 +173,7 @@ export default function TopBar() {
         method: 'POST',
         credentials: 'include'
       });
-      
+
       if (res.ok) {
         setIsPanelOpen(false);
         // Recargar la página para actualizar el estado del club
@@ -189,12 +189,12 @@ export default function TopBar() {
   };
 
   return (
-    <div className="bg-white border-b border-gray-200 -mx-6 lg:-mx-8 px-6 lg:px-8 h-16 flex items-center justify-between">
+    <div className="bg-white border-b border-gray-200 px-4 lg:px-6 h-16 flex items-center justify-between w-full">
       {/* Left side: Toggle sidebar button (desktop only) */}
       <div className="flex items-center gap-4">
         <button
           onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          className="hidden lg:flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors ml-8"
+          className="hidden lg:flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors text-gray-600"
           title={isSidebarCollapsed ? "Expandir menú" : "Colapsar menú"}
         >
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -215,21 +215,20 @@ export default function TopBar() {
         {/* Trial indicator (compact) */}
         {trialDaysLeft !== null && (
           <div
-            className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm ${
-              trialDaysLeft <= 0
+            className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm ${trialDaysLeft <= 0
                 ? 'bg-red-100 text-red-700'
                 : trialDaysLeft <= 3
-                ? 'bg-orange-100 text-orange-700'
-                : 'bg-blue-100 text-blue-700'
-            }`}
+                  ? 'bg-orange-100 text-orange-700'
+                  : 'bg-blue-100 text-blue-700'
+              }`}
             title={
               (user as any).trialExpiresAt
                 ? `${trialDaysLeft <= 0 ? 'Expirado el' : 'Expira el'}: ${new Date((user as any).trialExpiresAt).toLocaleDateString('es-ES', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}`
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}`
                 : `Tu periodo de prueba ${trialDaysLeft <= 0 ? 'ha expirado' : `expira en ${trialDaysLeft} ${trialDaysLeft === 1 ? 'día' : 'días'}`}`
             }
           >
@@ -260,8 +259,8 @@ export default function TopBar() {
 
         {/* Novedades button (only for clubs) */}
         {(user.role === 'CLUB' || user.role === 'club') && (
-          <NovedadesButton 
-            hasUnreadNews={hasUnreadNews} 
+          <NovedadesButton
+            hasUnreadNews={hasUnreadNews}
             onClick={handleNovedadesClick}
           />
         )}
@@ -284,17 +283,17 @@ export default function TopBar() {
                 {user?.name?.[0]?.toUpperCase() || 'U'}
               </div>
             )}
-            
-            {/* User name (hidden on mobile) */}
-            <div className="hidden sm:flex flex-col items-start min-w-0">
+
+            {/* User name (visible on all screens) */}
+            <div className="flex flex-col items-start min-w-0">
               {user?.name && (
                 <div className="text-sm font-semibold text-gray-900 truncate max-w-[150px]">
                   {user.name}
                 </div>
               )}
             </div>
-            
-            <ChevronDown className={`h-4 w-4 text-gray-600 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+
+            <ChevronDown className={`h-4 w-4 text-gray-600 transition-transform hidden sm:block ${isDropdownOpen ? 'rotate-180' : ''}`} />
           </button>
 
           {/* Dropdown menu */}

@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
 
     // 1.5 Obtener usuario completo de la base de datos
     const user = await (prisma as any).user.findUnique({
-      where: { id: authUser.id },
+      where: { id: authUser.user.id },
       select: {
         id: true,
         email: true,
@@ -82,39 +82,59 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 5. Crear cliente en MercadoPago
+    // 5. Buscar o crear cliente en MercadoPago
     const nameParts = user.name?.trim().split(' ') || ['Usuario', 'Time4Swim'];
     const firstName = nameParts[0] || 'Usuario';
     const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Time4Swim';
 
-    console.log('🔍 DEBUG - Creando customer MP:', { 
-      userName: user.name, 
-      firstName, 
-      lastName,
-      email: user.email 
-    });
+    console.log('🔍 Buscando customer MP por email:', user.email);
 
-    const customerResponse = await fetch('https://api.mercadopago.com/v1/customers', {
-      method: 'POST',
+    // Buscar customer existente por email
+    const searchResponse = await fetch(`https://api.mercadopago.com/v1/customers/search?email=${user.email}`, {
+      method: 'GET',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        email: user.email,
-        first_name: firstName,
-        last_name: lastName,
-      }),
     });
 
-    if (!customerResponse.ok) {
-      const error = await customerResponse.json();
-      console.error('Error creando customer MP:', error);
-      throw new Error('Error al crear cliente en MercadoPago');
+    let customer;
+
+    if (searchResponse.ok) {
+      const searchResult = await searchResponse.json();
+      if (searchResult.results && searchResult.results.length > 0) {
+        // Customer ya existe, reutilizarlo
+        customer = searchResult.results[0];
+        console.log('✅ Customer existente encontrado:', customer.id);
+      }
     }
 
-    const customer = await customerResponse.json();
-    console.log('✅ Cliente MercadoPago creado:', customer.id);
+    // Si no existe, crear uno nuevo
+    if (!customer) {
+      console.log('📝 Creando nuevo customer MP...');
+      const customerResponse = await fetch('https://api.mercadopago.com/v1/customers', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: user.email,
+          first_name: firstName,
+          last_name: lastName,
+        }),
+      });
+
+      if (!customerResponse.ok) {
+        const error = await customerResponse.json();
+        console.error('❌ Error MP:', error);
+        const errorDetail = error.cause?.[0]?.description || error.message || 'error';
+        throw new Error(`Error MP: ${errorDetail}`);
+      }
+
+      customer = await customerResponse.json();
+      console.log('✅ Nuevo customer creado:', customer.id);
+    }
 
     // 6. Asociar tarjeta al cliente
     const cardResponse = await fetch(`https://api.mercadopago.com/v1/customers/${customer.id}/cards`, {

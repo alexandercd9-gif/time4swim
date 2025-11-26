@@ -35,7 +35,9 @@ export default function ProfesorLayout({
           ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-80'}
         `}
       >
-        <TopBar />
+        <div className="sticky top-0 z-40 backdrop-blur-sm bg-white/95 shadow-sm">
+          <TopBar />
+        </div>
         <div className="px-6 lg:px-8 pt-1 pb-6">
           {children}
         </div>

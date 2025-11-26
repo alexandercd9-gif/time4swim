@@ -77,83 +77,83 @@ export default function AdminDashboardPage() {
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-          <BarChart3 className="h-8 w-8 text-blue-600" />
+        <h1 className="text-4xl font-black text-gray-900 flex items-center gap-3">
+          <BarChart3 className="h-10 w-10 text-blue-600" />
           Dashboard Administrador
         </h1>
-        <p className="text-gray-600 mt-1">Panel de administración del sistema</p>
+        <p className="text-gray-600 mt-2 text-lg">Panel de administración del sistema</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <CardContent className="p-5">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-base font-semibold text-gray-700">Padres Totales</p>
-                <p className="text-2xl font-bold text-gray-900">{stats?.users.total || 0}</p>
-                <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
+              <div className="flex-1">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Padres Totales</p>
+                <p className="text-4xl font-black text-gray-900">{stats?.users.total || 0}</p>
+                <p className="text-xs text-green-600 flex items-center gap-1 font-semibold mt-1">
                   <TrendingUp className="h-3 w-3" />
                   +{stats?.users.newThisMonth || 0} este mes
                 </p>
               </div>
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-                <Users className="h-6 w-6 text-white" />
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shadow-lg">
+                <Users className="h-7 w-7 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+        <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <CardContent className="p-5">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-base font-semibold text-gray-700">Clubes Registrados</p>
-                <p className="text-2xl font-bold text-gray-900">{stats?.clubs.total || 0}</p>
-                <p className="text-xs text-blue-600 flex items-center gap-1 mt-1">
+              <div className="flex-1">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Clubes Registrados</p>
+                <p className="text-4xl font-black text-gray-900">{stats?.clubs.total || 0}</p>
+                <p className="text-xs text-green-600 flex items-center gap-1 font-semibold mt-1">
                   <Building className="h-3 w-3" />
                   Activos: {stats?.clubs.active || 0}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center">
-                <Building className="h-6 w-6 text-white" />
+              <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-700 rounded-xl flex items-center justify-center shadow-lg">
+                <Building className="h-7 w-7 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+        <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <CardContent className="p-5">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-base font-semibold text-gray-700">Actividad Mensual</p>
-                <p className="text-2xl font-bold text-gray-900">
+              <div className="flex-1">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Actividad Mensual</p>
+                <p className="text-4xl font-black text-gray-900">
                   {(stats?.activity.newUsersThisMonth || 0) + (stats?.activity.newSwimmersThisMonth || 0)}
                 </p>
-                <p className="text-xs text-purple-600 flex items-center gap-1 mt-1">
+                <p className="text-xs text-purple-600 flex items-center gap-1 font-semibold mt-1">
                   <Activity className="h-3 w-3" />
                   Nuevos registros
                 </p>
               </div>
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
-                <BarChart3 className="h-6 w-6 text-white" />
+              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl flex items-center justify-center shadow-lg">
+                <BarChart3 className="h-7 w-7 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+        <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <CardContent className="p-5">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-base font-semibold text-gray-700">Pendientes de Pago</p>
-                <p className="text-2xl font-bold text-gray-900">{stats?.payments.pending || 0}</p>
-                <p className="text-xs text-orange-600 flex items-center gap-1 mt-1">
+              <div className="flex-1">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Pendientes de Pago</p>
+                <p className="text-4xl font-black text-gray-900">{stats?.payments.pending || 0}</p>
+                <p className="text-xs text-orange-600 flex items-center gap-1 font-semibold mt-1">
                   <CreditCard className="h-3 w-3" />
                   {stats?.payments.overdue || 0} vencidos
                 </p>
               </div>
-              <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
-                <CreditCard className="h-6 w-6 text-white" />
+              <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg">
+                <CreditCard className="h-7 w-7 text-white" />
               </div>
             </div>
           </CardContent>
@@ -161,10 +161,10 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="border-0 shadow-md">
+        <Card className="border-0 shadow-lg">
           <CardHeader>
-            <CardTitle className="flex items-center gap-3 text-lg">
-              <BarChart3 className="h-6 w-6 text-blue-600" />
+            <CardTitle className="flex items-center gap-3 text-xl font-black">
+              <BarChart3 className="h-7 w-7 text-blue-600" />
               Registros de Padres por Mes
             </CardTitle>
           </CardHeader>
@@ -233,10 +233,10 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-md">
+        <Card className="border-0 shadow-lg">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PieChartIcon className="h-5 w-5 text-green-600" />
+            <CardTitle className="flex items-center gap-3 text-xl font-black">
+              <PieChartIcon className="h-7 w-7 text-green-600" />
               Distribución de Clubes
             </CardTitle>
           </CardHeader>

@@ -39,7 +39,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Get media swimmers and check if any belongs to this parent
-    const mediaSwimmers = await prisma.mediaSwimmer.findMany({
+    const mediaSwimmers = await prisma.mediaswimmer.findMany({
       where: { mediaId },
       select: { childId: true }
     });
@@ -52,7 +52,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Check if any of the swimmers belongs to this parent
-    const childIds = mediaSwimmers.map(ms => ms.childId);
+    const childIds = mediaSwimmers.map((ms: any) => ms.childId);
     const userChildren = await (prisma as any).userchild.findMany({
       where: {
         userId: user.user.id,

@@ -23,7 +23,7 @@ export async function GET(request: Request) {
       where: {
         role: 'TEACHER',
         ...(clubId ? {
-          clubs: {
+          userclub: {
             some: {
               clubId,
             },
@@ -108,10 +108,12 @@ export async function POST(request: Request) {
         accountStatus: 'ACTIVE',
         isTrialAccount: false,
         profilePhoto: photo || null,
-        clubs: clubId ? {
+        userclub: clubId ? {
           create: {
+            id: `UC_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             clubId,
             isActive: true,
+            updatedAt: new Date(),
           },
         } : undefined,
       },
@@ -155,7 +157,7 @@ export async function PUT(request: Request) {
     // Verificar que el entrenador existe
     const existingCoach = await prisma.user.findUnique({
       where: { id },
-      include: { clubs: true },
+      include: { userclub: true },
     });
 
     if (!existingCoach || existingCoach.role !== 'TEACHER') {

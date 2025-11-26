@@ -66,13 +66,20 @@ export async function PUT(
       include: {
         _count: {
           select: {
-            children: true
+            userchild: true
           }
         }
       }
     });
 
-    return NextResponse.json(updatedParent);
+    const { _count, ...parentData } = updatedParent;
+    
+    const responsePayload = {
+      ...parentData,
+      children: _count.userchild
+    };
+
+    return NextResponse.json(responsePayload);
   } catch (error) {
     console.error('Error updating parent:', error);
     return NextResponse.json(
@@ -94,7 +101,7 @@ export async function DELETE(
     const parent = await prisma.user.findUnique({
       where: { id },
       include: {
-        children: true
+        userchild: true
       }
     });
 
